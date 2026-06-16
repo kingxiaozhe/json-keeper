@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JSON Keeper — Privacy Policy</title>
+  <style>
+    body { max-width: 720px; margin: 40px auto; padding: 0 20px; font-family: system-ui, sans-serif; line-height: 1.6; color: #222; }
+    h1 { font-size: 24px; } h2 { font-size: 18px; margin-top: 28px; }
+    code { background: #f3f3f3; padding: 1px 5px; border-radius: 4px; }
+    .updated { color: #666; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>JSON Keeper — Privacy Policy</h1>
+  <p class="updated">Last updated: 2026-06-16</p>
+
+  <p>JSON Keeper is a browser extension that formats and displays JSON documents
+  you open or paste. This policy explains what data the extension does and does
+  not handle.</p>
+
+  <h2>Data we collect</h2>
+  <p><strong>None.</strong> JSON Keeper does not collect, transmit, sell, or share
+  any personal information. There is no analytics, no tracking, no remote server,
+  no account, and no advertising. The extension makes no network requests of any
+  kind — everything runs locally in your browser.</p>
+
+  <h2>Data stored on your device</h2>
+  <p>The extension saves a few small preferences locally using the browser's
+  <code>chrome.storage.local</code> API — your chosen theme (auto/light/dark) and
+  view mode (pretty/raw/min), plus a temporary copy of text you paste into the
+  popup so it can be opened in the viewer tab. This data stays on your own device,
+  is never transmitted by us, and can be erased by removing the extension.</p>
+
+  <h2>The JSON you view</h2>
+  <p>JSON Keeper reads the content of JSON documents you open or paste solely to
+  format and display them in your browser. That content is never sent anywhere; it
+  is processed entirely on your device.</p>
+
+  <h2>Permissions</h2>
+  <ul>
+    <li><strong>storage</strong> — to remember your theme/view preferences.</li>
+    <li><strong>host access (http, https, file)</strong> — so the extension can
+    detect and pretty-print a JSON document on whatever page you open. It only
+    reads page text to render JSON; it does not read cookies, browsing history, or
+    other site data, and it transmits nothing.</li>
+  </ul>
+
+  <h2>Contact</h2>
+  <p>Questions can be raised via the extension's Chrome Web Store listing or its
+  source repository.</p>
+</body>
+</html>

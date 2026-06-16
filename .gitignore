@@ -1,0 +1,8 @@
+# Never commit the extension signing key.
+*.pem
+
+# Dev / marketing artifacts not needed in the repo
+design/
+node_modules/
+.DS_Store
+*.log
