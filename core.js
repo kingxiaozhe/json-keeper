@@ -160,8 +160,18 @@
       return false;
     }
 
-    const pretty = JSONBig.stringify(value, 2);
-    const minified = JSONBig.stringify(value);
+    // Sort-keys (recursive, arrays keep order) toggles a sorted copy used by the
+    // tree AND by copy/pretty/min so what you see equals what you copy.
+    const sortValue = (v) => {
+      if (Array.isArray(v)) return v.map(sortValue);
+      if (v && typeof v === "object" && typeof v !== "bigint") {
+        const o = {}; for (const k of Object.keys(v).sort()) o[k] = sortValue(v[k]); return o;
+      }
+      return v;
+    };
+    let sorted = false, displayValue = value, pretty, minified;
+    const recompute = () => { displayValue = sorted ? sortValue(value) : value; pretty = JSONBig.stringify(displayValue, 2); minified = JSONBig.stringify(displayValue); };
+    recompute();
     const original = (opts.originalText != null ? opts.originalText : rawText).trim();
     const topInfo = isContainer(value) ? (Array.isArray(value) ? value.length + " items" : Object.keys(value).length + " keys") : "value";
     const heavy = rawText.length > LARGE;
@@ -172,11 +182,13 @@
           '<button class="jk-btn" data-act="copy"><svg class="jk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy JSON</button>' +
           '<div class="jk-seg"><button class="on" data-act="pretty">Pretty</button><button data-act="raw">Raw</button><button data-act="min">Min</button></div>' +
           '<button class="jk-btn" data-act="fold" style="display:none">⤢ Collapse all</button>' +
+          '<button class="jk-btn" data-act="sort" title="Sort keys A→Z (recursive)">⇅ Sort</button>' +
           '<div class="jk-search"><svg class="jk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>' +
             '<input placeholder="Search keys & values"><span class="jk-find-n" data-find hidden></span>' +
             '<button class="jk-find-b" data-find-prev title="Previous (Shift+Enter)" hidden>↑</button><button class="jk-find-b" data-find-next title="Next (Enter)" hidden>↓</button><kbd>/</kbd></div>' +
           '<button class="jk-btn jk-icon" data-act="dl" title="Download .json">⤓</button>' +
           '<button class="jk-btn jk-icon" data-act="theme" title="Theme: auto">◐</button>' +
+          '<select class="jk-skin" data-act="skin" title="Color theme"><option value="default">Default</option><option value="solarized">Solarized</option><option value="monokai">Monokai</option><option value="github">GitHub</option></select>' +
           '<div class="jk-meta"><span class="jk-mono">' + humanSize(rawText.length) + " · " + topInfo + '</span><span class="jk-chip">✓ big-ints precise</span></div>' +
           '<span class="jk-flash" data-flash></span>' +
         "</div>" +
@@ -204,7 +216,7 @@
     function renderTree() {
       if (treeBuilt) return;
       treeBuilt = true;
-      const { topLevel, counts, nodes } = buildTree(value, prettyEl);
+      const { topLevel, counts, nodes } = buildTree(displayValue, prettyEl);
 
       const hasNested = topLevel.some((t) => !t.leaf);
       if (hasNested && topLevel.length >= 3) {
@@ -288,6 +300,27 @@
     themeBtn.addEventListener("click", () => { theme = order[(order.indexOf(theme) + 1) % 3]; renderTheme(); store.set("jk:theme", theme); });
     store.get("jk:theme", (t) => { if (t) { theme = t; renderTheme(); } });
     renderTheme();
+
+    // ---- sort keys (recursive), remembered ----
+    const sortBtn = $('[data-act="sort"]');
+    function applySort() {
+      sortBtn.classList.toggle("on", sorted);
+      recompute();
+      treeBuilt = false; prettyEl.innerHTML = "";
+      const cur = Object.keys(segBtns).find((k) => segBtns[k].classList.contains("on")) || "pretty";
+      setView(cur);
+    }
+    sortBtn.addEventListener("click", () => { sorted = !sorted; store.set("jk:sort", sorted); applySort(); });
+    store.get("jk:sort", (v) => { if (v) { sorted = true; applySort(); } });
+
+    // ---- color skin (retints syntax colors over the light/dark base), remembered ----
+    const skinSel = $('[data-act="skin"]');
+    const applySkin = (s) => {
+      const set = (el) => { if (!el) return; if (s === "default") el.removeAttribute("data-jk-skin"); else el.setAttribute("data-jk-skin", s); };
+      set(rootEl.querySelector(".jk-wrap")); set(document.documentElement);
+    };
+    skinSel.addEventListener("change", () => { applySkin(skinSel.value); store.set("jk:skin", skinSel.value); });
+    store.get("jk:skin", (s) => { if (s) { skinSel.value = s; applySkin(s); } });
 
     // ---- search (highlight + count + jump + auto-expand) ----
     const searchInput = $(".jk-search input"), findN = $("[data-find]"), prevB = $("[data-find-prev]"), nextB = $("[data-find-next]");

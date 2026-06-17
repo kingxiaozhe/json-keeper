@@ -28,6 +28,11 @@
   --jk-shadow:0 16px 50px rgba(0,0,0,.5);
 }
 
+/* color skins — retint syntax colors over whatever light/dark base is active */
+:root[data-jk-skin="solarized"], .jk-scope[data-jk-skin="solarized"] { --jk-key:#268bd2; --jk-str:#2aa198; --jk-num:#d33682; --jk-bool:#859900; --jk-null:#93a1a1; --jk-pun:#93a1a1; }
+:root[data-jk-skin="monokai"],  .jk-scope[data-jk-skin="monokai"]  { --jk-key:#66d9ef; --jk-str:#a6e22e; --jk-num:#ae81ff; --jk-bool:#fd971f; --jk-null:#75715e; --jk-pun:#90908a; }
+:root[data-jk-skin="github"],   .jk-scope[data-jk-skin="github"]   { --jk-key:#953800; --jk-str:#0a3069; --jk-num:#0550ae; --jk-bool:#cf222e; --jk-null:#6e7781; --jk-pun:#6e7781; }
+
 html.jk-active, html.jk-active body { margin:0; height:100%; background:var(--jk-canvas); }
 html.jk-active .jk-root { height:100vh; }
 
@@ -41,6 +46,9 @@ html.jk-active .jk-root { height:100vh; }
   cursor:pointer; border:1px solid var(--jk-border2); background:var(--jk-panel); color:var(--jk-fg); border-radius:7px; }
 .jk-btn:hover { border-color:var(--jk-accent); color:var(--jk-accent); }
 .jk-btn.jk-icon { padding:6px 9px; font-size:14px; }
+.jk-btn.on { border-color:var(--jk-accent); color:var(--jk-accent); background:var(--jk-accent-soft); }
+.jk-skin { font:inherit; font-size:12px; padding:6px 6px; border:1px solid var(--jk-border2); border-radius:7px;
+  background:var(--jk-panel); color:var(--jk-fg); cursor:pointer; }
 .jk-btn.jk-primary { background:var(--jk-accent); border-color:var(--jk-accent); color:#fff; }
 .jk-btn.jk-primary:hover { color:#fff; filter:brightness(1.06); }
 .jk-ic { width:14px; height:14px; }
