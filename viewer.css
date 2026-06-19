@@ -116,6 +116,9 @@ html.jk-active .jk-root { height:100vh; }
 .jk-status { flex:0 0 auto; display:flex; align-items:center; gap:14px; padding:5px 14px; font-size:11px;
   background:var(--jk-bar); border-top:1px solid var(--jk-border); color:var(--jk-dim); white-space:nowrap; overflow:hidden; }
 .jk-status .jk-ok { color:var(--jk-good); font-weight:600; }
+.jk-warn { color:#b8860b; font-weight:600; }
+@media (prefers-color-scheme: dark){ :root:not([data-jk-theme]) .jk-warn, .jk-scope:not([data-jk-theme]) .jk-warn { color:#e3b341; } }
+:root[data-jk-theme="dark"] .jk-warn, .jk-scope[data-jk-theme="dark"] .jk-warn { color:#e3b341; }
 .jk-st b { color:var(--jk-fg); font-weight:600; }
 .jk-spacer { flex:1; }
 .jk-trust { color:var(--jk-faint); }

@@ -153,7 +153,8 @@
   function mountViewer(rootEl, rawText, opts) {
     opts = opts || {};
     let value;
-    try { value = JSONBig.parse(normalize(rawText)); }
+    const diag = { dupKeys: [], bigInts: 0 };
+    try { value = JSONBig.parse(normalize(rawText), diag); }
     catch (e) {
       if (!opts.showErrors) return false;
       rootEl.innerHTML = '<div class="jk-wrap jk-scope"><div class="jk-error">Not valid JSON: ' + esc(e.message) + "</div></div>";
@@ -176,6 +177,15 @@
     const topInfo = isContainer(value) ? (Array.isArray(value) ? value.length + " items" : Object.keys(value).length + " keys") : "value";
     const heavy = rawText.length > LARGE;
 
+    // Correctness report — the moat: surface what other viewers silently get wrong.
+    const dupes = [...new Set(diag.dupKeys)];
+    const chipHTML = diag.bigInts ? "✓ " + diag.bigInts + " big-ints exact" : "✓ big-ints precise";
+    const warnHTML = dupes.length
+      ? '<span class="jk-warn" title="JSON spec keeps only the last value of a duplicated key; other viewers drop the rest silently">⚠ ' +
+        dupes.length + " duplicate key" + (dupes.length > 1 ? "s" : "") + ": " +
+        dupes.slice(0, 4).map((k) => '"' + esc(k) + '"').join(", ") + (dupes.length > 4 ? "…" : "") + " — last value shown</span>"
+      : "";
+
     rootEl.innerHTML =
       '<div class="jk-wrap jk-scope">' +
         '<div class="jk-bar">' +
@@ -189,7 +199,7 @@
           '<button class="jk-btn jk-icon" data-act="dl" title="Download .json">⤓</button>' +
           '<button class="jk-btn jk-icon" data-act="theme" title="Theme: auto">◐</button>' +
           '<select class="jk-skin" data-act="skin" title="Color theme"><option value="default">Default</option><option value="solarized">Solarized</option><option value="monokai">Monokai</option><option value="github">GitHub</option></select>' +
-          '<div class="jk-meta"><span class="jk-mono">' + humanSize(rawText.length) + " · " + topInfo + '</span><span class="jk-chip">✓ big-ints precise</span></div>' +
+          '<div class="jk-meta"><span class="jk-mono">' + humanSize(rawText.length) + " · " + topInfo + '</span><span class="jk-chip">' + chipHTML + "</span></div>" +
           '<span class="jk-flash" data-flash></span>' +
         "</div>" +
         '<div class="jk-crumb jk-mono" data-crumb>root</div>' +
@@ -208,7 +218,7 @@
     const carets = () => prettyEl.querySelectorAll(".jk-caret:not(.jk-leaf)");
 
     statusEl.innerHTML = heavy
-      ? '<span class="jk-ok">● valid JSON</span><span class="jk-st">' + humanSize(rawText.length) + ' — large file, tree built on demand</span><span class="jk-spacer"></span><span class="jk-trust">big integers kept exact · no ads · no telemetry</span>'
+      ? '<span class="jk-ok">● valid JSON</span>' + warnHTML + '<span class="jk-st">' + humanSize(rawText.length) + ' — large file, tree built on demand</span><span class="jk-spacer"></span><span class="jk-trust">big integers kept exact · no ads · no telemetry</span>'
       : "";
 
     // ---- tree (built immediately, or lazily for large files) ----
@@ -242,7 +252,7 @@
 
       const seg = (n, label) => (n ? '<span class="jk-st"><b>' + n + "</b> " + label + "</span>" : "");
       statusEl.innerHTML =
-        '<span class="jk-ok">● valid JSON</span><span class="jk-st">' + nodes + " nodes</span>" +
+        '<span class="jk-ok">● valid JSON</span>' + warnHTML + '<span class="jk-st">' + nodes + " nodes</span>" +
         seg(counts.object, "obj") + seg(counts.array, "arr") + seg(counts.string, "str") +
         seg(counts.number, "num") + seg(counts.boolean, "bool") + seg(counts.null, "null") +
         '<span class="jk-spacer"></span><span class="jk-trust">big integers kept exact · no ads · no telemetry</span>';
