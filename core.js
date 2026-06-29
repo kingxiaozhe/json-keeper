@@ -36,6 +36,22 @@
     return out + esc(text.slice(last));
   }
 
+  // embeddedJSON(s) — if string `s` is itself a JSON object/array (a very common
+  // API-payload shape: an escaped JSON blob inside a field), return the parsed
+  // container so it can be expanded inline; otherwise null. Cheap first-char/
+  // last-char gate avoids parsing ordinary strings; size-capped so a giant
+  // string can't stall the tree.
+  const EMBED_MAX = 100_000;
+  function embeddedJSON(s) {
+    if (typeof s !== "string") return null;
+    const t = s.trim();
+    if (t.length < 2 || t.length > EMBED_MAX) return null;
+    const a = t[0], z = t[t.length - 1];
+    if (!((a === "{" && z === "}") || (a === "[" && z === "]"))) return null;
+    try { const v = JSONBig.parse(t); return isContainer(v) ? v : null; }
+    catch { return null; }
+  }
+
   // epochHint(n) — if `n` plausibly looks like a Unix timestamp (seconds in
   // ~2001–2286, or milliseconds in the same window), return a human-readable
   // UTC string; otherwise null. Tooltip-only, so false positives are harmless.
@@ -126,17 +142,21 @@
     }
 
     function walk(key, val, depth, isLast, crumb, apath) {
-      tally(val);
       const comma = isLast ? "" : '<span class="jk-pun">,</span>';
       const keyHTML = key !== null ? '<span class="jk-key">"' + esc(key) + '"</span><span class="jk-pun">: </span>' : "";
-      if (isContainer(val)) {
-        const arr = Array.isArray(val);
-        const entries = arr ? val.map((v, i) => [i, v]) : Object.entries(val);
+
+      // Render `cval` as a collapsible container. `embedded` flags a value that
+      // was a JSON string we parsed for inline display (badge + start collapsed).
+      function container(cval, embedded) {
+        tally(cval);
+        const arr = Array.isArray(cval);
+        const entries = arr ? cval.map((v, i) => [i, v]) : Object.entries(cval);
         const open = arr ? "[" : "{", close = arr ? "]" : "}";
+        const badge = embedded ? '<span class="jk-embed" title="This value is a JSON string — expanded inline; copy gives the parsed JSON">{ } JSON string</span>' : "";
         const head = row(depth,
-          '<span class="jk-caret">▾</span>' + keyHTML + '<span class="jk-pun">' + open + "</span>" +
+          '<span class="jk-caret">▾</span>' + keyHTML + badge + '<span class="jk-pun">' + open + "</span>" +
           '<span class="jk-count">' + entries.length + (arr ? " items" : " keys") + "</span>" +
-          '<span class="jk-prev" hidden> … ' + close + comma + "</span>", crumb, apath, val, true);
+          '<span class="jk-prev" hidden> … ' + close + comma + "</span>", crumb, apath, cval, true);
         const startIdx = rows.length;
         entries.forEach(([k, v], i) => walk(arr ? null : k, v, depth + 1, i === entries.length - 1,
           crumb + (arr ? "[" + k + "]" : " › " + k), childAccessor(apath, k, arr)));
@@ -145,11 +165,17 @@
         const caret = head.querySelector(".jk-caret"), prev = head.querySelector(".jk-prev"), count = head.querySelector(".jk-count");
         caret._collapse = (on) => { caret.classList.toggle("jk-collapsed", on); blockRows.forEach((r) => (r.style.display = on ? "none" : "")); prev.hidden = !on; count.hidden = on; };
         caret.addEventListener("click", (e) => { e.stopPropagation(); caret._collapse(!caret.classList.contains("jk-collapsed")); });
+        if (embedded) caret._collapse(true); // embedded JSON starts folded to keep the view tidy
         if (depth === 1) topLevel.push({ key: arr ? "[" + key + "]" : key, head, n: entries.length });
-      } else {
-        const r = row(depth, '<span class="jk-caret jk-leaf">▾</span>' + keyHTML + valueHTML(val) + comma, crumb, apath, val, true);
-        if (depth === 1) topLevel.push({ key: key === null ? "·" : key, head: r, leaf: true });
       }
+
+      if (isContainer(val)) { container(val, false); return; }
+      const embedded = embeddedJSON(val);
+      if (embedded) { container(embedded, true); return; }
+
+      tally(val);
+      const r = row(depth, '<span class="jk-caret jk-leaf">▾</span>' + keyHTML + valueHTML(val) + comma, crumb, apath, val, true);
+      if (depth === 1) topLevel.push({ key: key === null ? "·" : key, head: r, leaf: true });
     }
 
     if (isContainer(value)) {
@@ -415,6 +441,6 @@
     return true;
   }
 
-  // linkify/epochHint exposed for unit tests; the rest is the public surface.
-  global.JK = { mountViewer, normalize, linkify, epochHint };
+  // linkify/epochHint/embeddedJSON exposed for unit tests; the rest is public.
+  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON };
 })(typeof window !== "undefined" ? window : globalThis);

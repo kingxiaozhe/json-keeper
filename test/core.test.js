@@ -7,7 +7,7 @@ const path = require("path");
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 eval(read("jsonbig.js")); // defines globalThis.JSONBig (core.js reads it)
 eval(read("core.js"));    // defines globalThis.JK
-const { linkify, epochHint } = globalThis.JK;
+const { linkify, epochHint, embeddedJSON } = globalThis.JK;
 
 let passed = 0, failed = 0;
 function eq(name, actual, expected) {
@@ -45,6 +45,19 @@ eq("year/age-like small ints are not timestamps", epochHint(2024), null);
 eq("negative is not a timestamp", epochHint(-1718800000), null);
 eq("microseconds (too big) not matched", epochHint(1718800000000000), null);
 eq("non-number ignored", epochHint("1718800000"), null);
+
+// ---- embeddedJSON: detect a JSON object/array carried inside a string ----
+ok("object string detected", (() => { const v = embeddedJSON('{"a":1}'); return v && v.a === 1; })());
+ok("array string detected", (() => { const v = embeddedJSON("[1,2,3]"); return Array.isArray(v) && v.length === 3; })());
+ok("surrounding whitespace tolerated", (() => { const v = embeddedJSON('  {"a":1}  '); return v && v.a === 1; })());
+ok("empty object string detected", (() => { const v = embeddedJSON("{}"); return v && typeof v === "object"; })());
+eq("plain string not detected", embeddedJSON("hello"), null);
+eq("number-like string not detected", embeddedJSON("12345"), null);
+eq("quoted-string content not detected", embeddedJSON('"just text"'), null);
+eq("unbalanced (no closing) rejected fast", embeddedJSON('{"a":1'), null);
+eq("invalid JSON-looking string rejected", embeddedJSON("{not json}"), null);
+eq("non-string input ignored", embeddedJSON(42), null);
+eq("oversized string skipped", embeddedJSON("[" + "1,".repeat(60000) + "1]"), null);
 
 console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);
