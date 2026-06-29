@@ -66,6 +66,26 @@ eq("negative big int", parse("-90071992547409920").toString(), "-900719925474099
 // ---- malformed numbers raise a positioned SyntaxError ----
 throws("lone '-' rejected", () => parse("-"));
 throws("bare NaN rejected", () => parse("NaN"));
+throws("malformed float '1e' rejected", () => parse("1e"));
+throws("malformed float '1e+' rejected", () => parse("1e+"));
+throws("malformed float inside array rejected", () => parse("[1e]"));
+(() => {
+  const d = { dupKeys: [], bigInts: 0, nonFinite: 0, precisionLoss: 0 };
+  try { parse("1e", d); } catch {}
+  eq("malformed float is not miscounted as nonFinite", d.nonFinite, 0);
+})();
+
+// ---- precisionLoss ignores trailing zeros (round numbers aren't lossy) ----
+(() => {
+  const d = { dupKeys: [], bigInts: 0, nonFinite: 0, precisionLoss: 0 };
+  parse("[1.00000000000000000, 1000000000000000000.0, 2.5]", d);
+  eq("round numbers with long zero runs not flagged", d.precisionLoss, 0);
+})();
+
+// ---- \u escapes are validated (no silent NUL / quote-eating) ----
+eq("valid \\u escape decodes", parse('"\\u0041"'), "A");
+throws("non-hex \\u escape rejected", () => parse('"\\uZZZZ"'));
+throws("truncated \\u escape rejected", () => parse('"\\u12"'));
 
 // ---- JSONC tolerance: comments + trailing commas ----
 eq("trailing comma in array", JSON.stringify(parse("[1,2,]")), "[1,2]");

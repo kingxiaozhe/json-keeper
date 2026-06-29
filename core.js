@@ -429,20 +429,22 @@
     }
     Object.keys(segBtns).forEach((k) => segBtns[k].addEventListener("click", () => setView(k)));
 
-    // ---- collapse all ----
+    // ---- collapse all / expand to a chosen depth ----
+    // `collapsed` tracks only the all-or-nothing state of the fold button. An
+    // intermediate depth leaves the tree partly open, so the button stays
+    // "Collapse all" (one click then folds everything) rather than mislabeling.
     let collapsed = false;
+    const relabelFold = () => { foldBtn.textContent = collapsed ? "⤡ Expand all" : "⤢ Collapse all"; };
     foldBtn.addEventListener("click", () => {
       collapsed = !collapsed;
       carets().forEach((c) => c._collapse && c._collapse(collapsed));
-      foldBtn.textContent = collapsed ? "⤡ Expand all" : "⤢ Collapse all";
-      if (depthSel) depthSel.value = collapsed ? "1" : "all";
+      relabelFold();
+      depthSel.value = collapsed ? "1" : "all";
     });
-
-    // ---- expand to a chosen depth ----
     depthSel.addEventListener("change", () => {
       applyDepth(carets(), depthSel.value === "all" ? Infinity : Number(depthSel.value));
-      collapsed = depthSel.value !== "all";
-      foldBtn.textContent = collapsed ? "⤡ Expand all" : "⤢ Collapse all";
+      collapsed = depthSel.value === "1"; // only a full collapse maps to the toggle's collapsed state
+      relabelFold();
     });
 
     // ---- copy whole / download ----
@@ -497,12 +499,20 @@
       renderTree(); // search needs the tree
       if (segBtns.pretty && !segBtns.pretty.classList.contains("on")) setView("pretty");
       clearMarks(prettyEl); // drop highlights from the previous query
-      prettyEl.querySelectorAll(".jk-row").forEach((r) => r.classList.remove("jk-dim", "jk-current"));
+      const rows = prettyEl.querySelectorAll(".jk-row");
+      rows.forEach((r) => r.classList.remove("jk-dim", "jk-current"));
       if (!q) { matches = []; cur = -1; showFind(false); return; }
       carets().forEach((c) => c._collapse && c._collapse(false));
-      matches = [...prettyEl.querySelectorAll(".jk-row")].filter((r) => r.textContent.toLowerCase().includes(q));
-      prettyEl.querySelectorAll(".jk-row").forEach((r) => { if (!matches.includes(r)) r.classList.add("jk-dim"); });
-      matches.forEach((r) => { const c = r.querySelector(".jk-content"); if (c) markText(c, q); }); // highlight hits in-place
+      // Single pass: partition rows into matches (highlighted) and the rest
+      // (dimmed) without a separate O(rows × matches) membership scan.
+      matches = [];
+      rows.forEach((r) => {
+        if (r.textContent.toLowerCase().includes(q)) {
+          matches.push(r);
+          const c = r.querySelector(".jk-content");
+          if (c) markText(c, q);
+        } else r.classList.add("jk-dim");
+      });
       showFind(true);
       findN.textContent = matches.length ? "1/" + matches.length : "0";
       cur = -1; if (matches.length) goto(0);
