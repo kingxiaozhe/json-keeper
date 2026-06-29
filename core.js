@@ -76,6 +76,48 @@
       " " + p(d.getUTCHours()) + ":" + p(d.getUTCMinutes()) + ":" + p(d.getUTCSeconds()) + " UTC";
   }
 
+  // markText(scope, q) — wrap each case-insensitive occurrence of `q` (already
+  // lowercased) inside <mark class="jk-mark"> within scope's text nodes. It
+  // splits TEXT nodes only, never touching element nodes, so syntax-coloring
+  // spans, links, and the caret's collapse listener all survive. Existing marks
+  // are skipped (clearMarks runs first anyway). Text is collected up front so we
+  // don't iterate a list we're mutating.
+  function markText(scope, q) {
+    if (!q) return;
+    const texts = [];
+    (function collect(node) {
+      node.childNodes.forEach((n) => {
+        if (n.nodeType === 3) texts.push(n);
+        else if (n.nodeType === 1 && !(n.classList && n.classList.contains("jk-mark"))) collect(n);
+      });
+    })(scope);
+    texts.forEach((tn) => {
+      const s = tn.nodeValue, low = s.toLowerCase();
+      if (!low.includes(q)) return;
+      const frag = document.createDocumentFragment();
+      let i = 0, idx;
+      while ((idx = low.indexOf(q, i)) !== -1) {
+        if (idx > i) frag.appendChild(document.createTextNode(s.slice(i, idx)));
+        const mark = document.createElement("mark");
+        mark.className = "jk-mark";
+        mark.textContent = s.slice(idx, idx + q.length);
+        frag.appendChild(mark);
+        i = idx + q.length;
+      }
+      if (i < s.length) frag.appendChild(document.createTextNode(s.slice(i)));
+      tn.parentNode.replaceChild(frag, tn);
+    });
+  }
+
+  // clearMarks(scope) — undo markText: replace each mark with its plain text,
+  // then normalize so the previously-split text nodes merge back into one. That
+  // merge matters: without it a later query spanning an old split boundary
+  // wouldn't be found.
+  function clearMarks(scope) {
+    scope.querySelectorAll(".jk-mark").forEach((m) => m.parentNode.replaceChild(document.createTextNode(m.textContent), m));
+    scope.normalize();
+  }
+
   const store = {
     get(k, cb) { try { chrome.storage.local.get(k, (r) => cb(r && r[k])); } catch { cb(undefined); } },
     set(k, v) { try { chrome.storage.local.set({ [k]: v }); } catch {} },
@@ -424,11 +466,13 @@
     function runSearch(q) {
       renderTree(); // search needs the tree
       if (segBtns.pretty && !segBtns.pretty.classList.contains("on")) setView("pretty");
+      clearMarks(prettyEl); // drop highlights from the previous query
       prettyEl.querySelectorAll(".jk-row").forEach((r) => r.classList.remove("jk-dim", "jk-current"));
       if (!q) { matches = []; cur = -1; showFind(false); return; }
       carets().forEach((c) => c._collapse && c._collapse(false));
       matches = [...prettyEl.querySelectorAll(".jk-row")].filter((r) => r.textContent.toLowerCase().includes(q));
       prettyEl.querySelectorAll(".jk-row").forEach((r) => { if (!matches.includes(r)) r.classList.add("jk-dim"); });
+      matches.forEach((r) => { const c = r.querySelector(".jk-content"); if (c) markText(c, q); }); // highlight hits in-place
       showFind(true);
       findN.textContent = matches.length ? "1/" + matches.length : "0";
       cur = -1; if (matches.length) goto(0);
@@ -454,5 +498,5 @@
   }
 
   // mountViewer/normalize are the public surface; the rest is exposed for tests.
-  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON, groupDigits, buildTree };
+  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON, groupDigits, buildTree, markText, clearMarks };
 })(typeof window !== "undefined" ? window : globalThis);
