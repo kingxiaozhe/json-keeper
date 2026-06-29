@@ -13,7 +13,7 @@ globalThis.document = makeDocument();
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 eval(read("jsonbig.js"));
 eval(read("core.js"));
-const { buildTree } = globalThis.JK;
+const { buildTree, applyDepth } = globalThis.JK;
 
 let passed = 0, failed = 0;
 function eq(name, actual, expected) {
@@ -69,6 +69,32 @@ const heads = (mount) => mount.querySelectorAll(".jk-caret").filter((c) => typeo
   eq("plain string stays a string", meta.counts.string, 1);
   ok("no embed badge", mount.querySelector(".jk-embed") === null);
 })();
+
+// ---- depth: maxDepth reported, carets tagged, applyDepth folds by level ----
+(() => {
+  const { mount, meta } = render({ a: { b: { c: { d: 1 } } }, e: 2 });
+  eq("maxDepth reported", meta.maxDepth, 3); // container heads: a(1) > b(2) > c(3)
+  const hs = heads(mount);
+  eq("three collapsible containers", hs.length, 3);
+  ok("carets tagged with their depth", hs.every((c) => typeof c._depth === "number"));
+  eq("depths are 1,2,3", hs.map((c) => c._depth).sort().join(","), "1,2,3");
+
+  applyDepth(hs, 2); // open depth 1, collapse depth >= 2
+  eq("depth-1 container open", hs.find((c) => c._depth === 1).classList.contains("jk-collapsed"), false);
+  eq("depth-2 container collapsed", hs.find((c) => c._depth === 2).classList.contains("jk-collapsed"), true);
+  eq("depth-3 container collapsed", hs.find((c) => c._depth === 3).classList.contains("jk-collapsed"), true);
+
+  applyDepth(hs, Infinity); // expand all
+  ok("expand-all opens every container", hs.every((c) => !c.classList.contains("jk-collapsed")));
+
+  applyDepth(hs, 1); // collapse everything
+  ok("level 1 collapses all containers", hs.every((c) => c.classList.contains("jk-collapsed")));
+})();
+
+// flat values: only the root is a container (rendered outside container()), so
+// no nested heads -> maxDepth 0. Top-level containers alone give maxDepth 1.
+eq("all-leaf object has maxDepth 0", render({ a: 1, b: 2 }).meta.maxDepth, 0);
+eq("top-level containers give maxDepth 1", render({ a: [1], b: [2] }).meta.maxDepth, 1);
 
 console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);

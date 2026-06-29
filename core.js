@@ -118,6 +118,13 @@
     scope.normalize();
   }
 
+  // applyDepth(carets, level) — fold the tree to a given depth: containers at
+  // depth >= level collapse, shallower ones open. level = Infinity means "expand
+  // all". Each container caret is tagged with caret._depth in buildTree.
+  function applyDepth(carets, level) {
+    carets.forEach((c) => c._collapse && c._collapse(c._depth >= level));
+  }
+
   const store = {
     get(k, cb) { try { chrome.storage.local.get(k, (r) => cb(r && r[k])); } catch { cb(undefined); } },
     set(k, v) { try { chrome.storage.local.set({ [k]: v }); } catch {} },
@@ -159,7 +166,7 @@
     tree.className = "jk-tree";
     const rows = [], topLevel = [];
     const counts = { string: 0, number: 0, boolean: 0, null: 0, object: 0, array: 0 };
-    let line = 1, nodes = 0;
+    let line = 1, nodes = 0, maxDepth = 0;
 
     const tally = (v) => {
       nodes++;
@@ -217,6 +224,8 @@
         row(depth, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + close + "</span>" + comma);
         const blockRows = rows.slice(startIdx);
         const caret = head.querySelector(".jk-caret"), prev = head.querySelector(".jk-prev"), count = head.querySelector(".jk-count");
+        caret._depth = depth;
+        if (depth > maxDepth) maxDepth = depth;
         caret._collapse = (on) => { caret.classList.toggle("jk-collapsed", on); blockRows.forEach((r) => (r.style.display = on ? "none" : "")); prev.hidden = !on; count.hidden = on; };
         caret.addEventListener("click", (e) => { e.stopPropagation(); caret._collapse(!caret.classList.contains("jk-collapsed")); });
         if (embedded) caret._collapse(true); // embedded JSON starts folded to keep the view tidy
@@ -246,7 +255,7 @@
       row(0, '<span class="jk-caret jk-leaf">▾</span>' + valueHTML(value), "root", "", value, true);
     }
     mount.appendChild(tree);
-    return { topLevel, counts, nodes };
+    return { topLevel, counts, nodes, maxDepth };
   }
 
   function applyTheme(rootEl, mode) {
@@ -311,6 +320,7 @@
           '<button class="jk-btn" data-act="copy"><svg class="jk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy JSON</button>' +
           '<div class="jk-seg"><button class="on" data-act="pretty">Pretty</button><button data-act="raw">Raw</button><button data-act="min">Min</button></div>' +
           '<button class="jk-btn" data-act="fold" style="display:none">⤢ Collapse all</button>' +
+          '<select class="jk-skin jk-depth" data-act="depth" title="Expand to a fixed depth" style="display:none"></select>' +
           '<button class="jk-btn" data-act="sort" title="Sort keys A→Z (recursive)">⇅ Sort</button>' +
           '<div class="jk-search"><svg class="jk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>' +
             '<input placeholder="Search keys & values"><span class="jk-find-n" data-find hidden></span>' +
@@ -332,7 +342,7 @@
     const $ = (s) => rootEl.querySelector(s);
     const prettyEl = $("[data-pretty]"), rawEl = $("[data-raw]"), scrollEl = $(".jk-scroll");
     const railEl = $("[data-rail]"), crumbEl = $("[data-crumb]"), statusEl = $("[data-status]");
-    const flash = $("[data-flash]"), foldBtn = $('[data-act="fold"]');
+    const flash = $("[data-flash]"), foldBtn = $('[data-act="fold"]'), depthSel = $('[data-act="depth"]');
     const say = (t) => { flash.textContent = t; setTimeout(() => (flash.textContent = ""), 1500); };
     const carets = () => prettyEl.querySelectorAll(".jk-caret:not(.jk-leaf)");
 
@@ -345,7 +355,7 @@
     function renderTree() {
       if (treeBuilt) return;
       treeBuilt = true;
-      const { topLevel, counts, nodes } = buildTree(displayValue, prettyEl);
+      const { topLevel, counts, nodes, maxDepth } = buildTree(displayValue, prettyEl);
 
       const hasNested = topLevel.some((t) => !t.leaf);
       if (hasNested && topLevel.length >= 3) {
@@ -377,6 +387,18 @@
         '<span class="jk-spacer"></span><span class="jk-trust">big integers kept exact · no ads · no telemetry</span>';
 
       foldBtn.style.display = carets().length ? "" : "none";
+
+      // Depth control only earns its place when there's nesting deeper than one
+      // level; otherwise Collapse-all already covers it.
+      if (maxDepth >= 2) {
+        let opts = '<option value="all">Depth: all</option>';
+        for (let d = 1; d <= maxDepth; d++) opts += '<option value="' + d + '">Depth: ' + d + "</option>";
+        depthSel.innerHTML = opts;
+        depthSel.value = "all";
+        depthSel.style.display = "";
+      } else {
+        depthSel.style.display = "none";
+      }
     }
 
     // ---- per-node copy (value / path / subtree) + breadcrumb (delegated) ----
@@ -412,6 +434,14 @@
     foldBtn.addEventListener("click", () => {
       collapsed = !collapsed;
       carets().forEach((c) => c._collapse && c._collapse(collapsed));
+      foldBtn.textContent = collapsed ? "⤡ Expand all" : "⤢ Collapse all";
+      if (depthSel) depthSel.value = collapsed ? "1" : "all";
+    });
+
+    // ---- expand to a chosen depth ----
+    depthSel.addEventListener("change", () => {
+      applyDepth(carets(), depthSel.value === "all" ? Infinity : Number(depthSel.value));
+      collapsed = depthSel.value !== "all";
       foldBtn.textContent = collapsed ? "⤡ Expand all" : "⤢ Collapse all";
     });
 
@@ -498,5 +528,5 @@
   }
 
   // mountViewer/normalize are the public surface; the rest is exposed for tests.
-  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON, groupDigits, buildTree, markText, clearMarks };
+  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON, groupDigits, buildTree, markText, clearMarks, applyDepth };
 })(typeof window !== "undefined" ? window : globalThis);
