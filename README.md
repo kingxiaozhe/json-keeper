@@ -1,4 +1,4 @@
-# JSON Keeper (v0.11.0)
+# JSON Keeper (v0.12.0)
 
 可信赖的 JSON 查看/格式化插件。重写自 JSONVue,差异化:**有明显粘贴入口 + 一键复制合法 JSON + 大整数永不失真 + 可折叠树/搜索**。设计语言 "Quiet Precision"(浅/深双主题,设计稿见 `design/`)。
 
@@ -30,6 +30,7 @@
 - **更多正确性诊断**[v0.9]:**数字溢出提示**(超出 float64 范围 → 变成 `Infinity` → 合法 JSON 无 `Infinity`,序列化回 `null` 静默丢数据,我们标出来)+ **浮点丢精度提示**(有效位超过 float64 能表示的范围,复制出来已不等于你粘贴的值);畸形数字(如孤立的 `-`)给出带位置的 `SyntaxError` 而非晦涩报错。
 - **值可读性**[v0.10]:字符串里的 **http/https 链接可点击**(严格限定 scheme + href 属性转义,杜绝 `javascript:`/`data:` 注入)+ 疑似 **Unix 时间戳**(epoch 秒/毫秒)的数字 hover 显示人类可读 UTC 时间(纯提示,无视觉噪音)+ **搜索输入防抖**(大树逐字输入不再卡顿)。
 - **嵌套 JSON 字符串内联展开**[v0.11]:字段值本身是被转义的 JSON 字符串(真实 API 响应极常见)时,自动识别并作为可折叠子树**内联展开**,带 `{ } JSON string` 徽章、**默认折叠**保持整洁;折叠/搜索/复制全部复用现有机制(复制得到解析后的 JSON)。检测有首尾字符快速判定 + 体积上限,不影响普通字符串性能。
+- **大数字千分位提示**[v0.12]:大整数(BigInt)与较大整数 hover 显示带千分位分隔的可读形式(如 `136,986,234,663,732,436`),便于核对位数。
 - **安全**:所有用户数据经 `esc`/`escAttr` 转义(含属性上下文),无注入面;零网络、零遥测、无远程代码。
 - UI 设计语言:B(Linear 冷静)底 + A(IDE 结构栏/状态栏)+ C(信任文案);浅/深双主题。设计探索见 `design/`。
 
@@ -50,5 +51,6 @@
 ## 测试
 - `npm test`(零依赖):
   - `test/jsonbig.test.js` —— 核心 `parse`/`stringify`:大整数保真与计数、重复 key、溢出/丢精度诊断、畸形数字报错、JSONC(注释 + 尾逗号)、转义往返与控制字符、Pretty/Min。
-  - `test/core.test.js` —— 视图纯函数 `linkify`/`epochHint`/`embeddedJSON`:URL 仅 http(s) 可点、其余 scheme 拒绝、注入面转义,时间戳 UTC 格式与边界,嵌套 JSON 字符串的识别与快速拒绝。
-  - 重构前的安全网。
+  - `test/core.test.js` —— 视图纯函数 `linkify`/`epochHint`/`embeddedJSON`/`groupDigits`:URL 仅 http(s) 可点、其余 scheme 拒绝、注入面转义,时间戳 UTC 格式与边界,嵌套 JSON 字符串的识别与快速拒绝,千分位分隔与非整数兜底。
+  - `test/tree.test.js` —— 借 `test/dom-stub.js`(零依赖 DOM 桩)在 node 下跑真实 `buildTree` 渲染路径:类型/节点计数、折叠隐藏与展开恢复、嵌套 JSON 内联展开(徽章 + 默认折叠 + 计入解析结构)。
+  - 重构前的安全网。共 80 条断言。

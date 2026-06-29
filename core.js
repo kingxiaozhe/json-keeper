@@ -52,6 +52,15 @@
     catch { return null; }
   }
 
+  // groupDigits(s) — add thousands separators to a plain integer string (keeps a
+  // leading minus); returns the input unchanged if it isn't all digits, so it's
+  // safe to call on any number/bigint's string form.
+  function groupDigits(s) {
+    const neg = s[0] === "-", d = neg ? s.slice(1) : s;
+    if (!/^\d+$/.test(d)) return s;
+    return (neg ? "-" : "") + d.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
   // epochHint(n) — if `n` plausibly looks like a Unix timestamp (seconds in
   // ~2001–2286, or milliseconds in the same window), return a human-readable
   // UTC string; otherwise null. Tooltip-only, so false positives are harmless.
@@ -85,8 +94,11 @@
   function valueHTML(v) {
     if (v === null) return '<span class="jk-null">null</span>';
     const t = typeof v;
-    if (t === "bigint") return '<span class="jk-num jk-precise" title="kept as an exact integer — never rounded to a float">' + v.toString() + "</span>";
-    if (t === "number") { const h = epochHint(v); return '<span class="jk-num"' + (h ? ' title="' + escAttr(h) + '"' : "") + ">" + String(v) + "</span>"; }
+    if (t === "bigint") return '<span class="jk-num jk-precise" title="' + escAttr("exact integer (never rounded) · " + groupDigits(v.toString())) + '">' + v.toString() + "</span>";
+    if (t === "number") {
+      const h = epochHint(v) || (Number.isInteger(v) && Math.abs(v) >= 10000 ? groupDigits(String(v)) : null);
+      return '<span class="jk-num"' + (h ? ' title="' + escAttr(h) + '"' : "") + ">" + String(v) + "</span>";
+    }
     if (t === "boolean") return '<span class="jk-bool">' + v + "</span>";
     if (t === "string") return '<span class="jk-str">' + linkify(JSONBig.stringify(v)) + "</span>";
     return "";
@@ -441,6 +453,6 @@
     return true;
   }
 
-  // linkify/epochHint/embeddedJSON exposed for unit tests; the rest is public.
-  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON };
+  // mountViewer/normalize are the public surface; the rest is exposed for tests.
+  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON, groupDigits, buildTree };
 })(typeof window !== "undefined" ? window : globalThis);

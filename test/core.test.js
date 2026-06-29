@@ -7,7 +7,7 @@ const path = require("path");
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 eval(read("jsonbig.js")); // defines globalThis.JSONBig (core.js reads it)
 eval(read("core.js"));    // defines globalThis.JK
-const { linkify, epochHint, embeddedJSON } = globalThis.JK;
+const { linkify, epochHint, embeddedJSON, groupDigits } = globalThis.JK;
 
 let passed = 0, failed = 0;
 function eq(name, actual, expected) {
@@ -58,6 +58,15 @@ eq("unbalanced (no closing) rejected fast", embeddedJSON('{"a":1'), null);
 eq("invalid JSON-looking string rejected", embeddedJSON("{not json}"), null);
 eq("non-string input ignored", embeddedJSON(42), null);
 eq("oversized string skipped", embeddedJSON("[" + "1,".repeat(60000) + "1]"), null);
+
+// ---- groupDigits: thousands separators, sign-aware, safe on non-integers ----
+eq("groups thousands", groupDigits("1234567"), "1,234,567");
+eq("under 1000 unchanged", groupDigits("999"), "999");
+eq("exact thousand", groupDigits("1000"), "1,000");
+eq("negative keeps sign", groupDigits("-1234567"), "-1,234,567");
+eq("big-int string grouped", groupDigits("136986234663732436"), "136,986,234,663,732,436");
+eq("non-digits returned as-is", groupDigits("12ab"), "12ab");
+eq("float string returned as-is (not all digits)", groupDigits("1234.5"), "1234.5");
 
 console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);
