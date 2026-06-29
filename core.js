@@ -153,7 +153,7 @@
   function mountViewer(rootEl, rawText, opts) {
     opts = opts || {};
     let value;
-    const diag = { dupKeys: [], bigInts: 0 };
+    const diag = { dupKeys: [], bigInts: 0, nonFinite: 0, precisionLoss: 0 };
     try { value = JSONBig.parse(normalize(rawText), diag); }
     catch (e) {
       if (!opts.showErrors) return false;
@@ -180,11 +180,18 @@
     // Correctness report — the moat: surface what other viewers silently get wrong.
     const dupes = [...new Set(diag.dupKeys)];
     const chipHTML = diag.bigInts ? "✓ " + diag.bigInts + " big-ints exact" : "✓ big-ints precise";
-    const warnHTML = dupes.length
-      ? '<span class="jk-warn" title="JSON spec keeps only the last value of a duplicated key; other viewers drop the rest silently">⚠ ' +
+    const warns = [];
+    if (dupes.length)
+      warns.push('<span class="jk-warn" title="JSON spec keeps only the last value of a duplicated key; other viewers drop the rest silently">⚠ ' +
         dupes.length + " duplicate key" + (dupes.length > 1 ? "s" : "") + ": " +
-        dupes.slice(0, 4).map((k) => '"' + esc(k) + '"').join(", ") + (dupes.length > 4 ? "…" : "") + " — last value shown</span>"
-      : "";
+        dupes.slice(0, 4).map((k) => '"' + esc(k) + '"').join(", ") + (dupes.length > 4 ? "…" : "") + " — last value shown</span>");
+    if (diag.nonFinite)
+      warns.push('<span class="jk-warn" title="A number exceeded the float64 range and became Infinity; valid JSON has no Infinity, so it serializes back to null — a silent data loss other viewers don\'t flag">⚠ ' +
+        diag.nonFinite + " number" + (diag.nonFinite > 1 ? "s" : "") + " out of range — shown as null</span>");
+    if (diag.precisionLoss)
+      warns.push('<span class="jk-warn" title="A float carried more significant digits than a float64 can hold, so the stored value differs from the text you pasted; only integers are kept exact (as big-ints)">⚠ ' +
+        diag.precisionLoss + " float" + (diag.precisionLoss > 1 ? "s" : "") + " lost precision</span>");
+    const warnHTML = warns.join("");
 
     rootEl.innerHTML =
       '<div class="jk-wrap jk-scope">' +
