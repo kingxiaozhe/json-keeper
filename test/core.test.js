@@ -1,0 +1,50 @@
+// core.test.js — zero-dependency tests for the pure view helpers exposed on
+// window.JK (linkify, epochHint). core.js touches the DOM only inside
+// mountViewer, so loading it under node is safe for these helpers.
+const fs = require("fs");
+const path = require("path");
+
+const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
+eval(read("jsonbig.js")); // defines globalThis.JSONBig (core.js reads it)
+eval(read("core.js"));    // defines globalThis.JK
+const { linkify, epochHint } = globalThis.JK;
+
+let passed = 0, failed = 0;
+function eq(name, actual, expected) {
+  if (actual === expected) { passed++; }
+  else { failed++; console.error("  ✗ " + name + "\n      got:  " + JSON.stringify(actual) + "\n      want: " + JSON.stringify(expected)); }
+}
+function ok(name, cond) { if (cond) passed++; else { failed++; console.error("  ✗ " + name); } }
+
+// ---- linkify: links http(s), escapes everything, refuses other schemes ----
+eq("plain text is escaped, unlinked",
+  linkify('a & b < c'), "a &amp; b &lt; c");
+eq("http URL becomes a safe anchor",
+  linkify("see http://x.com/p"),
+  'see <a class="jk-link" href="http://x.com/p" target="_blank" rel="noopener noreferrer">http://x.com/p</a>');
+ok("https URL linked", linkify("https://a.b/c").includes('href="https://a.b/c"'));
+ok("javascript: scheme NOT linked", !linkify("javascript:alert(1)").includes("<a "));
+ok("data: scheme NOT linked", !linkify("data:text/html,x").includes("<a "));
+ok("ftp: scheme NOT linked", !linkify("ftp://h/f").includes("<a "));
+// An attacker-crafted value can't break out of the href attribute: the URL
+// regex stops at the quote, so the payload lands outside the tag as plain text.
+eq("quote terminates the URL; payload is inert text",
+  linkify('http://x.com/"onmouseover=alert(1)'),
+  '<a class="jk-link" href="http://x.com/" target="_blank" rel="noopener noreferrer">http://x.com/</a>"onmouseover=alert(1)');
+ok("angle brackets after URL stay escaped",
+  linkify("http://x.com <b>").includes("&lt;b&gt;"));
+eq("URL stops at a JSON closing quote (quotes safe as text content)",
+  linkify('"http://x.com"'),
+  '"<a class="jk-link" href="http://x.com" target="_blank" rel="noopener noreferrer">http://x.com</a>"');
+
+// ---- epochHint: plausible Unix timestamps only, UTC formatted ----
+eq("epoch seconds -> UTC", epochHint(1718800000), "Unix time: 2024-06-19 12:26:40 UTC");
+eq("epoch milliseconds -> UTC", epochHint(1718800000000), "Unix time: 2024-06-19 12:26:40 UTC");
+eq("small counts are not timestamps", epochHint(42), null);
+eq("year/age-like small ints are not timestamps", epochHint(2024), null);
+eq("negative is not a timestamp", epochHint(-1718800000), null);
+eq("microseconds (too big) not matched", epochHint(1718800000000000), null);
+eq("non-number ignored", epochHint("1718800000"), null);
+
+console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
+process.exit(failed ? 1 : 0);

@@ -19,6 +19,38 @@
   const idKey = (k) => /^[A-Za-z_$][\w$]*$/.test(k);
   const LARGE = 1_000_000; // chars; above this, build the tree on demand to avoid freezing the tab
 
+  // linkify(text) — escape `text`, turning http/https URLs into anchors. ONLY
+  // http(s) is linked (no javascript:/data: etc.) and the href is attribute-
+  // escaped, so a crafted string value can't inject script or break out of the
+  // attribute. Non-URL text is plain-escaped exactly as before.
+  const URL_RE = /https?:\/\/[^\s"<>]+/g;
+  function linkify(text) {
+    let out = "", last = 0, m;
+    URL_RE.lastIndex = 0;
+    while ((m = URL_RE.exec(text))) {
+      out += esc(text.slice(last, m.index));
+      const url = m[0];
+      out += '<a class="jk-link" href="' + escAttr(url) + '" target="_blank" rel="noopener noreferrer">' + esc(url) + "</a>";
+      last = m.index + url.length;
+    }
+    return out + esc(text.slice(last));
+  }
+
+  // epochHint(n) — if `n` plausibly looks like a Unix timestamp (seconds in
+  // ~2001–2286, or milliseconds in the same window), return a human-readable
+  // UTC string; otherwise null. Tooltip-only, so false positives are harmless.
+  function epochHint(n) {
+    if (typeof n !== "number" || !Number.isFinite(n) || n <= 0) return null;
+    let ms = null;
+    if (n >= 1e9 && n < 1e10) ms = n * 1000;       // seconds
+    else if (n >= 1e12 && n < 1e13) ms = n;        // milliseconds
+    if (ms === null) return null;
+    const d = new Date(ms);
+    const p = (x, w) => String(x).padStart(w || 2, "0");
+    return "Unix time: " + d.getUTCFullYear() + "-" + p(d.getUTCMonth() + 1) + "-" + p(d.getUTCDate()) +
+      " " + p(d.getUTCHours()) + ":" + p(d.getUTCMinutes()) + ":" + p(d.getUTCSeconds()) + " UTC";
+  }
+
   const store = {
     get(k, cb) { try { chrome.storage.local.get(k, (r) => cb(r && r[k])); } catch { cb(undefined); } },
     set(k, v) { try { chrome.storage.local.set({ [k]: v }); } catch {} },
@@ -38,9 +70,9 @@
     if (v === null) return '<span class="jk-null">null</span>';
     const t = typeof v;
     if (t === "bigint") return '<span class="jk-num jk-precise" title="kept as an exact integer — never rounded to a float">' + v.toString() + "</span>";
-    if (t === "number") return '<span class="jk-num">' + String(v) + "</span>";
+    if (t === "number") { const h = epochHint(v); return '<span class="jk-num"' + (h ? ' title="' + escAttr(h) + '"' : "") + ">" + String(v) + "</span>"; }
     if (t === "boolean") return '<span class="jk-bool">' + v + "</span>";
-    if (t === "string") return '<span class="jk-str">' + esc(JSONBig.stringify(v)) + "</span>";
+    if (t === "string") return '<span class="jk-str">' + linkify(JSONBig.stringify(v)) + "</span>";
     return "";
   }
 
@@ -363,7 +395,14 @@
       findN.textContent = matches.length ? "1/" + matches.length : "0";
       cur = -1; if (matches.length) goto(0);
     }
-    searchInput.addEventListener("input", (e) => runSearch(e.target.value.trim().toLowerCase()));
+    // Debounce keystrokes: runSearch scans every row, so firing it on each
+    // keypress jitters on large trees. ~120ms feels instant but coalesces typing.
+    let searchT = 0;
+    searchInput.addEventListener("input", (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      clearTimeout(searchT);
+      searchT = setTimeout(() => runSearch(q), 120);
+    });
     searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); goto(cur + (e.shiftKey ? -1 : 1)); } });
     nextB.addEventListener("click", () => goto(cur + 1));
     prevB.addEventListener("click", () => goto(cur - 1));
@@ -376,5 +415,6 @@
     return true;
   }
 
-  global.JK = { mountViewer, normalize };
+  // linkify/epochHint exposed for unit tests; the rest is the public surface.
+  global.JK = { mountViewer, normalize, linkify, epochHint };
 })(typeof window !== "undefined" ? window : globalThis);

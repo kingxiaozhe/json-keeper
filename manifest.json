@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtr4CuVrMPSpVepWIidIqPGCWz+P9UAsSxhLQso9ELXOOO3H7iyBzTLyX+Fzn+JnOeblKErAjTSvu1IcigKGtcJ23a5R6WJPv2ODtIfQaiCeKVqcN1uaWtMMFL3KRgl/b05UAVr61Ss2yXlvExjVELlsO4FNcqiiFpFhbTyIlg8LQ+ClF968hCdNrEDk54AAtFQDixiISfdrxw4Rh3E7wWwqJ4a9QnUrB5yhuOe4oYX2xyxVRyeF/P4EfqJ+Gs/M2mbld0DcURU/enEtD08ynTPiikzRQvS2JNNcqLvMtL90C6C9kWCOlroZ3u03UqvwNj0VwXxxUO2u+ChKSPZfWEQIDAQAB",
   "name": "JSON Keeper",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "View, format and copy JSON — with an obvious paste box, one-click valid-JSON copy, and big integers that never lose precision.",
   "permissions": ["storage"],
   "host_permissions": ["http://*/*", "https://*/*", "file:///*"],

@@ -100,6 +100,8 @@ html.jk-active .jk-root { height:100vh; }
 .jk-count { color:var(--jk-faint); font-size:11.5px; margin-left:6px; }
 .jk-prev { color:var(--jk-faint); font-style:italic; }
 .jk-precise { text-decoration: underline dotted color-mix(in srgb, var(--jk-num) 55%, transparent); text-underline-offset:3px; cursor:help; }
+.jk-link { color:inherit; text-decoration:underline; text-decoration-color:color-mix(in srgb, var(--jk-str) 55%, transparent); text-underline-offset:2px; }
+.jk-link:hover { text-decoration-color:var(--jk-str); }
 
 /* per-node hover actions */
 .jk-acts { position:absolute; right:0; top:0; height:100%; display:none; align-items:center; gap:4px;
