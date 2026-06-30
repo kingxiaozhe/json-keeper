@@ -7,7 +7,7 @@ const path = require("path");
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 eval(read("jsonbig.js")); // defines globalThis.JSONBig (core.js reads it)
 eval(read("core.js"));    // defines globalThis.JK
-const { linkify, epochHint, embeddedJSON, groupDigits } = globalThis.JK;
+const { linkify, epochHint, embeddedJSON, groupDigits, countNodes } = globalThis.JK;
 
 let passed = 0, failed = 0;
 function eq(name, actual, expected) {
@@ -67,6 +67,18 @@ eq("negative keeps sign", groupDigits("-1234567"), "-1,234,567");
 eq("big-int string grouped", groupDigits("136986234663732436"), "136,986,234,663,732,436");
 eq("non-digits returned as-is", groupDigits("12ab"), "12ab");
 eq("float string returned as-is (not all digits)", groupDigits("1234.5"), "1234.5");
+
+// ---- countNodes: total nodes, short-circuits past the cap ----
+eq("scalar is one node", countNodes(5, 100), 1);
+eq("object counts itself + members", countNodes({ a: 1, b: 2 }, 100), 3);
+eq("nested counts every level", countNodes({ a: { b: [1, 2] } }, 100), 5); // root, a, array, 1, 2
+eq("null/bigint are leaves", countNodes({ a: null, b: 10n }, 100), 3);
+eq("short-circuits once past cap", countNodes([1, 2, 3, 4, 5], 2), 3); // stops at cap+1, doesn't count all
+(() => {
+  const big = Array.from({ length: 200 }, (_, i) => i);
+  ok("large array exceeds a small cap", countNodes(big, 50) > 50);
+  ok("same array under a big cap returns exact count", countNodes(big, 1000) === 201);
+})();
 
 console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);

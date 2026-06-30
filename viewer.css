@@ -89,6 +89,10 @@ html.jk-active .jk-root { height:100vh; }
 .jk-row.jk-hit { background:color-mix(in srgb, var(--jk-accent) 18%, transparent); }
 .jk-row.jk-dim { opacity:.26; }
 .jk-row.jk-current { background:var(--jk-cur); box-shadow: inset 2px 0 0 var(--jk-cur-bd); }
+.jk-big { padding:28px 22px; max-width:560px; color:var(--jk-dim); font-size:13px; line-height:1.55; }
+.jk-big p { margin:0 0 12px; }
+.jk-big .jk-btn { margin:2px 0 14px; }
+.jk-big-hint { font-size:11.5px; color:var(--jk-faint); }
 .jk-mark { background:#ffe08a; color:#1c2024; border-radius:2px; padding:0 1px; }
 .jk-row.jk-current .jk-mark { background:#ffc23d; }
 :root[data-jk-theme="dark"] .jk-mark, .jk-scope[data-jk-theme="dark"] .jk-mark { background:#9a7400; color:#fff; }

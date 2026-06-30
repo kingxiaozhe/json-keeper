@@ -18,6 +18,7 @@
   const humanSize = (n) => (n < 1024 ? n + " B" : n < 1048576 ? (n / 1024).toFixed(1) + " KB" : (n / 1048576).toFixed(1) + " MB");
   const idKey = (k) => /^[A-Za-z_$][\w$]*$/.test(k);
   const LARGE = 1_000_000; // chars; above this, build the tree on demand to avoid freezing the tab
+  const NODE_CAP = 50_000; // nodes; above this, don't auto-build the DOM tree (offer an opt-in instead)
 
   // linkify(text) — escape `text`, turning http/https URLs into anchors. ONLY
   // http(s) is linked (no javascript:/data: etc.) and the href is attribute-
@@ -123,6 +124,24 @@
   // all". Each container caret is tagged with caret._depth in buildTree.
   function applyDepth(carets, level) {
     carets.forEach((c) => c._collapse && c._collapse(c._depth >= level));
+  }
+
+  // countNodes(v, cap) — total node count of a parsed value, short-circuiting as
+  // soon as it passes `cap` (returns cap + 1). Lets us decide whether the full
+  // DOM tree is worth building eagerly without paying to count a giant structure.
+  function countNodes(v, cap) {
+    let n = 0;
+    const stack = [v];
+    while (stack.length) {
+      const cur = stack.pop();
+      if (++n > cap) return n;
+      if (Array.isArray(cur)) { for (let i = 0; i < cur.length; i++) stack.push(cur[i]); }
+      else if (cur && typeof cur === "object" && typeof cur !== "bigint") {
+        const keys = Object.keys(cur);
+        for (let i = 0; i < keys.length; i++) stack.push(cur[keys[i]]);
+      }
+    }
+    return n;
   }
 
   const store = {
@@ -297,6 +316,10 @@
     const original = (opts.originalText != null ? opts.originalText : rawText).trim();
     const topInfo = isContainer(value) ? (Array.isArray(value) ? value.length + " items" : Object.keys(value).length + " keys") : "value";
     const heavy = rawText.length > LARGE;
+    // Even a byte-small doc can be a huge *structure* (e.g. a long array of tiny
+    // values); building that many DOM rows is what freezes the tab. Guard on node
+    // count so Pretty/search don't auto-build an enormous tree without consent.
+    const bigStruct = countNodes(value, NODE_CAP) > NODE_CAP;
 
     // Correctness report — the moat: surface what other viewers silently get wrong.
     const dupes = [...new Set(diag.dupKeys)];
@@ -346,14 +369,31 @@
     const say = (t) => { flash.textContent = t; setTimeout(() => (flash.textContent = ""), 1500); };
     const carets = () => prettyEl.querySelectorAll(".jk-caret:not(.jk-leaf)");
 
-    statusEl.innerHTML = heavy
-      ? '<span class="jk-ok">● valid JSON</span>' + warnHTML + '<span class="jk-st">' + humanSize(rawText.length) + ' — large file, tree built on demand</span><span class="jk-spacer"></span><span class="jk-trust">big integers kept exact · no ads · no telemetry</span>'
+    statusEl.innerHTML = (heavy || bigStruct)
+      ? '<span class="jk-ok">● valid JSON</span>' + warnHTML + '<span class="jk-st">' + humanSize(rawText.length) +
+        (bigStruct ? " · over " + groupDigits(String(NODE_CAP)) + " nodes — tree on demand" : " — large file, tree built on demand") +
+        '</span><span class="jk-spacer"></span><span class="jk-trust">big integers kept exact · no ads · no telemetry</span>'
       : "";
 
-    // ---- tree (built immediately, or lazily for large files) ----
-    let treeBuilt = false;
+    // ---- tree (built immediately, or lazily/by-consent for large files) ----
+    let treeBuilt = false, forced = false;
+    // For an enormous structure, don't auto-build the DOM tree — show a guard with
+    // an opt-in. Raw/Min stay fast; building only happens when the user asks.
+    function renderBigGuard() {
+      prettyEl.innerHTML =
+        '<div class="jk-big"><p>This document has a very large structure (over ' + groupDigits(String(NODE_CAP)) +
+        ' nodes). Building the full interactive tree may briefly freeze the tab.</p>' +
+        '<button class="jk-btn" data-act="force-tree">Render tree anyway</button>' +
+        '<p class="jk-big-hint">Raw and Min views stay fast, and big integers are still exact.</p></div>';
+      prettyEl.querySelector('[data-act="force-tree"]').addEventListener("click", () => {
+        forced = true; treeBuilt = false; prettyEl.innerHTML = "";
+        renderTree();
+        const q = searchInput.value.trim().toLowerCase(); if (q) runSearch(q);
+      });
+    }
     function renderTree() {
       if (treeBuilt) return;
+      if (bigStruct && !forced) { renderBigGuard(); return; }
       treeBuilt = true;
       const { topLevel, counts, nodes, maxDepth } = buildTree(displayValue, prettyEl);
 
@@ -530,13 +570,14 @@
     prevB.addEventListener("click", () => goto(cur - 1));
     rootEl.addEventListener("keydown", (e) => { if (e.key === "/" && document.activeElement !== searchInput) { e.preventDefault(); searchInput.focus(); } });
 
-    // initial view: large files start in Raw (tree on demand); else saved or Pretty
-    if (heavy) setView("raw");
+    // initial view: large files / huge structures start in Raw (tree on demand);
+    // else saved or Pretty
+    if (heavy || bigStruct) setView("raw");
     else store.get("jk:view", (v) => setView(v && segBtns[v] ? v : "pretty"));
 
     return true;
   }
 
   // mountViewer/normalize are the public surface; the rest is exposed for tests.
-  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON, groupDigits, buildTree, markText, clearMarks, applyDepth };
+  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON, groupDigits, buildTree, markText, clearMarks, applyDepth, countNodes };
 })(typeof window !== "undefined" ? window : globalThis);
