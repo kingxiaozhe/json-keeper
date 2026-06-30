@@ -126,6 +126,33 @@
     carets.forEach((c) => c._collapse && c._collapse(c._depth >= level));
   }
 
+  // toCSV(value) — convert a top-level ARRAY to CSV, or return null when CSV
+  // doesn't apply (non-array / empty). An array of objects becomes a table whose
+  // columns are the union of keys in first-seen order; anything else becomes a
+  // single "value" column. Cells are RFC-4180 quoted only when they contain a
+  // comma, quote, or newline; nested objects/arrays are emitted as compact JSON,
+  // and BigInt keeps its exact digits.
+  function csvCell(v) {
+    if (v === null || v === undefined) return "";
+    let s;
+    if (typeof v === "bigint") s = v.toString();
+    else if (typeof v === "object") s = JSONBig.stringify(v);
+    else s = String(v);
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function toCSV(value) {
+    if (!Array.isArray(value) || value.length === 0) return null;
+    const isRow = (v) => v && typeof v === "object" && !Array.isArray(v) && typeof v !== "bigint";
+    if (value.every(isRow)) {
+      const cols = [], seen = new Set();
+      value.forEach((row) => Object.keys(row).forEach((k) => { if (!seen.has(k)) { seen.add(k); cols.push(k); } }));
+      const lines = [cols.map(csvCell).join(",")];
+      value.forEach((row) => lines.push(cols.map((c) => csvCell(row[c])).join(",")));
+      return lines.join("\r\n");
+    }
+    return ["value"].concat(value.map(csvCell)).join("\r\n");
+  }
+
   // countNodes(v, cap) — total node count of a parsed value, short-circuiting as
   // soon as it passes `cap` (returns cap + 1). Lets us decide whether the full
   // DOM tree is worth building eagerly without paying to count a giant structure.
@@ -283,8 +310,8 @@
     set(document.documentElement);
   }
 
-  function download(name, text) {
-    const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  function download(name, text, mime) {
+    const url = URL.createObjectURL(new Blob([text], { type: mime || "application/json" }));
     const a = document.createElement("a");
     a.href = url; a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -349,6 +376,7 @@
             '<input placeholder="Search keys & values"><span class="jk-find-n" data-find hidden></span>' +
             '<button class="jk-find-b" data-find-prev title="Previous (Shift+Enter)" hidden>↑</button><button class="jk-find-b" data-find-next title="Next (Enter)" hidden>↓</button><kbd>/</kbd></div>' +
           '<button class="jk-btn jk-icon" data-act="dl" title="Download .json">⤓</button>' +
+          '<button class="jk-btn" data-act="csv" title="Download CSV (array → table)" style="display:none">⤓ CSV</button>' +
           '<button class="jk-btn jk-icon" data-act="theme" title="Theme: auto">◐</button>' +
           '<select class="jk-skin" data-act="skin" title="Color theme"><option value="default">Default</option><option value="solarized">Solarized</option><option value="monokai">Monokai</option><option value="github">GitHub</option></select>' +
           '<div class="jk-meta"><span class="jk-mono">' + humanSize(rawText.length) + " · " + topInfo + '</span><span class="jk-chip">' + chipHTML + "</span></div>" +
@@ -493,6 +521,17 @@
     });
     $('[data-act="dl"]').addEventListener("click", () => { download("data.json", pretty); say("Downloaded ✓"); });
 
+    // ---- CSV export (only when the top level is an array) ----
+    const csvBtn = $('[data-act="csv"]');
+    if (Array.isArray(value) && value.length) {
+      csvBtn.style.display = "";
+      csvBtn.addEventListener("click", () => {
+        const csv = toCSV(displayValue); // displayValue tracks the sort toggle
+        if (csv == null) { say("CSV needs an array"); return; }
+        download("data.csv", csv, "text/csv"); say("CSV downloaded ✓");
+      });
+    }
+
     // ---- theme (auto → light → dark), remembered ----
     const themeBtn = $('[data-act="theme"]');
     const order = ["auto", "light", "dark"], glyph = { auto: "◐", light: "☀", dark: "☾" };
@@ -579,5 +618,5 @@
   }
 
   // mountViewer/normalize are the public surface; the rest is exposed for tests.
-  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON, groupDigits, buildTree, markText, clearMarks, applyDepth, countNodes };
+  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON, groupDigits, buildTree, markText, clearMarks, applyDepth, countNodes, toCSV };
 })(typeof window !== "undefined" ? window : globalThis);

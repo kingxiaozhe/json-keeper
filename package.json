@@ -1,6 +1,6 @@
 {
   "name": "json-keeper",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "private": true,
   "description": "Trustworthy JSON viewer Chrome extension — exact big integers, correctness diagnostics, no ads/telemetry.",
   "license": "MIT",

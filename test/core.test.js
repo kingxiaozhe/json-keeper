@@ -7,7 +7,7 @@ const path = require("path");
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 eval(read("jsonbig.js")); // defines globalThis.JSONBig (core.js reads it)
 eval(read("core.js"));    // defines globalThis.JK
-const { linkify, epochHint, embeddedJSON, groupDigits, countNodes } = globalThis.JK;
+const { linkify, epochHint, embeddedJSON, groupDigits, countNodes, toCSV } = globalThis.JK;
 
 let passed = 0, failed = 0;
 function eq(name, actual, expected) {
@@ -79,6 +79,27 @@ eq("short-circuits once past cap", countNodes([1, 2, 3, 4, 5], 2), 3); // stops 
   ok("large array exceeds a small cap", countNodes(big, 50) > 50);
   ok("same array under a big cap returns exact count", countNodes(big, 1000) === 201);
 })();
+
+// ---- toCSV: array of objects -> table, with union columns and RFC-4180 quoting ----
+eq("array of objects -> header + rows",
+  toCSV([{ a: 1, b: 2 }, { a: 3, b: 4 }]), "a,b\r\n1,2\r\n3,4");
+eq("union of keys in first-seen order, missing cells blank",
+  toCSV([{ a: 1 }, { b: 2 }]), "a,b\r\n1,\r\n,2");
+eq("null cell is empty", toCSV([{ a: null }]), "a\r\n");
+eq("quotes comma/quote/newline cells",
+  toCSV([{ a: "x,y", b: 'he said "hi"', c: "line1\nline2" }]),
+  'a,b,c\r\n"x,y","he said ""hi""","line1\nline2"');
+eq("nested object/array cell -> compact JSON",
+  toCSV([{ a: { x: 1 }, b: [1, 2] }]), 'a,b\r\n"{""x"":1}","[1,2]"');
+eq("bigint cell keeps exact digits",
+  toCSV([{ id: 136986234663732436n }]), "id\r\n136986234663732436");
+eq("array of scalars -> single value column",
+  toCSV([1, "two", true]), "value\r\n1\r\ntwo\r\ntrue");
+eq("non-array returns null", toCSV({ a: 1 }), null);
+eq("empty array returns null", toCSV([]), null);
+eq("scalar returns null", toCSV(42), null);
+eq("mixed array (objects + scalars) -> single value column",
+  toCSV([{ a: 1 }, 5]), 'value\r\n"{""a"":1}"\r\n5');
 
 console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);
