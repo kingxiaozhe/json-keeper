@@ -6,6 +6,20 @@
 // (remembered), Pretty/Raw/Min, download, smart rail (scroll-spy, auto-hidden
 // for flat JSON), and a large-file guard (tree built on demand). All parsing/
 // serializing via JSONBig so big integers stay exact.
+//
+// File map (top → bottom):
+//   • small utils        — esc/escAttr/isContainer/humanSize/idKey
+//   • pure helpers        — linkify, embeddedJSON, groupDigits, epochHint,
+//                           markText/clearMarks, applyDepth, posToLineCol,
+//                           scopedEls, applySearch, countNodes, toCSV
+//                           (DOM-light, exported on JK, unit-tested)
+//   • valueHTML           — one JSON scalar → highlighted HTML
+//   • buildTree           — value → collapsible DOM tree (+ counts/depth)
+//   • applyTheme/download  — view plumbing
+//   • mountViewer         — assembles toolbar + tree + status into a root, and
+//                           wires every control (view, sort, skin, theme, depth,
+//                           search, copy/download/CSV)
+//   • JK export           — public surface + test hooks
 (function (global) {
   "use strict";
   const JSONBig = global.JSONBig;
