@@ -7,7 +7,7 @@ const path = require("path");
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 eval(read("jsonbig.js")); // defines globalThis.JSONBig (core.js reads it)
 eval(read("core.js"));    // defines globalThis.JK
-const { linkify, epochHint, embeddedJSON, groupDigits, countNodes, toCSV } = globalThis.JK;
+const { linkify, epochHint, embeddedJSON, groupDigits, countNodes, toCSV, posToLineCol } = globalThis.JK;
 
 let passed = 0, failed = 0;
 function eq(name, actual, expected) {
@@ -100,6 +100,14 @@ eq("empty array returns null", toCSV([]), null);
 eq("scalar returns null", toCSV(42), null);
 eq("mixed array (objects + scalars) -> single value column",
   toCSV([{ a: 1 }, 5]), 'value\r\n"{""a"":1}"\r\n5');
+
+// ---- posToLineCol: 1-based line/column for a parse-error offset ----
+eq("offset 0 -> line 1 col 1", JSON.stringify(posToLineCol("abc", 0)), '{"line":1,"col":1}');
+eq("mid first line", JSON.stringify(posToLineCol("abc", 2)), '{"line":1,"col":3}');
+eq("start of second line", JSON.stringify(posToLineCol("ab\ncd", 3)), '{"line":2,"col":1}');
+eq("col within later line", JSON.stringify(posToLineCol("ab\ncd", 4)), '{"line":2,"col":2}');
+eq("third line after two breaks", JSON.stringify(posToLineCol("a\n\nz", 3)), '{"line":3,"col":1}');
+eq("offset past end is clamped", JSON.stringify(posToLineCol("ab", 99)), '{"line":1,"col":3}');
 
 console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);

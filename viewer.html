@@ -1,16 +1,45 @@
 <!doctype html>
-<html>
+<html class="jk-page-html">
 <head>
   <meta charset="utf-8">
   <title>JSON Keeper</title>
   <link rel="stylesheet" href="viewer.css">
 </head>
-<body class="jk-page">
-  <div class="jk-page-wrap">
-    <textarea id="in" class="jk-input" placeholder='Paste JSON here, then press Format (⌘/Ctrl+Enter)'></textarea>
-    <div class="jk-page-bar"><button class="jk-btn jk-primary" id="go">Format JSON</button></div>
-    <div id="out"></div>
+<body>
+  <div class="jk-page">
+    <div class="jk-ptop">
+      <span class="jk-brand">JSON Keeper <span class="d">·</span> <span style="color:var(--jk-dim);font-weight:500">Format workbench</span></span>
+      <span class="sp"></span>
+    </div>
+
+    <div class="jk-split" id="split">
+      <!-- left: paste / edit -->
+      <section class="jk-pane jk-pane-in" id="inPane">
+        <div class="jk-in-head">
+          <span class="lbl">Paste / edit</span>
+          <span class="sp"></span>
+          <span class="hint">Format <kbd>⌘/Ctrl ↵</kbd></span>
+        </div>
+        <textarea id="in" class="jk-input" spellcheck="false"
+          placeholder='Paste JSON here — it formats on the right as you paste'></textarea>
+        <div class="jk-in-foot">
+          <span class="jk-valid" id="valid"></span>
+          <span class="sp"></span>
+          <label class="jk-autobox"><input type="checkbox" id="auto" checked> Auto-format</label>
+          <button class="jk-btn" id="clear">Clear</button>
+          <button class="jk-btn jk-primary" id="go">Format JSON →</button>
+        </div>
+      </section>
+
+      <div class="jk-divider" id="divider" title="Drag to resize"></div>
+
+      <!-- right: formatted output (core.js mounts the viewer here) -->
+      <section class="jk-pane jk-pane-out" id="outPane">
+        <div id="out"></div>
+      </section>
+    </div>
   </div>
+
   <script src="jsonbig.js"></script>
   <script src="core.js"></script>
   <script src="viewer.js"></script>

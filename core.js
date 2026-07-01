@@ -119,6 +119,60 @@
     scope.normalize();
   }
 
+  // posToLineCol(text, pos) — 1-based line & column for a character offset, so a
+  // parse error at "position N" can be shown as "line L, col C" and jumped to.
+  function posToLineCol(text, pos) {
+    pos = Math.max(0, Math.min(pos | 0, text.length));
+    let line = 1, last = -1;
+    for (let i = 0; i < pos; i++) if (text[i] === "\n") { line++; last = i; }
+    return { line, col: pos - last };
+  }
+
+  // scopedEls(row, scope) — the elements within a tree row that a search should
+  // look at: keys, values, or both. Deliberately excludes the line-number gutter,
+  // the hover action buttons, and structural punctuation/counts, so a query like
+  // "path" no longer matches every row's copy-path button. Uses only single-class
+  // selectors (portable across the test DOM).
+  function scopedEls(row, scope) {
+    const out = [];
+    const add = (sel) => row.querySelectorAll(sel).forEach((e) => out.push(e));
+    if (scope !== "values") add(".jk-key");
+    if (scope !== "keys") [".jk-str", ".jk-num", ".jk-bool", ".jk-null"].forEach(add);
+    return out;
+  }
+
+  // applySearch(prettyEl, carets, q, scope, filter) — the shared search core:
+  // highlight `q` within the scoped parts of each row, reveal collapsed ancestors
+  // of any match, and (when filter is on) keep only matches and their ancestor
+  // path. Returns the matched rows in document order. UI (count, next/prev) lives
+  // in the caller. `q` must already be lowercased.
+  function applySearch(prettyEl, carets, q, scope, filter) {
+    clearMarks(prettyEl);
+    const rows = prettyEl.querySelectorAll(".jk-row");
+    rows.forEach((r) => r.classList.remove("jk-dim", "jk-current", "jk-filtered"));
+    if (!q) return [];
+    const matches = [];
+    rows.forEach((r) => {
+      let hit = false;
+      scopedEls(r, scope).forEach((el) => {
+        if (el.textContent.toLowerCase().includes(q)) { markText(el, q); hit = true; }
+      });
+      if (hit) matches.push(r);
+    });
+    const mset = new Set(matches);
+    // Reveal every collapsed container whose subtree contains a match (all
+    // ancestors on the path get expanded, since each ancestor's block includes it).
+    carets.forEach((c) => { if (c._rows && c._rows.some((r) => mset.has(r))) c._collapse(false); });
+    if (filter) {
+      const show = new Set(matches);
+      carets.forEach((c) => { if (c._rows && c._rows.some((r) => mset.has(r)) && c._headRow) show.add(c._headRow); });
+      rows.forEach((r) => { if (!show.has(r)) r.classList.add("jk-filtered"); });
+    } else {
+      rows.forEach((r) => { if (!mset.has(r)) r.classList.add("jk-dim"); });
+    }
+    return matches;
+  }
+
   // applyDepth(carets, level) — fold the tree to a given depth: containers at
   // depth >= level collapse, shallower ones open. level = Infinity means "expand
   // all". Each container caret is tagged with caret._depth in buildTree.
@@ -271,6 +325,8 @@
         const blockRows = rows.slice(startIdx);
         const caret = head.querySelector(".jk-caret"), prev = head.querySelector(".jk-prev"), count = head.querySelector(".jk-count");
         caret._depth = depth;
+        caret._rows = blockRows;   // descendant rows — used by search to reveal/keep ancestors of a match
+        caret._headRow = head;     // this container's own row
         if (depth > maxDepth) maxDepth = depth;
         caret._collapse = (on) => { caret.classList.toggle("jk-collapsed", on); blockRows.forEach((r) => (r.style.display = on ? "none" : "")); prev.hidden = !on; count.hidden = on; };
         caret.addEventListener("click", (e) => { e.stopPropagation(); caret._collapse(!caret.classList.contains("jk-collapsed")); });
@@ -373,7 +429,9 @@
           '<select class="jk-skin jk-depth" data-act="depth" title="Expand to a fixed depth" style="display:none"></select>' +
           '<button class="jk-btn" data-act="sort" title="Sort keys A→Z (recursive)">⇅ Sort</button>' +
           '<div class="jk-search"><svg class="jk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>' +
-            '<input placeholder="Search keys & values"><span class="jk-find-n" data-find hidden></span>' +
+            '<input placeholder="Find (⌘/Ctrl+F)"><span class="jk-find-n" data-find hidden></span>' +
+            '<select class="jk-find-scope" data-find-scope title="Where to search"><option value="both">All</option><option value="keys">Keys</option><option value="values">Values</option></select>' +
+            '<button class="jk-find-b" data-find-filter title="Show only matching rows and their path" hidden>≡</button>' +
             '<button class="jk-find-b" data-find-prev title="Previous (Shift+Enter)" hidden>↑</button><button class="jk-find-b" data-find-next title="Next (Enter)" hidden>↓</button><kbd>/</kbd></div>' +
           '<button class="jk-btn jk-icon" data-act="dl" title="Download .json">⤓</button>' +
           '<button class="jk-btn" data-act="csv" title="Download CSV (array → table)" style="display:none">⤓ CSV</button>' +
@@ -562,10 +620,11 @@
     skinSel.addEventListener("change", () => { applySkin(skinSel.value); store.set("jk:skin", skinSel.value); });
     store.get("jk:skin", (s) => { if (s) { skinSel.value = s; applySkin(s); } });
 
-    // ---- search (highlight + count + jump + auto-expand) ----
-    const searchInput = $(".jk-search input"), findN = $("[data-find]"), prevB = $("[data-find-prev]"), nextB = $("[data-find-next]");
+    // ---- search (scoped highlight + count + jump + match-aware expand + filter) ----
+    const searchInput = $(".jk-search input"), findN = $("[data-find]");
+    const prevB = $("[data-find-prev]"), nextB = $("[data-find-next]"), filterB = $("[data-find-filter]"), scopeSel = $("[data-find-scope]");
     let matches = [], cur = -1;
-    const showFind = (on) => [findN, prevB, nextB].forEach((el) => (el.hidden = !on));
+    const showFind = (on) => [findN, prevB, nextB, filterB].forEach((el) => (el.hidden = !on));
     function goto(i) {
       if (!matches.length) return;
       cur = (i + matches.length) % matches.length;
@@ -577,37 +636,33 @@
     function runSearch(q) {
       renderTree(); // search needs the tree
       if (segBtns.pretty && !segBtns.pretty.classList.contains("on")) setView("pretty");
-      clearMarks(prettyEl); // drop highlights from the previous query
-      const rows = prettyEl.querySelectorAll(".jk-row");
-      rows.forEach((r) => r.classList.remove("jk-dim", "jk-current"));
-      if (!q) { matches = []; cur = -1; showFind(false); return; }
-      carets().forEach((c) => c._collapse && c._collapse(false));
-      // Single pass: partition rows into matches (highlighted) and the rest
-      // (dimmed) without a separate O(rows × matches) membership scan.
-      matches = [];
-      rows.forEach((r) => {
-        if (r.textContent.toLowerCase().includes(q)) {
-          matches.push(r);
-          const c = r.querySelector(".jk-content");
-          if (c) markText(c, q);
-        } else r.classList.add("jk-dim");
-      });
+      if (!q) { applySearch(prettyEl, carets(), "", scopeSel.value, false); matches = []; cur = -1; showFind(false); return; }
+      matches = applySearch(prettyEl, carets(), q, scopeSel.value, filterB.classList.contains("on"));
       showFind(true);
       findN.textContent = matches.length ? "1/" + matches.length : "0";
       cur = -1; if (matches.length) goto(0);
     }
-    // Debounce keystrokes: runSearch scans every row, so firing it on each
-    // keypress jitters on large trees. ~120ms feels instant but coalesces typing.
+    const rerun = () => runSearch(searchInput.value.trim().toLowerCase());
+    // Debounce keystrokes: applySearch scans every row, so coalesce typing (~120ms).
     let searchT = 0;
-    searchInput.addEventListener("input", (e) => {
-      const q = e.target.value.trim().toLowerCase();
-      clearTimeout(searchT);
-      searchT = setTimeout(() => runSearch(q), 120);
-    });
-    searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); goto(cur + (e.shiftKey ? -1 : 1)); } });
+    searchInput.addEventListener("input", () => { clearTimeout(searchT); searchT = setTimeout(rerun, 120); });
+    searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); goto(cur + (e.shiftKey ? -1 : 1)); } if (e.key === "Escape") { searchInput.value = ""; rerun(); } });
+    scopeSel.addEventListener("change", rerun);
+    filterB.addEventListener("click", () => { filterB.classList.toggle("on"); rerun(); });
     nextB.addEventListener("click", () => goto(cur + 1));
     prevB.addEventListener("click", () => goto(cur - 1));
     rootEl.addEventListener("keydown", (e) => { if (e.key === "/" && document.activeElement !== searchInput) { e.preventDefault(); searchInput.focus(); } });
+    // ⌘/Ctrl+F focuses the in-app find instead of the browser's. Bound once per
+    // page (guarded), and it locates the live search input so it survives re-mounts.
+    if (!global.__jkFindBound) {
+      global.__jkFindBound = true;
+      document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && (e.key === "f" || e.key === "F")) {
+          const inp = document.querySelector(".jk-search input");
+          if (inp) { e.preventDefault(); inp.focus(); inp.select(); }
+        }
+      });
+    }
 
     // initial view: large files / huge structures start in Raw (tree on demand);
     // else saved or Pretty
@@ -618,5 +673,5 @@
   }
 
   // mountViewer/normalize are the public surface; the rest is exposed for tests.
-  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON, groupDigits, buildTree, markText, clearMarks, applyDepth, countNodes, toCSV };
+  global.JK = { mountViewer, normalize, linkify, epochHint, embeddedJSON, groupDigits, buildTree, markText, clearMarks, applyDepth, countNodes, toCSV, posToLineCol, scopedEls, applySearch };
 })(typeof window !== "undefined" ? window : globalThis);

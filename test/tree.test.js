@@ -13,7 +13,10 @@ globalThis.document = makeDocument();
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 eval(read("jsonbig.js"));
 eval(read("core.js"));
-const { buildTree, applyDepth } = globalThis.JK;
+const { buildTree, applyDepth, applySearch } = globalThis.JK;
+
+// container carets (they carry _collapse / _rows / _headRow); leaf carets don't.
+const caretsOf = (mount) => mount.querySelectorAll(".jk-caret").filter((c) => typeof c._collapse === "function");
 
 let passed = 0, failed = 0;
 function eq(name, actual, expected) {
@@ -95,6 +98,42 @@ const heads = (mount) => mount.querySelectorAll(".jk-caret").filter((c) => typeo
 // no nested heads -> maxDepth 0. Top-level containers alone give maxDepth 1.
 eq("all-leaf object has maxDepth 0", render({ a: 1, b: 2 }).meta.maxDepth, 0);
 eq("top-level containers give maxDepth 1", render({ a: [1], b: [2] }).meta.maxDepth, 1);
+
+// ---- applySearch: scope, match-aware expand, filter, and the gutter/acts fix ----
+const rowWith = (mount, s) => mount.querySelectorAll(".jk-row").filter((r) => r.textContent.includes(s))[0];
+const SAMPLE = { name: "Ada", city: "name-town", info: { name: "Bob" } };
+
+(() => {
+  const { mount } = render(SAMPLE);
+  eq("scope=keys matches key occurrences", applySearch(mount, caretsOf(mount), "name", "keys", false).length, 2);   // "name" key + info.name key
+  eq("scope=values matches value occurrences", applySearch(mount, caretsOf(mount), "name", "values", false).length, 1); // "name-town" value
+  eq("scope=both is the union", applySearch(mount, caretsOf(mount), "name", "both", false).length, 3);
+  eq("empty query clears matches", applySearch(mount, caretsOf(mount), "", "both", false).length, 0);
+})();
+
+// the bug fix: a query that only appears on the copy-path button / gutter must NOT match
+(() => {
+  const { mount } = render(SAMPLE);
+  eq("'path' (a hover-button label) matches nothing", applySearch(mount, caretsOf(mount), "path", "both", false).length, 0);
+})();
+
+// match-aware expand: a collapsed ancestor of a match is revealed
+(() => {
+  const { mount } = render(SAMPLE);
+  const info = caretsOf(mount).find((c) => c._headRow.textContent.includes('"info"'));
+  info._collapse(true);
+  ok("ancestor starts collapsed", info.classList.contains("jk-collapsed"));
+  applySearch(mount, caretsOf(mount), "name", "keys", false); // info.name is a match
+  ok("collapsed ancestor of a match is re-expanded", !info.classList.contains("jk-collapsed"));
+})();
+
+// filter: keep matches + their ancestor path, hide the rest
+(() => {
+  const { mount } = render(SAMPLE);
+  applySearch(mount, caretsOf(mount), "name", "keys", true);
+  ok("ancestor header of a match is kept", !rowWith(mount, '"info"').classList.contains("jk-filtered"));
+  ok("an unrelated row is filtered out", rowWith(mount, '"city"').classList.contains("jk-filtered"));
+})();
 
 console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);

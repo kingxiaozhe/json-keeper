@@ -1,4 +1,4 @@
-# JSON Keeper (v0.16.0)
+# JSON Keeper (v0.17.0)
 
 可信赖的 JSON 查看/格式化插件。重写自 JSONVue,差异化:**有明显粘贴入口 + 一键复制合法 JSON + 大整数永不失真 + 可折叠树/搜索**。设计语言 "Quiet Precision"(浅/深双主题,设计稿见 `design/`)。
 
@@ -36,6 +36,7 @@
 - **审查修正**[v0.14.1]:对抗式 review 后修复——丢精度诊断对尾随零的圆整数误报(`1.000…`)、畸形浮点(`1e`、`1e+`)被当作有效值/误计入溢出、`\u` 转义对非十六进制或截断输入静默产出 NUL;搜索改为单趟扫描(去掉 O(n²) 成员判定),深度下拉与"折叠全部"按钮的状态/标签去歧义。
 - **超大结构守卫**[v0.15]:不仅看字节数,还按**节点数**(`countNodes`,超过 5 万即短路)判断;结构过大时**不自动构建 DOM 树**,而是给出明确提示 + "仍要渲染"入口(Raw/Min 始终流畅、大整数仍精确)。这能真正避免极大文档卡死标签页,而不是事后才发现已经卡住。
 - **数组导出 CSV**[v0.16]:顶层是数组时,工具栏出现 `⤓ CSV`——对象数组转为表格(列 = 各行键的并集,首次出现顺序),其余数组转为单列 `value`;遵循 RFC-4180 转义(含逗号/引号/换行才加引号),嵌套对象/数组用紧凑 JSON、BigInt 保留精确位数。导出内容跟随排序状态。
+- **左右分栏工作台 + 查找增强**[v0.17]:独立 viewer 页改为**左右分栏**——左边粘贴/编辑、右边格式化,改数据无需回到顶部;**粘贴即格式化**(可关),解析出错时左栏显示**行/列并可点击跳转**到出错位置。查找升级为编辑器级:**`⌘/Ctrl+F` 聚焦应用内查找**、**范围切换(All/Keys/Values)**、命中在折叠节点内时**自动展开其祖先**、**"只看匹配行"保留父级路径**、`Esc` 清空;并修复了旧查找会误匹配行号与行内按钮文字的问题(查找范围严格限定在键/值)。
 - **安全**:所有用户数据经 `esc`/`escAttr` 转义(含属性上下文),无注入面;零网络、零遥测、无远程代码。
 - UI 设计语言:B(Linear 冷静)底 + A(IDE 结构栏/状态栏)+ C(信任文案);浅/深双主题。设计探索见 `design/`。
 
@@ -45,18 +46,21 @@
 - 仅 Chrome。
 
 ## 结构
-- `manifest.json` — MV3,content script(`jsonbig.js`+`core.js`+`content.js`)注入 http/https/file。`key` 钉死本地 ID。
-- `jsonbig.js` — 保真大整数的 JSON parse/stringify(核心正确性)。
-- `core.js` — 共享渲染:高亮树 + 工具栏(Copy 合法JSON / Raw 原始源)。
+
+详见 [`ARCHITECTURE.md`](ARCHITECTURE.md)。核心分层:`jsonbig.js`(解析/序列化正确性)→ `core.js`(共享渲染引擎 `window.JK`)→ 两个入口(`content.js` 接管 JSON 网址、`viewer.html/js` 分栏工作台)共用同一引擎。
+
+- `manifest.json` — MV3,content script(`jsonbig.js`+`core.js`+`content.js`)注入 http/https/file。`key` 钉死本地 ID(打包上传时移除)。
+- `jsonbig.js` — 保真大整数的 JSON parse/stringify(核心正确性,零依赖)。
+- `core.js` — 共享渲染引擎:纯函数工具(`linkify`/`embeddedJSON`/`toCSV`/`applySearch` 等)+ `buildTree` + `mountViewer`,统一挂在 `window.JK`。
 - `content.js` — 检测 JSON 文档→**先解析成功再替换页面**(失败不动原页)。
 - `popup.html/js` — 粘贴入口 → 存 storage、开 `viewer.html`。
-- `viewer.html/js` — 独立粘贴/格式化工作台。
+- `viewer.html/js` — 独立**左右分栏**工作台;`viewer.js` 只管页面外壳(编辑器/校验/分栏),渲染全部委托给 `JK.mountViewer`。
 - `viewer.css` — 接管页 + viewer 页共用样式(含深色)。
 
 ## 测试
 - `npm test`(零依赖):
   - `test/jsonbig.test.js` —— 核心 `parse`/`stringify`:大整数保真与计数、重复 key、溢出/丢精度诊断、畸形数字报错、JSONC(注释 + 尾逗号)、转义往返与控制字符、Pretty/Min。
-  - `test/core.test.js` —— 视图纯函数 `linkify`/`epochHint`/`embeddedJSON`/`groupDigits`/`countNodes`:URL 仅 http(s) 可点、其余 scheme 拒绝、注入面转义,时间戳 UTC 格式与边界,嵌套 JSON 字符串的识别与快速拒绝,千分位分隔与非整数兜底,节点计数与超阈值短路。
-  - `test/tree.test.js` —— 借 `test/dom-stub.js`(零依赖 DOM 桩)在 node 下跑真实 `buildTree` 渲染路径:类型/节点计数、折叠隐藏与展开恢复、嵌套 JSON 内联展开(徽章 + 默认折叠 + 计入解析结构)、深度标注与 `applyDepth` 按层级折叠。
+  - `test/core.test.js` —— 视图纯函数 `linkify`/`epochHint`/`embeddedJSON`/`groupDigits`/`countNodes`/`toCSV`/`posToLineCol`:注入面转义、时间戳与千分位、嵌套 JSON 识别、节点计数短路、CSV 转义与并集列、解析错误的行/列换算。
+  - `test/tree.test.js` —— 借 `test/dom-stub.js`(零依赖 DOM 桩)在 node 下跑真实 `buildTree` + `applySearch`:类型/节点计数、折叠与展开、嵌套 JSON 内联展开、`applyDepth` 按层级折叠,以及查找的**范围(键/值)、命中祖先自动展开、只看匹配行、以及"不误匹配行号/按钮文字"**。
   - `test/highlight.test.js` —— 搜索高亮手术 `markText`/`clearMarks`:命中包裹与计数、保留嵌套结构、清除后文本还原、跨旧切分边界重搜可命中。
-  - 重构前的安全网。共 131 条断言。
+  - 重构前的安全网。共 146 条断言。
