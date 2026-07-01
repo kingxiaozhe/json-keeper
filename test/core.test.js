@@ -6,6 +6,7 @@ const path = require("path");
 
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 eval(read("jsonbig.js")); // defines globalThis.JSONBig (core.js reads it)
+eval(read("jk-util.js"));
 eval(read("core.js"));    // defines globalThis.JK
 const { linkify, epochHint, embeddedJSON, groupDigits, countNodes, toCSV, posToLineCol } = globalThis.JK;
 

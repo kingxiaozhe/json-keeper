@@ -13,12 +13,16 @@ jsonbig.js   ── correctness core: JSON parse/stringify that keeps big intege
                  exact and reports diagnostics. No DOM, no dependencies.
      │  window.JSONBig
      ▼
-core.js      ── the shared rendering engine, exposed as window.JK:
-                 • pure helpers  (linkify, epochHint, embeddedJSON, groupDigits,
-                                   countNodes, toCSV, posToLineCol, scopedEls, …)
+jk-util.js   ── pure value helpers (no DOM, no shared state): esc/escAttr,
+                 linkify, embeddedJSON, groupDigits, epochHint, posToLineCol,
+                 countNodes, toCSV. Each independently unit-tested.
+     │  window.JKUtil
+     ▼
+core.js      ── the DOM-coupled rendering engine, exposed as window.JK:
+                 • markText/clearMarks, scopedEls, applySearch, applyDepth
                  • buildTree     (value → collapsible DOM tree)
-                 • applySearch   (scoped highlight + match-aware expand + filter)
                  • mountViewer   (assembles toolbar + tree + status into a root)
+                 (re-exports the JKUtil helpers on JK for callers/tests)
      │  window.JK
      ├───────────────┬───────────────────────────────┐
      ▼               ▼                                 ▼
@@ -26,6 +30,12 @@ content.js      viewer.html/js                    popup.html/js
 (takeover a     (split-pane paste                 (paste box → stash text →
  JSON page)      workbench)                         open viewer.html)
 ```
+
+The split between `jk-util.js` and `core.js` is the one place we separate by
+seam rather than size: the helpers are genuinely pure and reusable, so they earn
+their own file. The DOM engine (`buildTree`/`mountViewer`) is one cohesive unit
+and stays together — splitting it would thread shared state across files for no
+real gain.
 
 Both entry points render through the **same** `JK.mountViewer`, so the in-page
 takeover and the standalone workbench never drift apart. Anything visual or

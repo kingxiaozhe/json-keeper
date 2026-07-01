@@ -10,6 +10,7 @@ const { makeDocument } = require("./dom-stub");
 globalThis.document = makeDocument();
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 eval(read("jsonbig.js"));
+eval(read("jk-util.js"));
 eval(read("core.js"));
 const { markText, clearMarks } = globalThis.JK;
 

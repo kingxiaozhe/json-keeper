@@ -11,6 +11,7 @@ globalThis.document = makeDocument();
 globalThis.requestAnimationFrame = () => 0; // rail scroll-spy only; never fires here
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 eval(read("jsonbig.js"));
+eval(read("jk-util.js"));
 eval(read("core.js"));
 const { mountViewer } = globalThis.JK;
 

@@ -1,4 +1,4 @@
-# JSON Keeper (v0.17.1)
+# JSON Keeper (v0.17.2)
 
 可信赖的 JSON 查看/格式化插件。重写自 JSONVue,差异化:**有明显粘贴入口 + 一键复制合法 JSON + 大整数永不失真 + 可折叠树/搜索**。设计语言 "Quiet Precision"(浅/深双主题,设计稿见 `design/`)。
 
@@ -47,11 +47,12 @@
 
 ## 结构
 
-详见 [`ARCHITECTURE.md`](ARCHITECTURE.md)。核心分层:`jsonbig.js`(解析/序列化正确性)→ `core.js`(共享渲染引擎 `window.JK`)→ 两个入口(`content.js` 接管 JSON 网址、`viewer.html/js` 分栏工作台)共用同一引擎。
+详见 [`ARCHITECTURE.md`](ARCHITECTURE.md)。核心分层:`jsonbig.js`(解析/序列化正确性)→ `jk-util.js`(纯值函数)→ `core.js`(DOM 渲染引擎 `window.JK`)→ 两个入口(`content.js` 接管 JSON 网址、`viewer.html/js` 分栏工作台)共用同一引擎。
 
-- `manifest.json` — MV3,content script(`jsonbig.js`+`core.js`+`content.js`)注入 http/https/file。`key` 钉死本地 ID(打包上传时移除)。
+- `manifest.json` — MV3,content script(`jsonbig.js`+`jk-util.js`+`core.js`+`content.js`)注入 http/https/file。`key` 钉死本地 ID(打包上传时移除)。
 - `jsonbig.js` — 保真大整数的 JSON parse/stringify(核心正确性,零依赖)。
-- `core.js` — 共享渲染引擎:纯函数工具(`linkify`/`embeddedJSON`/`toCSV`/`applySearch` 等)+ `buildTree` + `mountViewer`,统一挂在 `window.JK`。
+- `jk-util.js` — **纯值函数**(无 DOM、无共享状态):`esc`/`linkify`/`embeddedJSON`/`groupDigits`/`epochHint`/`posToLineCol`/`countNodes`/`toCSV`,各自独立单测。
+- `core.js` — **DOM 渲染引擎**:`buildTree` + `mountViewer` + 搜索(`applySearch` 等);从 `JKUtil` 取用纯函数并统一挂在 `window.JK`。
 - `content.js` — 检测 JSON 文档→**先解析成功再替换页面**(失败不动原页)。
 - `popup.html/js` — 粘贴入口 → 存 storage、开 `viewer.html`。
 - `viewer.html/js` — 独立**左右分栏**工作台;`viewer.js` 只管页面外壳(编辑器/校验/分栏),渲染全部委托给 `JK.mountViewer`。
