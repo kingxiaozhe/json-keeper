@@ -444,14 +444,18 @@
 
     // ---- view (pretty|raw|min); Pretty builds the tree lazily ----
     const segBtns = { pretty: $('[data-act="pretty"]'), raw: $('[data-act="raw"]'), min: $('[data-act="min"]') };
-    function setView(v) {
+    // Persist ONLY on user clicks. Programmatic calls (initial Raw for a huge
+    // doc, search forcing Pretty, sort re-render) must not overwrite the saved
+    // preference — otherwise opening one large file flips every future document
+    // to Raw with no user action.
+    function setView(v, persist) {
       if (v === "pretty") renderTree();
       Object.entries(segBtns).forEach(([k, b]) => b.classList.toggle("on", k === v));
       if (v === "pretty") { prettyEl.hidden = false; rawEl.hidden = true; }
       else { prettyEl.hidden = true; rawEl.hidden = false; rawEl.textContent = v === "min" ? minified : original; }
-      store.set("jk:view", v);
+      if (persist) store.set("jk:view", v);
     }
-    Object.keys(segBtns).forEach((k) => segBtns[k].addEventListener("click", () => setView(k)));
+    Object.keys(segBtns).forEach((k) => segBtns[k].addEventListener("click", () => setView(k, true)));
 
     // ---- collapse all / expand to a chosen depth ----
     // `collapsed` tracks only the all-or-nothing state of the fold button. An
@@ -505,6 +509,9 @@
       treeBuilt = false; prettyEl.innerHTML = "";
       const cur = Object.keys(segBtns).find((k) => segBtns[k].classList.contains("on")) || "pretty";
       setView(cur);
+      // The rebuild destroyed the rows the search state pointed at — re-run the
+      // active query against the new tree (rerun on an empty box just clears).
+      rerun();
     }
     sortBtn.addEventListener("click", () => { sorted = !sorted; store.set("jk:sort", sorted); applySort(); });
     store.get("jk:sort", (v) => { if (v) { sorted = true; applySort(); } });
@@ -549,7 +556,12 @@
     filterB.addEventListener("click", () => { filterB.classList.toggle("on"); rerun(); });
     nextB.addEventListener("click", () => goto(cur + 1));
     prevB.addEventListener("click", () => goto(cur - 1));
-    rootEl.addEventListener("keydown", (e) => { if (e.key === "/" && document.activeElement !== searchInput) { e.preventDefault(); searchInput.focus(); } });
+    // The workbench re-mounts into the SAME rootEl on every auto-format, so a
+    // plain addEventListener would stack one handler per mount — each closure
+    // pinning the previous mount's entire tree in memory. Replace, don't stack.
+    if (rootEl._jkSlash) rootEl.removeEventListener("keydown", rootEl._jkSlash);
+    rootEl._jkSlash = (e) => { if (e.key === "/" && document.activeElement !== searchInput) { e.preventDefault(); searchInput.focus(); } };
+    rootEl.addEventListener("keydown", rootEl._jkSlash);
     // ⌘/Ctrl+F focuses the in-app find instead of the browser's. Bound once per
     // page (guarded), and it locates the live search input so it survives re-mounts.
     if (!global.__jkFindBound) {

@@ -59,6 +59,7 @@ class El {
   append(...nodes) { nodes.forEach((n) => { n.parentNode = this; this.children.push(n); }); }
   appendChild(n) { n.parentNode = this; this.children.push(n); return n; }
   addEventListener(t, fn) { (this._listeners[t] = this._listeners[t] || []).push(fn); }
+  removeEventListener(t, fn) { const l = this._listeners[t]; if (l) { const i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); } }
   // test helper: fire a listener (no real event system)
   dispatch(type, ev) { (this._listeners[type] || []).forEach((fn) => fn(ev || { preventDefault() {}, stopPropagation() {} })); }
   click() { this.dispatch("click"); }

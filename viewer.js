@@ -61,7 +61,7 @@
   // ---- draggable split ----
   const divider = $("divider"), split = $("split"), inPane = $("inPane");
   let dragging = false;
-  divider.addEventListener("mousedown", () => { dragging = true; divider.classList.add("jk-drag"); document.body.style.cursor = "col-resize"; });
+  divider.addEventListener("mousedown", (e) => { e.preventDefault(); dragging = true; divider.classList.add("jk-drag"); document.body.style.cursor = "col-resize"; });
   window.addEventListener("mouseup", () => { dragging = false; divider.classList.remove("jk-drag"); document.body.style.cursor = ""; });
   window.addEventListener("mousemove", (e) => {
     if (!dragging) return;

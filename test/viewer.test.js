@@ -9,6 +9,14 @@ const { makeDocument } = require("./dom-stub");
 
 globalThis.document = makeDocument();
 globalThis.requestAnimationFrame = () => 0; // rail scroll-spy only; never fires here
+// chrome.storage mock: get returns nothing saved; set records writes so we can
+// assert what persists (and what must not).
+const storageWrites = [];
+globalThis.chrome = { storage: { local: {
+  get: (k, cb) => cb({}),
+  set: (obj) => storageWrites.push(obj),
+  remove: () => {},
+} } };
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 eval(read("jsonbig.js"));
 eval(read("jk-util.js"));
@@ -72,6 +80,38 @@ const mount = () => document.createElement("div");
   ok("renders an error message", root.querySelector(".jk-error") !== null);
   const root2 = mount();
   eq("invalid JSON without showErrors returns false", mountViewer(root2, "{bad", { showErrors: false }), false);
+})();
+
+// ---- view preference persists ONLY on user clicks, never programmatically ----
+(() => {
+  storageWrites.length = 0;
+  const root = mount();
+  mountViewer(root, '{"a":1}', {}); // initial view is programmatic (saved/default)
+  ok("mounting alone writes no jk:view", !storageWrites.some((w) => "jk:view" in w));
+  root.querySelector('[data-act="raw"]').click(); // a real user click
+  ok("clicking Raw persists jk:view", storageWrites.some((w) => w["jk:view"] === "raw"));
+})();
+
+// ---- re-mounting into the same root replaces (not stacks) the '/' handler ----
+(() => {
+  const root = mount();
+  mountViewer(root, '{"a":1}', {});
+  mountViewer(root, '{"a":2}', {});
+  mountViewer(root, '{"a":3}', {});
+  eq("one keydown listener after three mounts", (root._listeners.keydown || []).length, 1);
+})();
+
+// ---- sorting re-runs the active search against the rebuilt tree ----
+(() => {
+  const root = mount();
+  mountViewer(root, '{"banana":1,"apple":2}', {});
+  const input = root.querySelector(".jk-search input");
+  input.value = "apple";
+  root.querySelector('[data-act="sort"]').click(); // rebuild + rerun
+  const marks = root.querySelectorAll(".jk-mark");
+  eq("highlight re-applied on the new tree", marks.length, 1);
+  eq("highlight covers the query", marks[0].textContent, "apple");
+  ok("stale-count cleared to fresh 1/1", root.querySelector("[data-find]").textContent === "1/1");
 })();
 
 console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");

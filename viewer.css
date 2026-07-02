@@ -172,7 +172,10 @@ html.jk-page-html, html.jk-page-html body { margin:0; height:100%; }
 @media (prefers-color-scheme: dark) { .jk-page:not([data-jk-theme]) .jk-valid.bad { color:#ff7b72; } }
 .jk-autobox { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--jk-dim); user-select:none; cursor:pointer; }
 
-#out { flex:1 1 auto; min-height:0; height:100%; }
-#out .jk-wrap { height:100%; border:0; border-radius:0; box-shadow:none; }
-#out .jk-scroll { max-height:none; }
-#out .jk-empty { padding:34px 22px; color:var(--jk-faint); font-size:13px; }
+/* Scoped under .jk-page: this stylesheet is injected into EVERY page via the
+   manifest, and a bare #out would restyle any host page that happens to have an
+   element with that (very common) id. */
+.jk-page #out { flex:1 1 auto; min-height:0; height:100%; }
+.jk-page #out .jk-wrap { height:100%; border:0; border-radius:0; box-shadow:none; }
+.jk-page #out .jk-scroll { max-height:none; }
+.jk-page #out .jk-empty { padding:34px 22px; color:var(--jk-faint); font-size:13px; }
