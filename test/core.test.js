@@ -1,21 +1,8 @@
-// core.test.js — zero-dependency tests for the pure view helpers exposed on
-// window.JK (linkify, epochHint). core.js touches the DOM only inside
-// mountViewer, so loading it under node is safe for these helpers.
-const fs = require("fs");
-const path = require("path");
-
-const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
-eval(read("jsonbig.js")); // defines globalThis.JSONBig (core.js reads it)
-eval(read("jk-util.js"));
-eval(read("core.js"));    // defines globalThis.JK
-const { linkify, epochHint, embeddedJSON, groupDigits, countNodes, toCSV, posToLineCol } = globalThis.JK;
-
-let passed = 0, failed = 0;
-function eq(name, actual, expected) {
-  if (actual === expected) { passed++; }
-  else { failed++; console.error("  ✗ " + name + "\n      got:  " + JSON.stringify(actual) + "\n      want: " + JSON.stringify(expected)); }
-}
-function ok(name, cond) { if (cond) passed++; else { failed++; console.error("  ✗ " + name); } }
+// core.test.js — tests for the pure view helpers exposed on window.JK
+// (linkify, epochHint, embeddedJSON, groupDigits, countNodes, toCSV,
+// posToLineCol). All value-level; the DOM stub is unused here.
+const { eq, ok, summary, loadEngine } = require("./harness");
+const { linkify, epochHint, embeddedJSON, groupDigits, countNodes, toCSV, posToLineCol } = loadEngine();
 
 // ---- linkify: links http(s), escapes everything, refuses other schemes ----
 eq("plain text is escaped, unlinked",
@@ -110,5 +97,4 @@ eq("col within later line", JSON.stringify(posToLineCol("ab\ncd", 4)), '{"line":
 eq("third line after two breaks", JSON.stringify(posToLineCol("a\n\nz", 3)), '{"line":3,"col":1}');
 eq("offset past end is clamped", JSON.stringify(posToLineCol("ab", 99)), '{"line":1,"col":3}');
 
-console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
-process.exit(failed ? 1 : 0);
+summary();

@@ -3,23 +3,8 @@
 // structure, that clearing restores the original text, and the subtle bit:
 // after a clear, a query spanning a previously-split boundary still matches
 // (i.e. text nodes were normalized back together).
-const fs = require("fs");
-const path = require("path");
-const { makeDocument } = require("./dom-stub");
-
-globalThis.document = makeDocument();
-const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
-eval(read("jsonbig.js"));
-eval(read("jk-util.js"));
-eval(read("core.js"));
-const { markText, clearMarks } = globalThis.JK;
-
-let passed = 0, failed = 0;
-function eq(name, actual, expected) {
-  if (actual === expected) { passed++; }
-  else { failed++; console.error("  ✗ " + name + "\n      got:  " + JSON.stringify(actual) + "\n      want: " + JSON.stringify(expected)); }
-}
-function ok(name, cond) { if (cond) passed++; else { failed++; console.error("  ✗ " + name); } }
+const { eq, ok, summary, loadEngine } = require("./harness");
+const { markText, clearMarks } = loadEngine();
 
 const make = (html) => { const el = document.createElement("div"); el.innerHTML = html; return el; };
 const marks = (el) => el.querySelectorAll(".jk-mark");
@@ -78,5 +63,4 @@ const marks = (el) => el.querySelectorAll(".jk-mark");
   eq("text untouched", el.textContent, "abc");
 })();
 
-console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
-process.exit(failed ? 1 : 0);
+summary();

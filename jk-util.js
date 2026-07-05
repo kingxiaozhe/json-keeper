@@ -34,20 +34,34 @@
     return out + esc(text.slice(last));
   }
 
-  // embeddedJSON(s) — if string `s` is itself a JSON object/array (a very common
-  // API-payload shape: an escaped JSON blob inside a field), return the parsed
-  // container so it can be expanded inline; otherwise null. Cheap first-char/
-  // last-char gate avoids parsing ordinary strings; size-capped so a giant
-  // string can't stall the tree.
+  // embeddedJSON(s[, diag]) — if string `s` is itself a JSON object/array (a very
+  // common API-payload shape: an escaped JSON blob inside a field), return the
+  // parsed container so it can be expanded inline; otherwise null. Cheap first-
+  // char/last-char gate avoids parsing ordinary strings; size-capped so a giant
+  // string can't stall the tree. `diag` (optional) collects the inner document's
+  // diagnostics — big-int counts, duplicate keys — so the correctness report
+  // covers embedded JSON too, not just the outer document.
   const EMBED_MAX = 100_000;
-  function embeddedJSON(s) {
+  function embeddedJSON(s, diag) {
     if (typeof s !== "string") return null;
     const t = s.trim();
     if (t.length < 2 || t.length > EMBED_MAX) return null;
     const a = t[0], z = t[t.length - 1];
     if (!((a === "{" && z === "}") || (a === "[" && z === "]"))) return null;
-    try { const v = JSONBig.parse(t); return isContainer(v) ? v : null; }
-    catch { return null; }
+    // Parse into a scratch collector and merge only on success, so a string that
+    // fails halfway through can't leave partial counts in the caller's diag.
+    const scratch = diag ? { dupKeys: [], bigInts: 0, nonFinite: 0, precisionLoss: 0 } : undefined;
+    try {
+      const v = JSONBig.parse(t, scratch);
+      if (!isContainer(v)) return null;
+      if (diag) {
+        diag.dupKeys.push(...scratch.dupKeys);
+        diag.bigInts += scratch.bigInts;
+        diag.nonFinite += scratch.nonFinite;
+        diag.precisionLoss += scratch.precisionLoss;
+      }
+      return v;
+    } catch { return null; }
   }
 
   // groupDigits(s) — add thousands separators to a plain integer string (keeps a
@@ -93,7 +107,7 @@
       const cur = stack.pop();
       if (++n > cap) return n;
       if (Array.isArray(cur)) { for (let i = 0; i < cur.length; i++) stack.push(cur[i]); }
-      else if (cur && typeof cur === "object" && typeof cur !== "bigint") {
+      else if (isContainer(cur)) {
         const keys = Object.keys(cur);
         for (let i = 0; i < keys.length; i++) stack.push(cur[keys[i]]);
       }
@@ -117,7 +131,7 @@
   }
   function toCSV(value) {
     if (!Array.isArray(value) || value.length === 0) return null;
-    const isRow = (v) => v && typeof v === "object" && !Array.isArray(v) && typeof v !== "bigint";
+    const isRow = (v) => isContainer(v) && !Array.isArray(v);
     if (value.every(isRow)) {
       const cols = [], seen = new Set();
       value.forEach((row) => Object.keys(row).forEach((k) => { if (!seen.has(k)) { seen.add(k); cols.push(k); } }));

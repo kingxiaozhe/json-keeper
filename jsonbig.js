@@ -211,6 +211,10 @@
   // copied text is real, precise JSON.
   function stringify(value, indent) {
     const pad = indent ? (typeof indent === "number" ? " ".repeat(indent) : indent) : "";
+    // Memoize per-depth indent strings: pad.repeat() ran once per container node,
+    // O(n·depth) character work on big documents.
+    const pads = [""];
+    const padAt = (d) => pads[d] || (pads[d] = pad.repeat(d));
     function go(v, depth) {
       if (v === null) return "null";
       const t = typeof v;
@@ -219,8 +223,8 @@
       if (t === "boolean") return String(v);
       if (t === "string") return quote(v);
       const nl = pad ? "\n" : "";
-      const cur = pad ? pad.repeat(depth + 1) : "";
-      const close = pad ? pad.repeat(depth) : "";
+      const cur = pad ? padAt(depth + 1) : "";
+      const close = pad ? padAt(depth) : "";
       const sep = pad ? ": " : ":";
       if (Array.isArray(v)) {
         if (!v.length) return "[]";

@@ -3,29 +3,9 @@
 // DOM-heavy; the upgraded dom-stub (with a small selector engine) lets it run
 // under Node. We assert it assembles without throwing and that core controls
 // are wired — the crash/regression surface, not pixel layout.
-const fs = require("fs");
-const path = require("path");
-const { makeDocument } = require("./dom-stub");
-
-globalThis.document = makeDocument();
-globalThis.requestAnimationFrame = () => 0; // rail scroll-spy only; never fires here
-// chrome.storage mock: get returns nothing saved; set records writes so we can
-// assert what persists (and what must not).
-const storageWrites = [];
-globalThis.chrome = { storage: { local: {
-  get: (k, cb) => cb({}),
-  set: (obj) => storageWrites.push(obj),
-  remove: () => {},
-} } };
-const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
-eval(read("jsonbig.js"));
-eval(read("jk-util.js"));
-eval(read("core.js"));
-const { mountViewer } = globalThis.JK;
-
-let passed = 0, failed = 0;
-function ok(name, cond) { if (cond) passed++; else { failed++; console.error("  ✗ " + name); } }
-function eq(name, a, b) { if (a === b) passed++; else { failed++; console.error("  ✗ " + name + "  (got " + JSON.stringify(a) + ", want " + JSON.stringify(b) + ")"); } }
+const { eq, ok, summary, loadEngine, installChrome } = require("./harness");
+const storageWrites = installChrome(); // records set() writes; get() answers "nothing saved"
+const { mountViewer } = loadEngine();
 const mount = () => document.createElement("div");
 
 // ---- a valid document assembles the full viewer ----
@@ -114,6 +94,26 @@ const mount = () => document.createElement("div");
   ok("stale-count cleared to fresh 1/1", root.querySelector("[data-find]").textContent === "1/1");
 })();
 
+// ---- embedded-JSON diagnostics reach the chip, without double-counting on rebuild ----
+(() => {
+  const root = mount();
+  mountViewer(root, '{"payload":"{\\"id\\":136986234663732436}"}', {});
+  const chip = root.querySelector("[data-chip]");
+  ok("chip counts the embedded big-int", /1 big-int/.test(chip.textContent));
+  root.querySelector('[data-act="sort"]').click(); // rebuild re-parses embedded JSON
+  ok("rebuild does not double-count", /1 big-int/.test(chip.textContent));
+})();
+
+// ---- pre-parsed handoff (opts.value/diag) renders without re-parsing ----
+(() => {
+  const diag = { dupKeys: [], bigInts: 0, nonFinite: 0, precisionLoss: 0 };
+  const value = globalThis.JSONBig.parse('{"id":136986234663732436}', diag);
+  const root = mount();
+  ok("mounts from a pre-parsed value", mountViewer(root, '{"id":136986234663732436}', { value, diag }) === true);
+  ok("tree rendered from the handed-off value", root.querySelectorAll(".jk-row").length > 0);
+  ok("handed-off diag drives the chip", /1 big-int/.test(root.querySelector("[data-chip]").textContent));
+})();
+
 // ---- saved sort restores on mount, even with a SYNCHRONOUS storage callback ----
 // (chrome storage is async in real Chrome; a sync callback once hit a TDZ on the
 // later-declared search `rerun` — this locks in the fix, and the hardened
@@ -132,5 +132,4 @@ const mount = () => document.createElement("div");
   }
 })();
 
-console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
-process.exit(failed ? 1 : 0);
+summary();

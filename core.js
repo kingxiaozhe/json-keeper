@@ -84,33 +84,40 @@
     return out;
   }
 
-  // applySearch(prettyEl, carets, q, scope, filter) — the shared search core:
-  // highlight `q` within the scoped parts of each row, reveal collapsed ancestors
-  // of any match, and (when filter is on) keep only matches and their ancestor
-  // path. Returns the matched rows in document order. UI (count, next/prev) lives
-  // in the caller. `q` must already be lowercased.
-  function applySearch(prettyEl, carets, q, scope, filter) {
+  // applySearch(prettyEl, q, scope, filter) — the shared search core: match `q`
+  // against each row's precomputed key/value text (r._sk / r._sv, stamped by
+  // buildTree), highlight the hits, reveal collapsed ancestors of any match, and
+  // (when filter is on) keep only matches and their ancestor path. Returns the
+  // matched rows in document order. UI (count, next/prev) lives in the caller.
+  // `q` must already be lowercased. The precomputed text means a keystroke costs
+  // one .includes per row (no DOM text reads); ancestor work walks each match's
+  // r._head chain — O(matches × depth), not O(rows × containers).
+  function applySearch(prettyEl, q, scope, filter) {
     clearMarks(prettyEl);
     const rows = prettyEl.querySelectorAll(".jk-row");
     rows.forEach((r) => r.classList.remove("jk-dim", "jk-current", "jk-filtered"));
     if (!q) return [];
     const matches = [];
     rows.forEach((r) => {
-      let hit = false;
-      scopedEls(r, scope).forEach((el) => {
-        if (el.textContent.toLowerCase().includes(q)) { markText(el, q); hit = true; }
-      });
-      if (hit) matches.push(r);
+      const hit = (scope !== "values" && r._sk && r._sk.includes(q)) ||
+                  (scope !== "keys" && r._sv && r._sv.includes(q));
+      if (!hit) return;
+      matches.push(r);
+      // Highlight only within matched rows — the expensive DOM-splitting work
+      // scales with matches, not with document size.
+      scopedEls(r, scope).forEach((el) => { if (el.textContent.toLowerCase().includes(q)) markText(el, q); });
     });
-    const mset = new Set(matches);
-    // Reveal every collapsed container whose subtree contains a match (all
-    // ancestors on the path get expanded, since each ancestor's block includes it).
-    carets.forEach((c) => { if (c._rows && c._rows.some((r) => mset.has(r))) c._collapse(false); });
+    const show = filter ? new Set(matches) : null;
+    matches.forEach((r) => {
+      for (let h = r._head; h; h = h._head) {
+        if (h._caret) h._caret._collapse(false);
+        if (show) show.add(h);
+      }
+    });
     if (filter) {
-      const show = new Set(matches);
-      carets.forEach((c) => { if (c._rows && c._rows.some((r) => mset.has(r)) && c._headRow) show.add(c._headRow); });
       rows.forEach((r) => { if (!show.has(r)) r.classList.add("jk-filtered"); });
     } else {
+      const mset = new Set(matches);
       rows.forEach((r) => { if (!mset.has(r)) r.classList.add("jk-dim"); });
     }
     return matches;
@@ -166,7 +173,15 @@
     return parent + "[" + JSON.stringify(key) + "]";
   }
 
-  function buildTree(value, mount) {
+  // Indent strings memoized by depth: row() runs once per rendered line, and
+  // "  ".repeat(depth) would allocate a fresh string every time.
+  const INDENTS = [];
+  const indent = (d) => INDENTS[d] || (INDENTS[d] = "  ".repeat(d));
+
+  // buildTree(value, mount[, diag]) — render `value` into `mount` as the
+  // collapsible row tree. `diag` (optional) collects diagnostics from embedded
+  // JSON strings expanded during the walk, so the correctness report covers them.
+  function buildTree(value, mount, diag) {
     mount.innerHTML = "";
     const tree = document.createElement("div");
     tree.className = "jk-tree";
@@ -178,7 +193,7 @@
       nodes++;
       if (v === null) counts.null++;
       else if (Array.isArray(v)) counts.array++;
-      else if (typeof v === "object" && typeof v !== "bigint") counts.object++;
+      else if (isContainer(v)) counts.object++;
       else if (typeof v === "bigint" || typeof v === "number") counts.number++;
       else counts[typeof v]++;
     };
@@ -186,6 +201,7 @@
     function row(depth, inner, crumb, apath, val, actionable) {
       const r = document.createElement("div");
       r.className = "jk-row";
+      r._head = curHead; // ancestor container's head row (null at top level)
       if (crumb) r.dataset.path = crumb;
       if (apath !== undefined) { r._apath = apath; r._val = val; }
       const g = document.createElement("span");
@@ -193,7 +209,7 @@
       g.textContent = line++;
       const c = document.createElement("span");
       c.className = "jk-content";
-      c.innerHTML = '<span class="jk-ind">' + "  ".repeat(depth) + "</span>" + inner;
+      c.innerHTML = '<span class="jk-ind">' + indent(depth) + "</span>" + inner;
       r.append(g, c);
       if (actionable) {
         const a = document.createElement("span");
@@ -208,9 +224,26 @@
       return r;
     }
 
+    // Innermost container's HEAD row during the walk. Every row records it as
+    // r._head, forming an ancestor chain (head rows chain to THEIR ancestor);
+    // search reveals/keeps a match's ancestors by walking this chain in
+    // O(matches × depth) instead of scanning every container's subtree.
+    let curHead = null;
+
+    // Plain text a search compares against: what the rendered key/value spans'
+    // textContent will be, precomputed here where key/val are at hand — so a
+    // search keystroke does string.includes per row instead of re-reading and
+    // re-lowercasing the DOM text of every row.
+    const leafText = (v) => {
+      if (typeof v === "string") return JSONBig.stringify(v);
+      if (typeof v === "bigint") return v.toString();
+      return String(v);
+    };
+
     function walk(key, val, depth, isLast, crumb, apath) {
       const comma = isLast ? "" : '<span class="jk-pun">,</span>';
       const keyHTML = key !== null ? '<span class="jk-key">"' + esc(key) + '"</span><span class="jk-pun">: </span>' : "";
+      const keySearch = key !== null ? ('"' + key + '"').toLowerCase() : "";
 
       // Render `cval` as a collapsible container. `embedded` flags a value that
       // was a JSON string we parsed for inline display (badge + start collapsed).
@@ -224,28 +257,40 @@
           '<span class="jk-caret">▾</span>' + keyHTML + badge + '<span class="jk-pun">' + open + "</span>" +
           '<span class="jk-count">' + entries.length + (arr ? " items" : " keys") + "</span>" +
           '<span class="jk-prev" hidden> … ' + close + comma + "</span>", crumb, apath, cval, true);
-        const startIdx = rows.length;
+        head._sk = keySearch;
+        const prevHead = curHead;
+        curHead = head;
+        const start = rows.length; // children + closing row live in rows[start..end)
         entries.forEach(([k, v], i) => walk(arr ? null : k, v, depth + 1, i === entries.length - 1,
           crumb + (arr ? "[" + k + "]" : " › " + k), childAccessor(apath, k, arr)));
         row(depth, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + close + "</span>" + comma);
-        const blockRows = rows.slice(startIdx);
+        const end = rows.length;
+        curHead = prevHead;
         const caret = head.querySelector(".jk-caret"), prev = head.querySelector(".jk-prev"), count = head.querySelector(".jk-count");
         caret._depth = depth;
-        caret._rows = blockRows;   // descendant rows — used by search to reveal/keep ancestors of a match
         caret._headRow = head;     // this container's own row
+        head._caret = caret;       // lets the ancestor chain reach the collapse fn
         if (depth > maxDepth) maxDepth = depth;
-        caret._collapse = (on) => { caret.classList.toggle("jk-collapsed", on); blockRows.forEach((r) => (r.style.display = on ? "none" : "")); prev.hidden = !on; count.hidden = on; };
+        // Collapse toggles an index RANGE over the shared rows array — no per-
+        // container row-array copies (those cost O(n·depth) memory on deep docs).
+        caret._collapse = (on) => {
+          caret.classList.toggle("jk-collapsed", on);
+          for (let j = start; j < end; j++) rows[j].style.display = on ? "none" : "";
+          prev.hidden = !on; count.hidden = on;
+        };
         caret.addEventListener("click", (e) => { e.stopPropagation(); caret._collapse(!caret.classList.contains("jk-collapsed")); });
         if (embedded) caret._collapse(true); // embedded JSON starts folded to keep the view tidy
         if (depth === 1) topLevel.push({ key: arr ? "[" + key + "]" : key, head, n: entries.length });
       }
 
       if (isContainer(val)) { container(val, false); return; }
-      const embedded = embeddedJSON(val);
+      const embedded = embeddedJSON(val, diag);
       if (embedded) { container(embedded, true); return; }
 
       tally(val);
       const r = row(depth, '<span class="jk-caret jk-leaf">▾</span>' + keyHTML + valueHTML(val) + comma, crumb, apath, val, true);
+      r._sk = keySearch;
+      r._sv = leafText(val).toLowerCase();
       if (depth === 1) topLevel.push({ key: key === null ? "·" : key, head: r, leaf: true });
     }
 
@@ -260,17 +305,23 @@
       row(0, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + (arr ? "]" : "}") + "</span>");
     } else {
       tally(value);
-      row(0, '<span class="jk-caret jk-leaf">▾</span>' + valueHTML(value), "root", "", value, true);
+      const r = row(0, '<span class="jk-caret jk-leaf">▾</span>' + valueHTML(value), "root", "", value, true);
+      r._sv = leafText(value).toLowerCase();
     }
     mount.appendChild(tree);
     return { topLevel, counts, nodes, maxDepth };
   }
 
-  function applyTheme(rootEl, mode) {
-    const set = (el) => { if (!el) return; if (mode === "auto") el.removeAttribute("data-jk-theme"); else el.setAttribute("data-jk-theme", mode); };
+  // setRootFlag(rootEl, attr, value, defaultVal) — stamp (or clear, at the
+  // default) a theming attribute on both the viewer wrap and the page root.
+  // Theme and skin share this so they can never drift in how they propagate.
+  function setRootFlag(rootEl, attr, value, defaultVal) {
+    const set = (el) => { if (!el) return; if (value === defaultVal) el.removeAttribute(attr); else el.setAttribute(attr, value); };
     set(rootEl.querySelector(".jk-wrap"));
     set(document.documentElement);
   }
+  const applyTheme = (rootEl, mode) => setRootFlag(rootEl, "data-jk-theme", mode, "auto");
+  const applySkin = (rootEl, s) => setRootFlag(rootEl, "data-jk-skin", s, "default");
 
   function download(name, text, mime) {
     const url = URL.createObjectURL(new Blob([text], { type: mime || "application/json" }));
@@ -279,28 +330,41 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  // mountViewer(rootEl, rawText, opts) — opts:
+  //   showErrors     render a parse error into rootEl instead of returning silently
+  //   originalText   what the Raw view shows (defaults to rawText)
+  //   value, diag    a pre-parsed value + its diagnostics; skips the parse here so
+  //                  a caller that already validated (the workbench) parses once
   function mountViewer(rootEl, rawText, opts) {
     opts = opts || {};
     let value;
-    const diag = { dupKeys: [], bigInts: 0, nonFinite: 0, precisionLoss: 0 };
-    try { value = JSONBig.parse(normalize(rawText), diag); }
-    catch (e) {
-      if (!opts.showErrors) return false;
-      rootEl.innerHTML = '<div class="jk-wrap jk-scope"><div class="jk-error">Not valid JSON: ' + esc(e.message) + "</div></div>";
-      return false;
+    const diag = opts.diag || { dupKeys: [], bigInts: 0, nonFinite: 0, precisionLoss: 0 };
+    if (opts.value !== undefined) value = opts.value; // JSON has no undefined, so it's a safe sentinel
+    else {
+      try { value = JSONBig.parse(normalize(rawText), diag); }
+      catch (e) {
+        if (!opts.showErrors) return false;
+        rootEl.innerHTML = '<div class="jk-wrap jk-scope"><div class="jk-error">Not valid JSON: ' + esc(e.message) + "</div></div>";
+        return false;
+      }
     }
 
     // Sort-keys (recursive, arrays keep order) toggles a sorted copy used by the
     // tree AND by copy/pretty/min so what you see equals what you copy.
     const sortValue = (v) => {
       if (Array.isArray(v)) return v.map(sortValue);
-      if (v && typeof v === "object" && typeof v !== "bigint") {
+      if (isContainer(v)) {
         const o = {}; for (const k of Object.keys(v).sort()) o[k] = sortValue(v[k]); return o;
       }
       return v;
     };
-    let sorted = false, displayValue = value, pretty, minified;
-    const recompute = () => { displayValue = sorted ? sortValue(value) : value; pretty = JSONBig.stringify(displayValue, 2); minified = JSONBig.stringify(displayValue); };
+    // pretty/minified are lazy: neither is needed to render the tree, so a mount
+    // no longer stringifies the whole document twice up front — only Copy,
+    // Download, and the Min view pay for what they use. Sort invalidates both.
+    let sorted = false, displayValue = value, prettyCache = null, minCache = null;
+    const recompute = () => { displayValue = sorted ? sortValue(value) : value; prettyCache = minCache = null; };
+    const getPretty = () => prettyCache || (prettyCache = JSONBig.stringify(displayValue, 2));
+    const getMin = () => minCache || (minCache = JSONBig.stringify(displayValue));
     recompute();
     const original = (opts.originalText != null ? opts.originalText : rawText).trim();
     const topInfo = isContainer(value) ? (Array.isArray(value) ? value.length + " items" : Object.keys(value).length + " keys") : "value";
@@ -310,21 +374,34 @@
     // count so Pretty/search don't auto-build an enormous tree without consent.
     const bigStruct = countNodes(value, NODE_CAP) > NODE_CAP;
 
-    // Correctness report — the moat: surface what other viewers silently get wrong.
-    const dupes = [...new Set(diag.dupKeys)];
-    const chipHTML = diag.bigInts ? "✓ " + diag.bigInts + " big-ints exact" : "✓ big-ints precise";
-    const warns = [];
-    if (dupes.length)
-      warns.push('<span class="jk-warn" title="JSON spec keeps only the last value of a duplicated key; other viewers drop the rest silently">⚠ ' +
-        dupes.length + " duplicate key" + (dupes.length > 1 ? "s" : "") + ": " +
-        dupes.slice(0, 4).map((k) => '"' + esc(k) + '"').join(", ") + (dupes.length > 4 ? "…" : "") + " — last value shown</span>");
-    if (diag.nonFinite)
-      warns.push('<span class="jk-warn" title="A number exceeded the float64 range and became Infinity; valid JSON has no Infinity, so it serializes back to null — a silent data loss other viewers don\'t flag">⚠ ' +
-        diag.nonFinite + " number" + (diag.nonFinite > 1 ? "s" : "") + " out of range — shown as null</span>");
-    if (diag.precisionLoss)
-      warns.push('<span class="jk-warn" title="A float carried more significant digits than a float64 can hold, so the stored value differs from the text you pasted; only integers are kept exact (as big-ints)">⚠ ' +
-        diag.precisionLoss + " float" + (diag.precisionLoss > 1 ? "s" : "") + " lost precision</span>");
-    const warnHTML = warns.join("");
+    // Correctness report — the moat: surface what other viewers silently get
+    // wrong. A FUNCTION rather than a snapshot: buildTree adds diagnostics from
+    // embedded JSON strings it expands, so the chip/warnings are recomputed after
+    // each tree build to cover the inner documents too.
+    const report = () => {
+      const dupes = [...new Set(diag.dupKeys)];
+      const warns = [];
+      if (dupes.length)
+        warns.push('<span class="jk-warn" title="JSON spec keeps only the last value of a duplicated key; other viewers drop the rest silently">⚠ ' +
+          dupes.length + " duplicate key" + (dupes.length > 1 ? "s" : "") + ": " +
+          dupes.slice(0, 4).map((k) => '"' + esc(k) + '"').join(", ") + (dupes.length > 4 ? "…" : "") + " — last value shown</span>");
+      if (diag.nonFinite)
+        warns.push('<span class="jk-warn" title="A number exceeded the float64 range and became Infinity; valid JSON has no Infinity, so it serializes back to null — a silent data loss other viewers don\'t flag">⚠ ' +
+          diag.nonFinite + " number" + (diag.nonFinite > 1 ? "s" : "") + " out of range — shown as null</span>");
+      if (diag.precisionLoss)
+        warns.push('<span class="jk-warn" title="A float carried more significant digits than a float64 can hold, so the stored value differs from the text you pasted; only integers are kept exact (as big-ints)">⚠ ' +
+          diag.precisionLoss + " float" + (diag.precisionLoss > 1 ? "s" : "") + " lost precision</span>");
+      return {
+        chip: diag.bigInts ? "✓ " + diag.bigInts + " big-ints exact" : "✓ big-ints precise",
+        warnHTML: warns.join(""),
+      };
+    };
+    const rpt0 = report();
+    // buildTree adds embedded-JSON diagnostics to `diag`, and it can run more
+    // than once (sort toggles rebuild). Remember the outer document's baseline so
+    // each rebuild starts from it instead of double-counting.
+    const baseDiag = { dupLen: diag.dupKeys.length, bigInts: diag.bigInts, nonFinite: diag.nonFinite, precisionLoss: diag.precisionLoss };
+    const resetDiag = () => { diag.dupKeys.length = baseDiag.dupLen; diag.bigInts = baseDiag.bigInts; diag.nonFinite = baseDiag.nonFinite; diag.precisionLoss = baseDiag.precisionLoss; };
 
     rootEl.innerHTML =
       '<div class="jk-wrap jk-scope">' +
@@ -343,7 +420,7 @@
           '<button class="jk-btn" data-act="csv" title="Download CSV (array → table)" style="display:none">⤓ CSV</button>' +
           '<button class="jk-btn jk-icon" data-act="theme" title="Theme: auto">◐</button>' +
           '<select class="jk-skin" data-act="skin" title="Color theme"><option value="default">Default</option><option value="solarized">Solarized</option><option value="monokai">Monokai</option><option value="github">GitHub</option></select>' +
-          '<div class="jk-meta"><span class="jk-mono">' + humanSize(rawText.length) + " · " + topInfo + '</span><span class="jk-chip">' + chipHTML + "</span></div>" +
+          '<div class="jk-meta"><span class="jk-mono">' + humanSize(rawText.length) + " · " + topInfo + '</span><span class="jk-chip" data-chip>' + rpt0.chip + "</span></div>" +
           '<span class="jk-flash" data-flash></span>' +
         "</div>" +
         '<div class="jk-crumb jk-mono" data-crumb>root</div>' +
@@ -362,7 +439,7 @@
     const carets = () => prettyEl.querySelectorAll(".jk-caret:not(.jk-leaf)");
 
     statusEl.innerHTML = (heavy || bigStruct)
-      ? '<span class="jk-ok">● valid JSON</span>' + warnHTML + '<span class="jk-st">' + humanSize(rawText.length) +
+      ? '<span class="jk-ok">● valid JSON</span>' + rpt0.warnHTML + '<span class="jk-st">' + humanSize(rawText.length) +
         (bigStruct ? " · over " + groupDigits(String(NODE_CAP)) + " nodes — tree on demand" : " — large file, tree built on demand") +
         '</span><span class="jk-spacer"></span><span class="jk-trust">big integers kept exact · no ads · no telemetry</span>'
       : "";
@@ -387,7 +464,10 @@
       if (treeBuilt) return;
       if (bigStruct && !forced) { renderBigGuard(); return; }
       treeBuilt = true;
-      const { topLevel, counts, nodes, maxDepth } = buildTree(displayValue, prettyEl);
+      resetDiag(); // rebuilds re-parse embedded JSON; start from the outer baseline
+      const { topLevel, counts, nodes, maxDepth } = buildTree(displayValue, prettyEl, diag);
+      const rpt = report(); // now includes embedded-JSON diagnostics
+      $("[data-chip]").textContent = rpt.chip;
 
       const hasNested = topLevel.some((t) => !t.leaf);
       if (hasNested && topLevel.length >= 3) {
@@ -413,7 +493,7 @@
 
       const seg = (n, label) => (n ? '<span class="jk-st"><b>' + n + "</b> " + label + "</span>" : "");
       statusEl.innerHTML =
-        '<span class="jk-ok">● valid JSON</span>' + warnHTML + '<span class="jk-st">' + nodes + " nodes</span>" +
+        '<span class="jk-ok">● valid JSON</span>' + rpt.warnHTML + '<span class="jk-st">' + nodes + " nodes</span>" +
         seg(counts.object, "obj") + seg(counts.array, "arr") + seg(counts.string, "str") +
         seg(counts.number, "num") + seg(counts.boolean, "bool") + seg(counts.null, "null") +
         '<span class="jk-spacer"></span><span class="jk-trust">big integers kept exact · no ads · no telemetry</span>';
@@ -460,7 +540,7 @@
       if (v === "pretty") renderTree();
       Object.entries(segBtns).forEach(([k, b]) => b.classList.toggle("on", k === v));
       if (v === "pretty") { prettyEl.hidden = false; rawEl.hidden = true; }
-      else { prettyEl.hidden = true; rawEl.hidden = false; rawEl.textContent = v === "min" ? minified : original; }
+      else { prettyEl.hidden = true; rawEl.hidden = false; rawEl.textContent = v === "min" ? getMin() : original; }
       if (persist) store.set("jk:view", v);
     }
     Object.keys(segBtns).forEach((k) => segBtns[k].addEventListener("click", () => setView(k, true)));
@@ -485,9 +565,9 @@
 
     // ---- copy whole / download ----
     $('[data-act="copy"]').addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(pretty); say("Copied valid JSON ✓"); } catch { say("Select & ⌘C to copy"); }
+      try { await navigator.clipboard.writeText(getPretty()); say("Copied valid JSON ✓"); } catch { say("Select & ⌘C to copy"); }
     });
-    $('[data-act="dl"]').addEventListener("click", () => { download("data.json", pretty); say("Downloaded ✓"); });
+    $('[data-act="dl"]').addEventListener("click", () => { download("data.json", getPretty()); say("Downloaded ✓"); });
 
     // ---- CSV export (only when the top level is an array) ----
     const csvBtn = $('[data-act="csv"]');
@@ -526,16 +606,11 @@
       rerun();
     }
     sortBtn.addEventListener("click", () => { sorted = !sorted; store.set("jk:sort", sorted); applySort(); });
-    store.get("jk:sort", (v) => { if (v) { sorted = true; applySort(); } });
 
     // ---- color skin (retints syntax colors over the light/dark base), remembered ----
     const skinSel = $('[data-act="skin"]');
-    const applySkin = (s) => {
-      const set = (el) => { if (!el) return; if (s === "default") el.removeAttribute("data-jk-skin"); else el.setAttribute("data-jk-skin", s); };
-      set(rootEl.querySelector(".jk-wrap")); set(document.documentElement);
-    };
-    skinSel.addEventListener("change", () => { applySkin(skinSel.value); store.set("jk:skin", skinSel.value); });
-    store.get("jk:skin", (s) => { if (s) { skinSel.value = s; applySkin(s); } });
+    skinSel.addEventListener("change", () => { applySkin(rootEl, skinSel.value); store.set("jk:skin", skinSel.value); });
+    store.get("jk:skin", (s) => { if (s) { skinSel.value = s; applySkin(rootEl, s); } });
 
     // ---- search (scoped highlight + count + jump + match-aware expand + filter) ----
     const searchInput = $(".jk-search input"), findN = $("[data-find]");
@@ -553,8 +628,8 @@
     function runSearch(q) {
       renderTree(); // search needs the tree
       if (segBtns.pretty && !segBtns.pretty.classList.contains("on")) setView("pretty");
-      if (!q) { applySearch(prettyEl, carets(), "", scopeSel.value, false); matches = []; cur = -1; showFind(false); return; }
-      matches = applySearch(prettyEl, carets(), q, scopeSel.value, filterB.classList.contains("on"));
+      if (!q) { applySearch(prettyEl, "", scopeSel.value, false); matches = []; cur = -1; showFind(false); return; }
+      matches = applySearch(prettyEl, q, scopeSel.value, filterB.classList.contains("on"));
       showFind(true);
       findN.textContent = matches.length ? "1/" + matches.length : "0";
       cur = -1; if (matches.length) goto(0);
@@ -586,10 +661,14 @@
       });
     }
 
-    // initial view: large files / huge structures start in Raw (tree on demand);
-    // else saved or Pretty
-    if (heavy || bigStruct) setView("raw");
-    else store.get("jk:view", (v) => setView(v && segBtns[v] ? v : "pretty"));
+    // initial view: resolve the saved sort FIRST so the first tree build is
+    // already sorted (restoring it via applySort used to build the tree twice),
+    // then pick the view — large files / huge structures start in Raw.
+    store.get("jk:sort", (v) => {
+      if (v) { sorted = true; sortBtn.classList.add("on"); recompute(); }
+      if (heavy || bigStruct) setView("raw");
+      else store.get("jk:view", (w) => setView(w && segBtns[w] ? w : "pretty"));
+    });
 
     return true;
   }

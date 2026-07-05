@@ -36,6 +36,9 @@ class El {
     this.parentNode = null;
     this._text = "";
     this._listeners = {};
+    // real form controls default .value to "" — code like input.value.trim()
+    // relies on that
+    if (this.tagName === "INPUT" || this.tagName === "SELECT" || this.tagName === "TEXTAREA") this.value = "";
   }
   get childNodes() { return this.children; }
   get classList() {

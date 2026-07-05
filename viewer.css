@@ -8,16 +8,22 @@
   --jk-fg:#1c2024; --jk-dim:#6b7280; --jk-faint:#9aa1ac; --jk-border:#e7e9ed; --jk-border2:#dde0e5;
   --jk-accent:#2563eb; --jk-accent-soft:#eaf1ff; --jk-good:#1a7f4b; --jk-guide:#eaecf0; --jk-cur:#fff3cf; --jk-cur-bd:#e9c45e;
   --jk-key:#1f6feb; --jk-str:#1a7f4b; --jk-num:#b1530f; --jk-bool:#8a3fd1; --jk-null:#7a828c; --jk-pun:#aab1bb;
+  --jk-mark:#ffe08a; --jk-mark-fg:#1c2024; --jk-mark-cur:#ffc23d; --jk-warn:#b8860b; --jk-bad:#c0392b;
   --jk-shadow:0 10px 40px rgba(20,30,50,.10);
 }
-/* dark vars (re-used by system-dark and forced-dark) */
+/* dark vars — this block and the [data-jk-theme="dark"] block below MUST stay
+   identical: one serves system-dark with no override, the other forced dark.
+   All theme-dependent colors (incl. component colors like --jk-mark/--jk-warn/
+   --jk-bad) are defined ONLY here and in the light block, so components never
+   need their own dark selectors. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-jk-theme]), .jk-scope:not([data-jk-theme]) {
     --jk-canvas:#0c0d0f; --jk-panel:#141619; --jk-panel2:#1a1d22; --jk-bar:#161a1e; --jk-rail:#121417;
     --jk-fg:#e6e8eb; --jk-dim:#9aa1ac; --jk-faint:#6b7280; --jk-border:#242830; --jk-border2:#2f343c;
     --jk-accent:#5b9bff; --jk-accent-soft:#16243f; --jk-good:#5fd49a; --jk-guide:#20242a; --jk-cur:#3a3115; --jk-cur-bd:#6b5a1f;
     --jk-key:#6cb6ff; --jk-str:#7ee0a0; --jk-num:#f0a868; --jk-bool:#d2a8ff; --jk-null:#8b949e; --jk-pun:#5c636d;
-    --jk-shadow:0 16px 50px rgba(0,0,0,.5);
+    --jk-mark:#9a7400; --jk-mark-fg:#ffffff; --jk-warn:#e3b341; --jk-bad:#ff7b72;
+  --jk-shadow:0 16px 50px rgba(0,0,0,.5);
   }
 }
 :root[data-jk-theme="dark"], .jk-scope[data-jk-theme="dark"] {
@@ -25,6 +31,7 @@
   --jk-fg:#e6e8eb; --jk-dim:#9aa1ac; --jk-faint:#6b7280; --jk-border:#242830; --jk-border2:#2f343c;
   --jk-accent:#5b9bff; --jk-accent-soft:#16243f; --jk-good:#5fd49a; --jk-guide:#20242a; --jk-cur:#3a3115; --jk-cur-bd:#6b5a1f;
   --jk-key:#6cb6ff; --jk-str:#7ee0a0; --jk-num:#f0a868; --jk-bool:#d2a8ff; --jk-null:#8b949e; --jk-pun:#5c636d;
+  --jk-mark:#9a7400; --jk-mark-fg:#ffffff; --jk-warn:#e3b341; --jk-bad:#ff7b72;
   --jk-shadow:0 16px 50px rgba(0,0,0,.5);
 }
 
@@ -97,10 +104,8 @@ html.jk-active .jk-root { height:100vh; }
 .jk-big p { margin:0 0 12px; }
 .jk-big .jk-btn { margin:2px 0 14px; }
 .jk-big-hint { font-size:11.5px; color:var(--jk-faint); }
-.jk-mark { background:#ffe08a; color:#1c2024; border-radius:2px; padding:0 1px; }
-.jk-row.jk-current .jk-mark { background:#ffc23d; }
-:root[data-jk-theme="dark"] .jk-mark, .jk-scope[data-jk-theme="dark"] .jk-mark { background:#9a7400; color:#fff; }
-@media (prefers-color-scheme: dark){ :root:not([data-jk-theme]) .jk-mark, .jk-scope:not([data-jk-theme]) .jk-mark { background:#9a7400; color:#fff; } }
+.jk-mark { background:var(--jk-mark); color:var(--jk-mark-fg); border-radius:2px; padding:0 1px; }
+.jk-row.jk-current .jk-mark { background:var(--jk-mark-cur); }
 .jk-gutter { width:44px; flex:0 0 44px; text-align:right; padding-right:12px; color:var(--jk-faint); opacity:.65; user-select:none; font-variant-numeric:tabular-nums; }
 .jk-content { flex:1; }
 .jk-ind { color:var(--jk-guide); }
@@ -131,9 +136,7 @@ html.jk-active .jk-root { height:100vh; }
 .jk-status { flex:0 0 auto; display:flex; align-items:center; gap:14px; padding:5px 14px; font-size:11px;
   background:var(--jk-bar); border-top:1px solid var(--jk-border); color:var(--jk-dim); white-space:nowrap; overflow:hidden; }
 .jk-status .jk-ok { color:var(--jk-good); font-weight:600; }
-.jk-warn { color:#b8860b; font-weight:600; }
-@media (prefers-color-scheme: dark){ :root:not([data-jk-theme]) .jk-warn, .jk-scope:not([data-jk-theme]) .jk-warn { color:#e3b341; } }
-:root[data-jk-theme="dark"] .jk-warn, .jk-scope[data-jk-theme="dark"] .jk-warn { color:#e3b341; }
+.jk-warn { color:var(--jk-warn); font-weight:600; }
 .jk-st b { color:var(--jk-fg); font-weight:600; }
 .jk-spacer { flex:1; }
 .jk-trust { color:var(--jk-faint); }
@@ -167,9 +170,7 @@ html.jk-page-html, html.jk-page-html body { margin:0; height:100%; }
 .jk-in-foot { flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:9px 12px; background:var(--jk-bar); border-top:1px solid var(--jk-border); }
 .jk-in-foot .sp { flex:1; }
 .jk-valid { font-size:12px; font-weight:600; display:flex; align-items:center; gap:6px; min-width:0; }
-.jk-valid.ok { color:var(--jk-good); } .jk-valid.bad { color:#c0392b; cursor:pointer; text-decoration:underline; }
-:root[data-jk-theme="dark"] .jk-valid.bad, .jk-page:not([data-jk-theme]) .jk-valid.bad { color:#ff7b72; }
-@media (prefers-color-scheme: dark) { .jk-page:not([data-jk-theme]) .jk-valid.bad { color:#ff7b72; } }
+.jk-valid.ok { color:var(--jk-good); } .jk-valid.bad { color:var(--jk-bad); cursor:pointer; text-decoration:underline; }
 .jk-autobox { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--jk-dim); user-select:none; cursor:pointer; }
 
 /* Scoped under .jk-page: this stylesheet is injected into EVERY page via the

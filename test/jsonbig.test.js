@@ -3,23 +3,8 @@
 // product's correctness moat, so it gets a safety net before any refactor.
 const fs = require("fs");
 const path = require("path");
-
-// jsonbig.js is an IIFE that assigns JSONBig onto the global object.
-eval(fs.readFileSync(path.join(__dirname, "..", "jsonbig.js"), "utf8"));
-const { parse, stringify } = globalThis.JSONBig;
-
-let passed = 0, failed = 0;
-function check(name, cond) {
-  if (cond) { passed++; }
-  else { failed++; console.error("  ✗ " + name); }
-}
-function eq(name, actual, expected) {
-  check(name + "  (got " + JSON.stringify(actual) + ", want " + JSON.stringify(expected) + ")", actual === expected);
-}
-function throws(name, fn) {
-  let threw = false; try { fn(); } catch { threw = true; }
-  check(name, threw);
-}
+const { check, eq, throws, summary, loadParser } = require("./harness");
+const { parse, stringify } = loadParser();
 
 // ---- big integers stay exact ----
 eq("big int preserved as BigInt", typeof parse("136986234663732436"), "bigint");
@@ -170,5 +155,4 @@ eq("empty array", stringify(parse("[]")), "[]");
   check(f + " has no raw control bytes" + (bad >= 0 ? " (byte at offset " + bad + ")" : ""), bad === -1);
 });
 
-console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
-process.exit(failed ? 1 : 0);
+summary();
