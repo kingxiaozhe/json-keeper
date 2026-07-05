@@ -114,5 +114,23 @@ const mount = () => document.createElement("div");
   ok("stale-count cleared to fresh 1/1", root.querySelector("[data-find]").textContent === "1/1");
 })();
 
+// ---- saved sort restores on mount, even with a SYNCHRONOUS storage callback ----
+// (chrome storage is async in real Chrome; a sync callback once hit a TDZ on the
+// later-declared search `rerun` — this locks in the fix, and the hardened
+// store.get now propagates any callback error instead of swallowing it)
+(() => {
+  const origGet = globalThis.chrome.storage.local.get;
+  globalThis.chrome.storage.local.get = (k, cb) => cb(k === "jk:sort" ? { "jk:sort": true } : {});
+  try {
+    const root = mount();
+    mountViewer(root, '{"banana":1,"apple":2}', {}); // any throw fails the suite
+    const firstKey = root.querySelectorAll(".jk-key")[0];
+    eq("saved sort applied on mount (keys A→Z)", firstKey && firstKey.textContent, '"apple"');
+    ok("sort button reflects the restored state", root.querySelector('[data-act="sort"]').classList.contains("on"));
+  } finally {
+    globalThis.chrome.storage.local.get = origGet;
+  }
+})();
+
 console.log((failed ? "\n" : "") + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);

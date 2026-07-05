@@ -1,4 +1,4 @@
-# JSON Keeper (v0.18.0)
+# JSON Keeper (v0.18.1)
 
 可信赖的 JSON 查看/格式化插件。重写自 JSONVue,差异化:**有明显粘贴入口 + 一键复制合法 JSON + 大整数永不失真 + 可折叠树/搜索**。设计语言 "Quiet Precision"(浅/深双主题,设计稿见 `design/`)。
 
@@ -65,4 +65,4 @@
   - `test/tree.test.js` —— 借 `test/dom-stub.js`(零依赖 DOM 桩)在 node 下跑真实 `buildTree` + `applySearch`:类型/节点计数、折叠与展开、嵌套 JSON 内联展开、`applyDepth` 按层级折叠,以及查找的**范围(键/值)、命中祖先自动展开、只看匹配行、以及"不误匹配行号/按钮文字"**。
   - `test/highlight.test.js` —— 搜索高亮手术 `markText`/`clearMarks`:命中包裹与计数、保留嵌套结构、清除后文本还原、跨旧切分边界重搜可命中。
   - `test/viewer.test.js` —— 借升级后的 DOM 桩(含小型选择器引擎)在 node 下跑**完整 `mountViewer`**:装配出 `.jk-wrap`/树/工具栏/搜索框、状态显示 valid、Pretty↔Raw 切换、caret 折叠、数组显示 CSV、以及错误路径不抛异常。覆盖此前无测试的视图组装层。
-  - 重构前的安全网。共 199 条断言(含源文件无控制字节的卫生守卫)。
+  - 重构前的安全网。共 201 条断言(含源文件无控制字节的卫生守卫)。

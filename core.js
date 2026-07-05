@@ -124,7 +124,15 @@
   }
 
   const store = {
-    get(k, cb) { try { chrome.storage.local.get(k, (r) => cb(r && r[k])); } catch { cb(undefined); } },
+    // The catch exists only for environments without chrome.storage (tests,
+    // detached pages). Track whether the callback was reached so an exception
+    // thrown INSIDE the callback propagates instead of being swallowed here and
+    // the callback re-invoked a second time with undefined.
+    get(k, cb) {
+      let called = false;
+      try { chrome.storage.local.get(k, (r) => { called = true; cb(r && r[k]); }); }
+      catch (e) { if (called) throw e; cb(undefined); }
+    },
     set(k, v) { try { chrome.storage.local.set({ [k]: v }); } catch {} },
   };
 
@@ -502,6 +510,10 @@
     renderTheme();
 
     // ---- sort keys (recursive), remembered ----
+    // `rerun` gets its real implementation in the search section below; applySort
+    // can fire earlier (from the jk:sort storage callback), so give it a safe
+    // default instead of a TDZ trap on the later `rerun = …` assignment.
+    let rerun = () => {};
     const sortBtn = $('[data-act="sort"]');
     function applySort() {
       sortBtn.classList.toggle("on", sorted);
@@ -547,7 +559,7 @@
       findN.textContent = matches.length ? "1/" + matches.length : "0";
       cur = -1; if (matches.length) goto(0);
     }
-    const rerun = () => runSearch(searchInput.value.trim().toLowerCase());
+    rerun = () => runSearch(searchInput.value.trim().toLowerCase());
     // Debounce keystrokes: applySearch scans every row, so coalesce typing (~120ms).
     let searchT = 0;
     searchInput.addEventListener("input", () => { clearTimeout(searchT); searchT = setTimeout(rerun, 120); });
