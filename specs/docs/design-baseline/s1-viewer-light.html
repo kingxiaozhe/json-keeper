@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>JSON Keeper - Viewer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "inverse-on-surface": "#2f3034",
+                        "surface-container-lowest": "#0c0e11",
+                        "on-tertiary": "#462a00",
+                        "on-surface-variant": "#c2c6d4",
+                        "on-secondary-fixed": "#00174b",
+                        "surface-bright": "#37393d",
+                        "surface-dim": "#111316",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffddb7",
+                        "surface-container-high": "#282a2d",
+                        "primary-fixed-dim": "#aac7ff",
+                        "surface-tint": "#aac7ff",
+                        "surface-container": "#1e2023",
+                        "primary": "#aac7ff",
+                        "primary-container": "#5b9bff",
+                        "surface-container-highest": "#333538",
+                        "outline": "#8c919e",
+                        "surface-variant": "#333538",
+                        "inverse-surface": "#e2e2e6",
+                        "on-primary-fixed-variant": "#00458e",
+                        "outline-variant": "#424752",
+                        "inverse-primary": "#005cb9",
+                        "tertiary-container": "#d88b00",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-primary": "#002f65",
+                        "on-surface": "#e2e2e6",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "surface-container-low": "#1a1c1f",
+                        "tertiary": "#ffb95d",
+                        "secondary": "#b4c5ff",
+                        "error-container": "#93000a",
+                        "on-tertiary-container": "#4a2d00",
+                        "tertiary-fixed-dim": "#ffb95d",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-background": "#e2e2e6",
+                        "on-primary-container": "#00326a",
+                        "secondary-container": "#0053db",
+                        "background": "#111316",
+                        "surface": "#111316",
+                        "on-primary-fixed": "#001b3e",
+                        "on-secondary": "#002a78",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "primary-fixed": "#d7e3ff",
+                        "on-secondary-container": "#cdd7ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "panel-padding": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "gutter": "12px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "interface-md": ["Inter"],
+                        "status-label": ["JetBrains Mono"],
+                        "code-sm": ["JetBrains Mono"],
+                        "code-lg": ["JetBrains Mono"],
+                        "interface-sm": ["Inter"],
+                        "code-md": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "interface-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "status-label": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "code-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "code-lg": ["14px", { "lineHeight": "22px", "fontWeight": "500" }],
+                        "interface-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom scrollbar for IDE-like feel */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #424752; /* outline-variant */
+            border: 2px solid #111316; /* surface-dim */
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8c919e; /* outline */
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen flex flex-col overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="flex justify-between items-center w-full px-panel-padding h-12 bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant flex-shrink-0 z-20 shadow-sm relative">
+<div class="flex items-center gap-6">
+<!-- Brand -->
+<div class="font-interface-md text-interface-md font-bold text-on-surface dark:text-on-surface flex items-center gap-2">
+<div class="w-6 h-6 rounded bg-primary-container text-on-primary-container flex items-center justify-center font-status-label text-[12px]">{ }</div>
+                JSON Keeper
+            </div>
+<!-- View Segments -->
+<div class="flex items-center bg-surface-container rounded-lg p-0.5 border border-outline-variant/50">
+<button class="px-3 py-1 font-interface-sm text-interface-sm text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors rounded">Raw</button>
+<button class="px-3 py-1 font-interface-sm text-interface-sm text-primary dark:text-primary bg-secondary-container/20 rounded shadow-sm transition-opacity opacity-80 border-b-2 border-primary pb-[3px]">Pretty</button>
+<button class="px-3 py-1 font-interface-sm text-interface-sm text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors rounded">Table</button>
+<button class="px-3 py-1 font-interface-sm text-interface-sm text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors rounded">Min</button>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<!-- Search -->
+<div class="relative flex items-center group">
+<span class="material-symbols-outlined absolute left-2.5 text-on-surface-variant group-focus-within:text-primary transition-colors" style="font-size: 16px;">search</span>
+<input class="bg-surface-container border border-outline-variant rounded-md pl-8 pr-8 py-1.5 font-interface-sm text-interface-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none w-56 transition-all placeholder-outline" placeholder="Find path or value..." type="text"/>
+<div class="absolute right-2 font-code-sm text-[10px] text-on-surface-variant border border-outline-variant rounded px-1.5 py-0.5 bg-surface leading-none shadow-sm flex items-center justify-center">/</div>
+</div>
+<div class="h-5 w-px bg-outline-variant mx-1"></div>
+<!-- Trailing Icons -->
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded-md hover:bg-surface-variant transition-colors text-on-surface-variant group relative" title="Copy Content">
+<span class="material-symbols-outlined" style="font-size: 18px;">content_copy</span>
+<span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-interface-sm text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none">Copy JSON</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-variant transition-colors text-on-surface-variant group relative" title="Download">
+<span class="material-symbols-outlined" style="font-size: 18px;">download</span>
+<span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-interface-sm text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none">Download</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-variant transition-colors text-on-surface-variant group relative" title="Settings">
+<span class="material-symbols-outlined" style="font-size: 18px;">settings</span>
+<span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-interface-sm text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none">Settings</span>
+</button>
+</div>
+</div>
+</nav>
+<!-- Breadcrumb Bar -->
+<div class="h-9 border-b border-outline-variant bg-surface-container-low flex items-center px-panel-padding gap-1 font-code-sm text-code-sm text-on-surface-variant flex-shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.2)] z-10 relative">
+<span class="material-symbols-outlined text-[14px] text-outline mr-1">data_object</span>
+<span class="hover:text-primary hover:underline cursor-pointer transition-colors decoration-primary/50">root</span>
+<span class="material-symbols-outlined text-[14px] text-outline-variant mx-0.5">chevron_right</span>
+<span class="hover:text-primary hover:underline cursor-pointer transition-colors decoration-primary/50">data</span>
+<span class="material-symbols-outlined text-[14px] text-outline-variant mx-0.5">chevron_right</span>
+<span class="hover:text-primary hover:underline cursor-pointer transition-colors decoration-primary/50">users</span>
+<span class="material-symbols-outlined text-[14px] text-outline-variant mx-0.5">chevron_right</span>
+<span class="hover:text-tertiary-fixed hover:underline cursor-pointer transition-colors text-tertiary-fixed-dim">[14]</span>
+<span class="material-symbols-outlined text-[14px] text-outline-variant mx-0.5">chevron_right</span>
+<span class="text-on-surface font-medium bg-surface-variant px-1.5 rounded-sm">profile</span>
+</div>
+<!-- Main Workspace -->
+<div class="flex-1 flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-full py-md px-sm gap-xs bg-surface-container dark:bg-surface-container w-64 border-r border-outline-variant dark:border-outline-variant left-0 flex-shrink-0 z-0">
+<div class="px-2 pt-2 pb-4">
+<h2 class="font-interface-md text-interface-md font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">account_tree</span>
+                    Structure
+                </h2>
+<p class="font-interface-sm text-[11px] text-on-surface-variant mt-1 uppercase tracking-wider font-semibold">Top-level keys</p>
+</div>
+<!-- Contextual Tabs -->
+<div class="flex justify-between bg-surface-container-highest/50 p-1 rounded-lg mb-4 border border-outline-variant/30">
+<button class="flex-1 flex justify-center py-1.5 bg-secondary-container dark:bg-secondary-container text-on-secondary-container dark:text-on-secondary-container font-bold rounded shadow-sm scale-95 transition-transform" title="Tree">
+<span class="material-symbols-outlined" style="font-size: 16px;">account_tree</span>
+</button>
+<button class="flex-1 flex justify-center py-1.5 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded transition-colors" title="History">
+<span class="material-symbols-outlined" style="font-size: 16px;">history</span>
+</button>
+<button class="flex-1 flex justify-center py-1.5 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded transition-colors" title="Diff">
+<span class="material-symbols-outlined" style="font-size: 16px;">difference</span>
+</button>
+<button class="flex-1 flex justify-center py-1.5 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded transition-colors" title="Compare">
+<span class="material-symbols-outlined" style="font-size: 16px;">library_add</span>
+</button>
+</div>
+<!-- Structure Tree -->
+<div class="flex-1 overflow-y-auto pr-1">
+<ul class="font-code-sm text-[12px] text-on-surface-variant flex flex-col gap-0.5">
+<li class="flex items-center gap-1.5 hover:bg-surface-container-high py-1 px-2 rounded cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-[14px] text-outline group-hover:text-primary transition-colors">arrow_right</span>
+<span class="material-symbols-outlined text-[14px] text-outline-variant">data_object</span>
+<span class="text-primary-fixed-dim">status</span>
+</li>
+<li class="flex items-center gap-1.5 hover:bg-surface-container-high py-1 px-2 rounded cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-[14px] text-outline group-hover:text-primary transition-colors">arrow_right</span>
+<span class="material-symbols-outlined text-[14px] text-outline-variant">data_object</span>
+<span class="text-primary-fixed-dim">meta</span>
+</li>
+<li class="flex items-center gap-1.5 bg-surface-container-high py-1 px-2 rounded cursor-pointer transition-colors border-l-2 border-primary">
+<span class="material-symbols-outlined text-[14px] text-primary transform rotate-90">arrow_right</span>
+<span class="material-symbols-outlined text-[14px] text-primary">data_array</span>
+<span class="text-primary font-semibold">results</span>
+</li>
+<div class="pl-5 flex flex-col gap-0.5 border-l border-outline-variant/30 ml-[11px] mt-0.5 mb-1">
+<li class="flex items-center gap-1.5 hover:bg-surface-container-high py-1 px-2 rounded cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-[14px] text-outline group-hover:text-primary transition-colors">arrow_right</span>
+<span class="text-tertiary-fixed-dim">[0] - user_abc</span>
+</li>
+<li class="flex items-center gap-1.5 bg-surface-variant py-1 px-2 rounded cursor-pointer transition-colors group border border-outline-variant/50 shadow-inner">
+<span class="material-symbols-outlined text-[14px] text-primary transform rotate-90">arrow_right</span>
+<span class="text-tertiary-fixed">[14] - user_xyz</span>
+</li>
+<div class="pl-4 flex flex-col gap-0.5 border-l border-outline-variant/30 ml-2 mt-0.5">
+<li class="flex items-center gap-1.5 hover:bg-surface-container-high py-1 px-2 rounded cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-[12px] text-outline group-hover:text-primary transition-colors">arrow_right</span>
+<span class="text-primary-fixed-dim">id</span>
+</li>
+<li class="flex items-center gap-1.5 bg-primary-container/10 py-1 px-2 rounded cursor-pointer transition-colors text-primary font-medium">
+<span class="material-symbols-outlined text-[12px] text-primary transform rotate-90">arrow_right</span>
+<span>profile</span>
+</li>
+</div>
+</div>
+<li class="flex items-center gap-1.5 hover:bg-surface-container-high py-1 px-2 rounded cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-[14px] text-outline group-hover:text-primary transition-colors">arrow_right</span>
+<span class="material-symbols-outlined text-[14px] text-outline-variant">data_object</span>
+<span class="text-primary-fixed-dim">pagination</span>
+</li>
+</ul>
+</div>
+</aside>
+<!-- Main Tree View (Editor Canvas) -->
+<main class="flex-1 flex bg-surface-dim overflow-hidden font-code-md text-code-md relative isolate">
+<!-- Decorative atmospheric gradient -->
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none -z-10"></div>
+<!-- Line Numbers -->
+<div class="w-14 flex-shrink-0 bg-surface border-r border-outline-variant/60 py-4 flex flex-col items-end pr-3 text-[12px] text-outline-variant select-none overflow-hidden font-code-sm leading-[1.6rem]">
+<span>138</span>
+<span>139</span>
+<span>140</span>
+<span>141</span>
+<span>142</span>
+<span>143</span>
+<span>144</span>
+<span>145</span>
+<span>146</span>
+<span class="text-tertiary bg-tertiary/10 w-full text-right pr-3 rounded-l-sm border-r-2 border-tertiary">147</span>
+<span>148</span>
+<span class="text-primary font-medium">149</span>
+<span class="text-primary font-medium">150</span>
+<span class="text-primary font-medium bg-primary/10 w-full text-right pr-3 rounded-l-sm border-r-2 border-primary">151</span>
+<span class="text-primary font-medium">152</span>
+<span class="text-primary font-medium">153</span>
+<span>154</span>
+</div>
+<!-- JSON Content -->
+<div class="flex-1 overflow-auto py-4 px-panel-padding text-on-surface leading-[1.6rem] whitespace-pre font-code-md">
+<div class="flex items-center hover:bg-surface-variant/30 rounded px-1 -mx-1"><span class="w-5 inline-flex justify-center text-outline cursor-pointer hover:text-primary transition-colors select-none material-symbols-outlined text-[16px]">arrow_right</span><span class="text-primary-fixed-dim">"settings"</span><span class="text-on-surface-variant">: { ... },</span></div>
+<div class="flex items-center hover:bg-surface-variant/30 rounded px-1 -mx-1"><span class="w-5 inline-flex justify-center text-outline cursor-pointer hover:text-primary transition-colors select-none material-symbols-outlined text-[16px] transform rotate-90">arrow_right</span><span class="text-primary-fixed-dim">"profile"</span><span class="text-on-surface-variant">: {</span></div>
+<div class="pl-5 flex items-center hover:bg-surface-variant/30 rounded px-1 -mx-1 group"><span class="w-5 inline-block"></span><span class="text-secondary">"username"</span><span class="text-on-surface-variant">: </span><span class="text-tertiary">"johndoe_99"</span><span class="text-on-surface-variant">,</span></div>
+<div class="pl-5 flex items-center hover:bg-surface-variant/30 rounded px-1 -mx-1 group"><span class="w-5 inline-block"></span><span class="text-secondary">"is_active"</span><span class="text-on-surface-variant">: </span><span class="text-error-container font-semibold">true</span><span class="text-on-surface-variant">,</span></div>
+<div class="pl-5 flex items-center hover:bg-surface-variant/30 rounded px-1 -mx-1 group"><span class="w-5 inline-block"></span><span class="text-secondary">"last_login"</span><span class="text-on-surface-variant">: </span><span class="text-tertiary">"2023-10-27T14:32:00Z"</span><span class="text-on-surface-variant">,</span></div>
+<div class="pl-5 flex items-center hover:bg-surface-variant/30 rounded px-1 -mx-1 group"><span class="w-5 inline-block"></span><span class="text-secondary">"reputation"</span><span class="text-on-surface-variant">: </span><span class="text-primary-container">450</span><span class="text-on-surface-variant">,</span></div>
+<div class="pl-5 flex items-center bg-tertiary/5 rounded px-1 -mx-1 group border border-tertiary/20 relative"><span class="w-5 inline-block"></span><span class="text-secondary">"reputation"</span><span class="text-on-surface-variant">: </span><span class="text-primary-container">452</span><span class="text-on-surface-variant">,</span><span class="absolute right-2 text-tertiary text-[11px] font-interface-sm flex items-center gap-1 bg-surface-container py-0.5 px-1.5 rounded"><span class="material-symbols-outlined text-[12px]">warning</span> Duplicate key</span></div>
+<div class="pl-5 flex items-center hover:bg-surface-variant/30 rounded px-1 -mx-1 group"><span class="w-5 inline-flex justify-center text-outline cursor-pointer hover:text-primary transition-colors select-none material-symbols-outlined text-[16px] transform rotate-90">arrow_right</span><span class="text-secondary">"financials"</span><span class="text-on-surface-variant">: {</span></div>
+<div class="pl-10 flex items-center hover:bg-surface-variant/30 rounded px-1 -mx-1 group"><span class="w-5 inline-block"></span><span class="text-secondary">"balance_usd"</span><span class="text-on-surface-variant">: </span><span class="text-primary-container">1240.50</span><span class="text-on-surface-variant">,</span></div>
+<div class="pl-10 flex items-center bg-primary/5 rounded px-1 -mx-1 border border-primary/20 shadow-[0_0_10px_rgba(170,199,255,0.05)] relative"><span class="w-5 inline-block"></span><span class="text-secondary">"transaction_id"</span><span class="text-on-surface-variant">: </span><span class="text-primary-container">9007199254740992</span><span class="inline-flex items-center ml-3 bg-surface-container-high border border-primary-fixed/30 rounded px-1.5 py-0.5 text-[10px] text-primary-fixed-dim font-interface-sm shadow-sm leading-none"><span class="material-symbols-outlined text-[10px] mr-0.5 text-primary">check_circle</span> ✓ exact</span><span class="text-on-surface-variant">,</span></div>
+<div class="pl-10 flex items-center hover:bg-surface-variant/30 rounded px-1 -mx-1 group"><span class="w-5 inline-block"></span><span class="text-secondary">"currency"</span><span class="text-on-surface-variant">: </span><span class="text-tertiary">"USD"</span></div>
+<div class="pl-5 flex items-center hover:bg-surface-variant/30 rounded px-1 -mx-1"><span class="w-5 inline-block"></span><span class="text-on-surface-variant">}</span></div>
+<div class="flex items-center hover:bg-surface-variant/30 rounded px-1 -mx-1"><span class="w-5 inline-block"></span><span class="text-on-surface-variant">},</span></div>
+</div>
+<!-- Floating Minimap Outline (Simulated for IDE feel) -->
+<div class="absolute right-0 top-0 bottom-0 w-16 bg-surface-container-lowest/50 border-l border-outline-variant/30 pointer-events-none opacity-40">
+<div class="w-full h-8 bg-primary/20 mt-32 border-y border-primary/40"></div>
+<div class="w-8 h-px bg-outline-variant mx-auto my-1"></div>
+<div class="w-10 h-px bg-outline-variant mx-auto my-1"></div>
+<div class="w-6 h-px bg-outline-variant mx-auto my-1"></div>
+<div class="w-12 h-px bg-outline-variant mx-auto my-1"></div>
+<div class="w-8 h-px bg-outline-variant mx-auto my-1"></div>
+</div>
+</main>
+</div>
+<!-- Bottom Status Bar (Footer) -->
+<footer class="fixed bottom-0 w-full z-50 flex justify-between items-center px-panel-padding h-8 bg-surface-container-low dark:bg-surface-container-low border-t border-outline-variant dark:border-outline-variant font-status-label text-status-label text-on-surface-variant dark:text-on-surface-variant cursor-default flex-shrink-0 shadow-[0_-1px_3px_rgba(0,0,0,0.3)]">
+<div class="flex items-center gap-6">
+<!-- Status Indicators -->
+<div class="flex items-center gap-2 text-primary dark:text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span class="font-bold">Validity: OK</span>
+</div>
+<div class="flex items-center gap-2 text-tertiary bg-tertiary/10 px-2 py-0.5 rounded border border-tertiary/20 hover:bg-tertiary/20 transition-colors cursor-pointer" title="View details">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span>⚠ 2 duplicate keys (last value shown)</span>
+</div>
+<div class="flex items-center gap-2 px-2 py-0.5 text-outline">
+<span class="material-symbols-outlined text-[14px]">account_tree</span>
+<span>Nodes: 1,240</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<!-- Trust Signals -->
+<div class="flex items-center gap-1.5 text-primary-fixed-dim bg-surface-container py-0.5 px-2 rounded-full border border-outline-variant/50 shadow-inner">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+<span>BigInt Safe</span>
+</div>
+<div class="text-outline flex items-center gap-2 opacity-80">
+<span>Precision Guaranteed</span>
+<span class="text-[8px]">•</span>
+<span>No telemetry</span>
+</div>
+</div>
+</footer>
+</body></html>

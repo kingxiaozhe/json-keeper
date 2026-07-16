@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>JSON Keeper - Chrome Extension Popup</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "on-secondary-fixed-variant": "#003ea8",
+                  "inverse-on-surface": "#2f3034",
+                  "surface-container-lowest": "#0c0e11",
+                  "on-tertiary": "#462a00",
+                  "on-surface-variant": "#c2c6d4",
+                  "on-secondary-fixed": "#00174b",
+                  "surface-bright": "#37393d",
+                  "surface-dim": "#111316",
+                  "on-error-container": "#ffdad6",
+                  "tertiary-fixed": "#ffddb7",
+                  "surface-container-high": "#282a2d",
+                  "primary-fixed-dim": "#aac7ff",
+                  "surface-tint": "#aac7ff",
+                  "surface-container": "#1e2023",
+                  "primary": "#aac7ff",
+                  "primary-container": "#5b9bff",
+                  "surface-container-highest": "#333538",
+                  "outline": "#8c919e",
+                  "surface-variant": "#333538",
+                  "inverse-surface": "#e2e2e6",
+                  "on-primary-fixed-variant": "#00458e",
+                  "outline-variant": "#424752",
+                  "inverse-primary": "#005cb9",
+                  "tertiary-container": "#d88b00",
+                  "secondary-fixed": "#dbe1ff",
+                  "on-primary": "#002f65",
+                  "on-surface": "#e2e2e6",
+                  "error": "#ffb4ab",
+                  "on-error": "#690005",
+                  "secondary-fixed-dim": "#b4c5ff",
+                  "surface-container-low": "#1a1c1f",
+                  "tertiary": "#ffb95d",
+                  "secondary": "#b4c5ff",
+                  "error-container": "#93000a",
+                  "on-tertiary-container": "#4a2d00",
+                  "tertiary-fixed-dim": "#ffb95d",
+                  "on-tertiary-fixed": "#2a1700",
+                  "on-background": "#e2e2e6",
+                  "on-primary-container": "#00326a",
+                  "secondary-container": "#0053db",
+                  "background": "#111316",
+                  "surface": "#111316",
+                  "on-primary-fixed": "#001b3e",
+                  "on-secondary": "#002a78",
+                  "on-tertiary-fixed-variant": "#653e00",
+                  "primary-fixed": "#d7e3ff",
+                  "on-secondary-container": "#cdd7ff"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.125rem",
+                  "lg": "0.25rem",
+                  "xl": "0.5rem",
+                  "full": "0.75rem"
+          },
+          "spacing": {
+                  "panel-padding": "16px",
+                  "lg": "24px",
+                  "md": "16px",
+                  "gutter": "12px",
+                  "unit": "4px",
+                  "sm": "8px",
+                  "xs": "4px"
+          },
+          "fontFamily": {
+                  "interface-md": [
+                          "Inter"
+                  ],
+                  "status-label": [
+                          "JetBrains Mono"
+                  ],
+                  "code-sm": [
+                          "JetBrains Mono"
+                  ],
+                  "code-lg": [
+                          "JetBrains Mono"
+                  ],
+                  "interface-sm": [
+                          "Inter"
+                  ],
+                  "code-md": [
+                          "JetBrains Mono"
+                  ]
+          },
+          "fontSize": {
+                  "interface-md": [
+                          "14px",
+                          {
+                                  "lineHeight": "20px",
+                                  "fontWeight": "400"
+                          }
+                  ],
+                  "status-label": [
+                          "11px",
+                          {
+                                  "lineHeight": "14px",
+                                  "letterSpacing": "0.02em",
+                                  "fontWeight": "600"
+                          }
+                  ],
+                  "code-sm": [
+                          "12px",
+                          {
+                                  "lineHeight": "18px",
+                                  "fontWeight": "400"
+                          }
+                  ],
+                  "code-lg": [
+                          "14px",
+                          {
+                                  "lineHeight": "22px",
+                                  "fontWeight": "500"
+                          }
+                  ],
+                  "interface-sm": [
+                          "12px",
+                          {
+                                  "lineHeight": "16px",
+                                  "fontWeight": "500"
+                          }
+                  ],
+                  "code-md": [
+                          "13px",
+                          {
+                                  "lineHeight": "20px",
+                                  "fontWeight": "400"
+                          }
+                  ]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      width: 328px;
+      height: 500px; /* Chrome extension popup max height is 600px, setting reasonable default */
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    /* Custom scrollbar for Quiet Precision feel */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: #333538;
+      border-radius: 4px;
+    }
+    
+    /* Fix for 13.5px and 11.5px and 10.5px specific requests not in config */
+    .text-title-custom {
+      font-size: 13.5px;
+      line-height: 18px;
+    }
+    .text-subheadline-custom {
+      font-size: 11.5px;
+      line-height: 16px;
+    }
+    .text-footer-custom {
+      font-size: 10.5px;
+      line-height: 14px;
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-interface-md h-full flex flex-col antialiased">
+<!-- Header -->
+<header class="flex flex-col px-md pt-md pb-gutter">
+<h1 class="font-interface-md text-title-custom font-bold text-on-surface">Paste JSON to format</h1>
+<p class="font-interface-sm text-subheadline-custom text-on-surface-variant mt-1">or open any .json URL — it auto-formats</p>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-md flex flex-col gap-md">
+<!-- Input Area with Error State -->
+<div class="flex flex-col gap-xs">
+<div class="relative w-full">
+<!-- Error outline applied here: border-error -->
+<textarea class="w-full h-[118px] bg-surface-container-low border border-error rounded focus:outline-none focus:ring-1 focus:ring-error text-code-sm font-code-sm text-on-surface p-sm resize-none" placeholder='{"id": 136986234663732436, "ok": true}' spellcheck="false">{"invalid": "json", missing_quotes}</textarea>
+<!-- BigInt Tooltip / Indicator (Mocked as inactive for this error state, but present in DOM) -->
+<div class="absolute top-sm right-sm hidden items-center bg-surface-container-high rounded border border-outline-variant px-xs py-[2px] shadow-sm">
+<span class="material-symbols-outlined text-tertiary" style="font-size: 14px;">check_circle</span>
+</div>
+</div>
+<!-- Error Validation Text -->
+<div class="flex items-center gap-xs text-error">
+<span class="material-symbols-outlined" style="font-size: 14px; font-variation-settings: 'FILL' 1;">error</span>
+<span class="font-interface-sm text-interface-sm">Invalid JSON</span>
+</div>
+</div>
+<!-- Format Action -->
+<button class="w-full bg-primary text-on-primary font-interface-md text-interface-md font-medium py-[6px] px-[12px] rounded border border-transparent hover:bg-primary-container transition-colors flex justify-center items-center gap-sm">
+      Format JSON 
+      <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+</button>
+<!-- Divider -->
+<div class="h-px w-full bg-outline-variant my-unit"></div>
+<!-- History Section -->
+<section class="flex flex-col gap-sm pb-md">
+<h2 class="font-interface-sm text-interface-sm text-on-surface-variant font-medium">Recent History</h2>
+<ul class="flex flex-col gap-xs">
+<!-- History Item 1 -->
+<li>
+<button class="w-full flex items-center justify-between p-sm rounded hover:bg-surface-container-high transition-colors group border border-transparent hover:border-outline-variant text-left">
+<div class="flex items-center gap-sm overflow-hidden">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors" style="font-size: 16px;">history</span>
+<span class="font-code-sm text-code-sm text-on-surface truncate">API Response (1.2MB)</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity" style="font-size: 16px;">open_in_new</span>
+</button>
+</li>
+<!-- History Item 2 -->
+<li>
+<button class="w-full flex items-center justify-between p-sm rounded hover:bg-surface-container-high transition-colors group border border-transparent hover:border-outline-variant text-left">
+<div class="flex items-center gap-sm overflow-hidden">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors" style="font-size: 16px;">history</span>
+<span class="font-code-sm text-code-sm text-on-surface truncate">config.json</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity" style="font-size: 16px;">open_in_new</span>
+</button>
+</li>
+<!-- History Item 3 -->
+<li>
+<button class="w-full flex items-center justify-between p-sm rounded hover:bg-surface-container-high transition-colors group border border-transparent hover:border-outline-variant text-left">
+<div class="flex items-center gap-sm overflow-hidden">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors" style="font-size: 16px;">history</span>
+<span class="font-code-sm text-code-sm text-on-surface truncate">user_data</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity" style="font-size: 16px;">open_in_new</span>
+</button>
+</li>
+</ul>
+</section>
+</main>
+<!-- Footer -->
+<footer class="mt-auto border-t border-outline-variant bg-surface-container-low px-md py-sm flex justify-between items-center">
+<span class="font-interface-sm text-footer-custom text-on-surface-variant">no ads · open source</span>
+<span class="font-status-label text-footer-custom text-tertiary flex items-center gap-unit">
+<span class="w-[6px] h-[6px] rounded-full bg-tertiary inline-block"></span>
+      local-only
+    </span>
+</footer>
+<script>
+    // Simple textarea auto-focus and clear error on type logic
+    document.addEventListener('DOMContentLoaded', () => {
+      const textarea = document.querySelector('textarea');
+      const errorText = textarea.nextElementSibling.nextElementSibling;
+      
+      textarea.addEventListener('input', () => {
+        if(textarea.classList.contains('border-error')) {
+           textarea.classList.remove('border-error');
+           textarea.classList.remove('focus:ring-error');
+           textarea.classList.add('border-outline-variant');
+           textarea.classList.add('focus:ring-primary');
+           if(errorText) errorText.style.display = 'none';
+        }
+      });
+    });
+  </script>
+</body></html>

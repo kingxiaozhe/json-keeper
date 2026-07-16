@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>JSON Keeper - Table &amp; Diff Views</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "inverse-on-surface": "#2f3034",
+                        "surface-container-lowest": "#0c0e11",
+                        "on-tertiary": "#462a00",
+                        "on-surface-variant": "#c2c6d4",
+                        "on-secondary-fixed": "#00174b",
+                        "surface-bright": "#37393d",
+                        "surface-dim": "#111316",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffddb7",
+                        "surface-container-high": "#282a2d",
+                        "primary-fixed-dim": "#aac7ff",
+                        "surface-tint": "#aac7ff",
+                        "surface-container": "#1e2023",
+                        "primary": "#aac7ff",
+                        "primary-container": "#5b9bff",
+                        "surface-container-highest": "#333538",
+                        "outline": "#8c919e",
+                        "surface-variant": "#333538",
+                        "inverse-surface": "#e2e2e6",
+                        "on-primary-fixed-variant": "#00458e",
+                        "outline-variant": "#424752",
+                        "inverse-primary": "#005cb9",
+                        "tertiary-container": "#d88b00",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-primary": "#002f65",
+                        "on-surface": "#e2e2e6",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "surface-container-low": "#1a1c1f",
+                        "tertiary": "#ffb95d",
+                        "secondary": "#b4c5ff",
+                        "error-container": "#93000a",
+                        "on-tertiary-container": "#4a2d00",
+                        "tertiary-fixed-dim": "#ffb95d",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-background": "#e2e2e6",
+                        "on-primary-container": "#00326a",
+                        "secondary-container": "#0053db",
+                        "background": "#111316",
+                        "surface": "#111316",
+                        "on-primary-fixed": "#001b3e",
+                        "on-secondary": "#002a78",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "primary-fixed": "#d7e3ff",
+                        "on-secondary-container": "#cdd7ff",
+                        "diff-add": "rgba(34, 197, 94, 0.15)",
+                        "diff-add-text": "#4ade80",
+                        "diff-del": "rgba(239, 68, 68, 0.15)",
+                        "diff-del-text": "#f87171"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "panel-padding": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "gutter": "12px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "interface-md": ["Inter"],
+                        "status-label": ["JetBrains Mono"],
+                        "code-sm": ["JetBrains Mono"],
+                        "code-lg": ["JetBrains Mono"],
+                        "interface-sm": ["Inter"],
+                        "code-md": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "interface-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "status-label": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "code-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "code-lg": ["14px", { "lineHeight": "22px", "fontWeight": "500" }],
+                        "interface-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #111316; color: #e2e2e6; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Table styles */
+        .json-table th { @apply border-b border-outline-variant dark:border-outline-variant px-md py-sm text-left font-interface-sm text-interface-sm text-on-surface-variant bg-surface-container-low; }
+        .json-table td { @apply border-b border-outline-variant/30 px-md py-sm font-code-sm text-code-sm text-on-surface whitespace-nowrap; }
+        .json-table tr:hover td { @apply bg-surface-container-high/50; }
+        
+        /* Diff view specific */
+        .diff-line { @apply flex w-full font-code-sm text-code-sm; }
+        .diff-ln { @apply w-12 shrink-0 text-right pr-4 py-0.5 text-outline select-none border-r border-outline-variant/50 bg-surface-container-low/50; }
+        .diff-content { @apply flex-1 pl-4 py-0.5 whitespace-pre; }
+        .diff-added { @apply bg-diff-add; }
+        .diff-added .diff-content { @apply text-diff-add-text; }
+        .diff-removed { @apply bg-diff-del; }
+        .diff-removed .diff-content { @apply text-diff-del-text; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-interface-md h-screen w-full flex flex-col">
+<!-- TopNavBar (JSON Keeper) -->
+<header class="flex justify-between items-center w-full px-panel-padding h-12 bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant shrink-0 z-20">
+<div class="flex items-center gap-md">
+<div class="font-interface-md text-interface-md font-bold text-on-surface dark:text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">data_object</span>
+                JSON Keeper
+            </div>
+</div>
+<nav class="flex items-center gap-xs h-full">
+<button class="px-sm h-full flex flex-col justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors">
+<span class="font-interface-md text-interface-md">Raw</span>
+</button>
+<button class="px-sm h-full flex flex-col justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors">
+<span class="font-interface-md text-interface-md">Pretty</span>
+</button>
+<button class="px-sm h-full flex flex-col justify-center text-primary dark:text-primary border-b-2 border-primary pb-1 opacity-80 transition-opacity">
+<span class="font-interface-md text-interface-md">Table</span>
+</button>
+<button class="px-sm h-full flex flex-col justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors">
+<span class="font-interface-md text-interface-md">Min</span>
+</button>
+</nav>
+<div class="flex items-center gap-sm">
+<div class="relative hidden md:flex items-center">
+<input class="bg-surface-container border border-outline-variant rounded-DEFAULT h-8 px-sm py-1 font-interface-sm text-interface-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-48 placeholder-on-surface-variant" placeholder="Search paths..." type="text"/>
+<span class="absolute right-sm text-outline font-code-sm text-[10px]">/</span>
+</div>
+<button class="p-1 rounded hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+</button>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="docked left-0 h-full w-64 border-r border-outline-variant dark:border-outline-variant bg-surface-container dark:bg-surface-container flex flex-col py-md px-sm gap-xs shrink-0 z-10">
+<div class="mb-sm px-sm">
+<h2 class="font-interface-md text-interface-md font-bold text-primary">Structure</h2>
+<p class="font-interface-sm text-interface-sm text-on-surface-variant">Top-level keys</p>
+</div>
+<nav class="flex flex-col gap-1">
+<button class="flex items-center gap-sm px-sm py-2 rounded-lg text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors w-full text-left" onclick="showView('tree-view')">
+<span class="material-symbols-outlined text-[16px]">account_tree</span>
+<span class="font-interface-sm text-interface-sm">Tree</span>
+</button>
+<button class="flex items-center gap-sm px-sm py-2 rounded-lg text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors w-full text-left">
+<span class="material-symbols-outlined text-[16px]">history</span>
+<span class="font-interface-sm text-interface-sm">History</span>
+</button>
+<button class="flex items-center gap-sm px-sm py-2 rounded-lg bg-secondary-container dark:bg-secondary-container text-on-secondary-container dark:text-on-secondary-container font-bold scale-95 transition-transform w-full text-left" onclick="showView('diff-view')">
+<span class="material-symbols-outlined text-[16px]">difference</span>
+<span class="font-interface-sm text-interface-sm">Diff</span>
+</button>
+<button class="flex items-center gap-sm px-sm py-2 rounded-lg text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors w-full text-left">
+<span class="material-symbols-outlined text-[16px]">library_add</span>
+<span class="font-interface-sm text-interface-sm">Compare</span>
+</button>
+</nav>
+<div class="mt-auto px-sm py-xs">
+<div class="text-[10px] uppercase tracking-wider text-outline font-interface-sm mb-1">Context</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-code-sm text-code-sm bg-surface-container-lowest p-2 rounded border border-outline-variant/30">
+<span class="material-symbols-outlined text-[14px]">folder</span>
+<span class="truncate">users_export_prod.json</span>
+</div>
+</div>
+</aside>
+<!-- Main Workspace Area -->
+<main class="flex-1 flex flex-col relative bg-surface-dim overflow-hidden">
+<!-- Breadcrumb / Toolbar Context -->
+<div class="h-8 border-b border-outline-variant/50 bg-surface flex items-center px-panel-padding shrink-0 justify-between">
+<div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
+<span class="hover:text-primary cursor-pointer">root</span>
+<span class="text-outline-variant">&gt;</span>
+<span class="hover:text-primary cursor-pointer">data</span>
+<span class="text-outline-variant">&gt;</span>
+<span class="text-on-surface font-medium">users (Array[4])</span>
+</div>
+<div class="flex gap-2" id="view-controls">
+<div class="bg-surface-container-highest rounded flex p-0.5 border border-outline-variant/50">
+<button class="px-2 py-0.5 rounded-sm text-on-surface bg-surface-variant border border-outline-variant/30 shadow-sm font-interface-sm text-interface-sm" onclick="showView('table-view')">Table View</button>
+<button class="px-2 py-0.5 rounded-sm text-on-surface-variant hover:text-on-surface font-interface-sm text-interface-sm" onclick="showView('diff-view')">Diff View</button>
+</div>
+</div>
+</div>
+<!-- TABLE VIEW (Active by default based on prompt intent for Table) -->
+<div class="flex-1 overflow-auto bg-surface" id="table-view">
+<table class="json-table w-full border-collapse text-left">
+<thead class="sticky top-0 z-10 shadow-sm">
+<tr>
+<th class="w-12 text-center">#</th>
+<th>ID (BigInt)</th>
+<th>Username</th>
+<th>Email</th>
+<th>Role</th>
+<th>Is Active</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="text-center text-outline-variant border-r border-outline-variant/30 bg-surface-container-lowest/50">0</td>
+<td>
+<div class="flex items-center gap-1 text-tertiary group relative cursor-help">
+                                    9007199254740991
+                                    <span class="material-symbols-outlined text-[14px] text-primary">verified</span>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block w-max bg-surface-container-highest border border-outline-variant px-2 py-1 rounded shadow-lg text-[10px] text-on-surface z-50">Precision Guaranteed (Exact)</div>
+</div>
+</td>
+<td class="text-primary-fixed">admin_system</td>
+<td class="text-secondary-fixed">sys@internal.net</td>
+<td><span class="px-1.5 py-0.5 rounded-sm bg-error-container/20 text-error text-[10px] uppercase border border-error/20">Super</span></td>
+<td class="text-primary">true</td>
+</tr>
+<tr>
+<td class="text-center text-outline-variant border-r border-outline-variant/30 bg-surface-container-lowest/50">1</td>
+<td>
+<div class="flex items-center gap-1 text-tertiary">
+                                    9007199254740992
+                                    <span class="material-symbols-outlined text-[14px] text-primary">verified</span>
+</div>
+</td>
+<td class="text-primary-fixed">jdoe_99</td>
+<td class="text-secondary-fixed">john.doe@example.com</td>
+<td class="text-on-surface-variant italic">null</td>
+<td class="text-primary">true</td>
+</tr>
+<tr>
+<td class="text-center text-outline-variant border-r border-outline-variant/30 bg-surface-container-lowest/50">2</td>
+<td>
+<div class="flex items-center gap-1 text-tertiary">
+                                    9007199254740995
+                                </div>
+</td>
+<td class="text-primary-fixed">sarah_connor</td>
+<td class="text-outline-variant">-</td>
+<td class="text-on-surface-variant italic">null</td>
+<td class="text-error">false</td>
+</tr>
+<tr>
+<td class="text-center text-outline-variant border-r border-outline-variant/30 bg-surface-container-lowest/50">3</td>
+<td>
+<div class="flex items-center gap-1 text-tertiary">
+                                    9007199254741008
+                                </div>
+</td>
+<td class="text-primary-fixed">dev_test_acc</td>
+<td class="text-secondary-fixed">dev@test.local</td>
+<td class="text-on-surface-variant italic">null</td>
+<td class="text-primary">true</td>
+</tr>
+</tbody>
+</table>
+<div class="p-md flex justify-center">
+<button class="px-md py-1.5 rounded border border-outline-variant bg-surface-container hover:bg-surface-container-high text-on-surface font-interface-sm text-interface-sm transition-colors flex items-center gap-2">
+                        Load More (96 remaining)
+                    </button>
+</div>
+</div>
+<!-- DIFF VIEW (Hidden by default, toggleable) -->
+<div class="hidden flex-1 flex flex-col overflow-hidden bg-surface" id="diff-view">
+<!-- Diff Toolbar -->
+<div class="h-8 border-b border-outline-variant/30 bg-surface-container-lowest flex items-center px-sm gap-4 shrink-0 font-interface-sm text-interface-sm text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-sm bg-diff-del"></span>
+<span>Original (users_v1.json)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-sm bg-diff-add"></span>
+<span>Modified (users_v2.json)</span>
+</div>
+<div class="ml-auto flex items-center gap-2">
+<button class="text-outline hover:text-primary transition-colors flex items-center gap-1" onclick="toggleEmptyDiff()">
+<span class="material-symbols-outlined text-[14px]">visibility_off</span>
+                            Toggle Empty State
+                        </button>
+</div>
+</div>
+<!-- Diff Content Split -->
+<div class="flex-1 flex overflow-hidden" id="diff-content">
+<!-- Left Side (Original) -->
+<div class="flex-1 overflow-auto border-r border-outline-variant/50 relative hide-scrollbar">
+<div class="absolute inset-0 p-0 font-code-md">
+<div class="diff-line"><div class="diff-ln">1</div><div class="diff-content">{</div></div>
+<div class="diff-line"><div class="diff-ln">2</div><div class="diff-content">  "users": [</div></div>
+<div class="diff-line"><div class="diff-ln">3</div><div class="diff-content">    {</div></div>
+<div class="diff-line diff-removed"><div class="diff-ln">4</div><div class="diff-content">      "id": 9007199254740991,</div></div>
+<div class="diff-line"><div class="diff-ln">5</div><div class="diff-content">      "username": "admin_system",</div></div>
+<div class="diff-line"><div class="diff-ln">6</div><div class="diff-content">      "isActive": true</div></div>
+<div class="diff-line"><div class="diff-ln">7</div><div class="diff-content">    },</div></div>
+<div class="diff-line"><div class="diff-ln">8</div><div class="diff-content">    {</div></div>
+<div class="diff-line diff-removed"><div class="diff-ln">9</div><div class="diff-content">      "id": 9007199254740992,</div></div>
+<div class="diff-line"><div class="diff-ln">10</div><div class="diff-content">      "username": "jdoe_99"</div></div>
+<div class="diff-line"><div class="diff-ln">11</div><div class="diff-content">    }</div></div>
+<div class="diff-line"><div class="diff-ln">12</div><div class="diff-content">  ]</div></div>
+<div class="diff-line"><div class="diff-ln">13</div><div class="diff-content">}</div></div>
+</div>
+</div>
+<!-- Right Side (Modified) -->
+<div class="flex-1 overflow-auto relative hide-scrollbar">
+<div class="absolute inset-0 p-0 font-code-md">
+<div class="diff-line"><div class="diff-ln">1</div><div class="diff-content">{</div></div>
+<div class="diff-line"><div class="diff-ln">2</div><div class="diff-content">  "users": [</div></div>
+<div class="diff-line"><div class="diff-ln">3</div><div class="diff-content">    {</div></div>
+<div class="diff-line diff-added"><div class="diff-ln">4</div><div class="diff-content">      "id": "9007199254740991",</div></div>
+<div class="diff-line"><div class="diff-ln">5</div><div class="diff-content">      "username": "admin_system",</div></div>
+<div class="diff-line"><div class="diff-ln">6</div><div class="diff-content">      "isActive": true</div></div>
+<div class="diff-line"><div class="diff-ln">7</div><div class="diff-content">    },</div></div>
+<div class="diff-line"><div class="diff-ln">8</div><div class="diff-content">    {</div></div>
+<div class="diff-line diff-added"><div class="diff-ln">9</div><div class="diff-content">      "id": "9007199254740992",</div></div>
+<div class="diff-line"><div class="diff-ln">10</div><div class="diff-content">      "username": "jdoe_99",</div></div>
+<div class="diff-line diff-added"><div class="diff-ln">11</div><div class="diff-content">      "email": "john.doe@example.com"</div></div>
+<div class="diff-line"><div class="diff-ln">12</div><div class="diff-content">    }</div></div>
+<div class="diff-line"><div class="diff-ln">13</div><div class="diff-content">  ]</div></div>
+<div class="diff-line"><div class="diff-ln">14</div><div class="diff-content">}</div></div>
+</div>
+</div>
+</div>
+<!-- Empty State (Hidden by default) -->
+<div class="hidden flex-1 flex flex-col items-center justify-center bg-surface-dim" id="diff-empty">
+<span class="material-symbols-outlined text-[48px] text-outline mb-4">task_alt</span>
+<h3 class="font-interface-lg text-interface-lg font-medium text-on-surface mb-2">No changes found</h3>
+<p class="font-interface-md text-interface-md text-on-surface-variant max-w-sm text-center">
+                        The original and modified JSON documents are identical structurally and by value.
+                    </p>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer Status Bar -->
+<footer class="fixed bottom-0 w-full z-50 flex justify-between items-center px-panel-padding h-8 bg-surface-container-low dark:bg-surface-container-low border-t border-outline-variant dark:border-outline-variant cursor-default shrink-0">
+<div class="font-status-label text-status-label text-on-surface-variant">
+            Precision Guaranteed
+        </div>
+<div class="flex items-center gap-4">
+<span class="font-status-label text-status-label text-tertiary dark:text-tertiary hover:text-on-surface dark:hover:text-on-surface transition-colors flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-primary inline-block"></span> Validity: OK
+            </span>
+<span class="font-status-label text-status-label text-tertiary dark:text-tertiary hover:text-on-surface dark:hover:text-on-surface transition-colors">Nodes: 1,240</span>
+<span class="font-status-label text-status-label text-tertiary dark:text-tertiary hover:text-on-surface dark:hover:text-on-surface transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">verified</span> BigInt Safe
+            </span>
+</div>
+</footer>
+<script>
+        function showView(viewId) {
+            document.getElementById('table-view').classList.add('hidden');
+            document.getElementById('diff-view').classList.add('hidden');
+            
+            if(viewId !== 'tree-view') {
+                document.getElementById(viewId).classList.remove('hidden');
+                document.getElementById(viewId).classList.add('flex');
+            }
+            
+            // Update active state in view controls
+            const buttons = document.querySelectorAll('#view-controls button');
+            buttons.forEach(btn => {
+                if(btn.innerText.toLowerCase().includes(viewId.split('-')[0])) {
+                    btn.className = "px-2 py-0.5 rounded-sm text-on-surface bg-surface-variant border border-outline-variant/30 shadow-sm font-interface-sm text-interface-sm";
+                } else {
+                    btn.className = "px-2 py-0.5 rounded-sm text-on-surface-variant hover:text-on-surface font-interface-sm text-interface-sm";
+                }
+            });
+        }
+
+        function toggleEmptyDiff() {
+            const content = document.getElementById('diff-content');
+            const empty = document.getElementById('diff-empty');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                content.classList.add('flex');
+                empty.classList.add('hidden');
+                empty.classList.remove('flex');
+            } else {
+                content.classList.add('hidden');
+                content.classList.remove('flex');
+                empty.classList.remove('hidden');
+                empty.classList.add('flex');
+            }
+        }
+    </script>
+</body></html>
