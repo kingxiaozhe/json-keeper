@@ -6,3 +6,6 @@ design/
 node_modules/
 .DS_Store
 *.log
+
+# Per-machine Claude Code permission grants (the shared config is .claude/CLAUDE.md + rules/).
+.claude/settings.local.json
