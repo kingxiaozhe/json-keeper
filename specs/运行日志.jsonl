@@ -1,0 +1,13 @@
+{"at":"2026-07-16T23:02:05","node":"N1","feature":"-","task":"-","event":"node_enter","detail":"开始初始化：扫描规格、检查工具"}
+{"at":"2026-07-16T23:02:08","node":"N1","feature":"-","task":"-","event":"degrade","detail":"没装 Codex 代码审查工具，只能用备用方案","failure_raw":"(eval):19: command not found: codex"}
+{"at":"2026-07-16T23:02:10","node":"N1","feature":"-","task":"-","event":"pause","detail":"等你拍板：①规格批不批 ②接不接受审查降级 ③四个待裁决问题还没答"}
+{"at":"2026-07-16T23:05:00","node":"N1","feature":"-","task":"-","event":"resume","detail":"你说了开始，规格批准放行"}
+{"at":"2026-07-16T23:05:01","node":"N1","feature":"-","task":"-","event":"decision","detail":"没装Codex仍开跑：你在知情后说开始，视为接受降级；本次所有审查列标降级"}
+{"at":"2026-07-16T23:05:02","node":"N1","feature":"-","task":"-","event":"decision","detail":"线上NaN改数据的缺陷并入功能5，理由：产品卖点就是不偷改数据；放弃了单开feature（会拖长战线）"}
+{"at":"2026-07-16T23:05:03","node":"N1","feature":"-","task":"-","event":"decision","detail":"表格1001条上限留到功能2再定；不单开性能feature（首屏承诺已删）"}
+{"at":"2026-07-16T23:05:05","node":"N2","feature":"1.ui-shell-redesign","task":"-","event":"node_enter","detail":"进入第一个功能：界面重做与代码拆分"}
+{"at":"2026-07-16T23:06:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-001","event":"task_start","detail":"给现有代码补测试，锁住当前行为"}
+{"at":"2026-07-16T23:14:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-001","event":"review","detail":"第1轮审查：备用审查员挑出5个问题，2个严重（测试抓不到真漏洞），全部接受并返工","rounds":1,"blocked":5,"channel":"子agent(降级)"}
+{"at":"2026-07-16T23:18:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-001","event":"decision","detail":"用最小DOM桩测转义调用点，不引jsdom（守零依赖）；放弃了改源码加导出的做法（等于没网先动刀）"}
+{"at":"2026-07-16T23:19:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-001","event":"error","detail":"自己的测试写错一条：把文本位置的引号当成漏洞，实为无害，已修正断言"}
+{"at":"2026-07-16T23:20:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-001","event":"task_done","detail":"通过：92条测试全过，5个变异全被抓到"}
