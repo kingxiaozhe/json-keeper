@@ -119,25 +119,46 @@ test("报错行为 — feature 5 的错误定位要在此基础上加字段", as
     assert.throws(() => JSONBig.parse('{"a":1} xx'), /Unexpected trailing characters/);
   });
 
-  // ⚠ 现状缺陷，非期望行为 —— 锁在这里是为了让 feature 5 修它时"改测试"这个动作显式可见。
-  // 详见 specs/5.repair-mode-and-virtual-scroll/requirements.md 的待裁决 1。
-  await t.test("[现状缺陷] 裸负号走 BigInt 分支，抛的是原生错误、无 position", () => {
+  // 以下三条原为 [现状缺陷] 断言（锁住 v0.8.0 的静默改数据行为）。
+  // T-001b 修复后**有意翻转** —— 这个动作就是让修复被看见的机制，正是防护网纪律的用意。
+  await t.test("裸负号报带 position 的 SyntaxError（原为原生 BigInt 错误、无 position）", () => {
     assert.throws(() => JSONBig.parse('{"a": -}'), (e) => {
-      assert.ok(!/at position/.test(e.message), "现状：这条路径没有 position");
+      assert.ok(e instanceof SyntaxError, `应为 SyntaxError，实为 ${e.constructor.name}`);
+      assert.match(e.message, /Invalid number: -/);
+      assert.match(e.message, /at position \d+/, "必须带位置，否则错误面板定位不了");
       return true;
     });
   });
 
-  await t.test("[现状缺陷] [1e] 解析'成功'为 NaN —— 静默改数据，Copy 出来变 null", () => {
-    const v = JSONBig.parse("[1e]");
-    assert.ok(Number.isNaN(v[0]), "现状：不报错，值是 NaN");
-    assert.equal(JSONBig.stringify(v), "[null]", "现状：复制出去变成 null —— 与产品承诺冲突");
+  await t.test("[1e] 被拒绝（原为解析'成功'返回 NaN → Copy 出 null）", () => {
+    // 原生 JSON.parse 也拒绝它 —— 之前我们比原生更宽松地吐出垃圾
+    assert.throws(() => JSON.parse("[1e]"), SyntaxError, "前提：原生也拒绝");
+    assert.throws(() => JSONBig.parse("[1e]"), /Invalid number: 1e/);
   });
 
-  await t.test("[现状缺陷] [1e999] 解析'成功'为 Infinity —— 同上", () => {
-    const v = JSONBig.parse("[1e999]");
+  await t.test("[1e+] / [-] 等截断字面量同样被拒绝", () => {
+    assert.throws(() => JSONBig.parse("[1e+]"), /Invalid number/);
+    assert.throws(() => JSONBig.parse("[-]"), /Invalid number/);
+  });
+
+  await t.test("[1e999] 溢出为 Infinity 时记入 diag.lossy —— 不静默放行", () => {
+    // 原生 JSON.parse 也返回 Infinity，故这里不拒绝（拒绝会比原生更严），
+    // 但复制出去确实会变 null，所以记下来让 UI 能标出。
+    const diag = { dupKeys: [], bigInts: 0, lossy: [] };
+    const v = JSONBig.parse("[1e999]", diag);
     assert.equal(v[0], Infinity);
-    assert.equal(JSONBig.stringify(v), "[null]");
+    assert.deepEqual(diag.lossy, ["1e999"]);
+  });
+
+  await t.test("正常浮点不进 lossy", () => {
+    const diag = { dupKeys: [], bigInts: 0, lossy: [] };
+    JSONBig.parse("[1.5, 1e10, -2.5e-3]", diag);
+    assert.deepEqual(diag.lossy, []);
+  });
+
+  await t.test("老调用方不传 lossy 字段也不炸（向后兼容）", () => {
+    const diag = { dupKeys: [], bigInts: 0 }; // T-001b 之前的构造形状
+    assert.doesNotThrow(() => JSONBig.parse("[1e999]", diag));
   });
 });
 

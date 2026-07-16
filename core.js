@@ -153,7 +153,7 @@
   function mountViewer(rootEl, rawText, opts) {
     opts = opts || {};
     let value;
-    const diag = { dupKeys: [], bigInts: 0 };
+    const diag = { dupKeys: [], bigInts: 0, lossy: [] };
     try { value = JSONBig.parse(normalize(rawText), diag); }
     catch (e) {
       if (!opts.showErrors) return false;
