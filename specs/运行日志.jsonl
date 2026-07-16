@@ -19,3 +19,6 @@
 {"at":"2026-07-17T00:02:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-002","event":"decision","detail":"删掉byPath的空转守卫而不是补测试：查证是死代码，留着会骗读代码的人"}
 {"at":"2026-07-17T00:03:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-002","event":"decision","detail":"撤回提前接上的面包屑回调：会导致点复制按钮改面包屑，交还给下个任务"}
 {"at":"2026-07-17T00:05:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-002","event":"task_done","detail":"通过：113条测试全过，主文件373降到266行"}
+{"at":"2026-07-17T01:10:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-003","event":"review","detail":"第1轮审查：拆分零回归，但挑出5个问题，1个严重（我的测试是戏台，12个变异跑掉10个），全部接受","rounds":1,"blocked":5,"channel":"子agent(降级)"}
+{"at":"2026-07-17T01:12:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-003","event":"decision","detail":"不引jsdom：产品卖点是零依赖无远程代码，为测试拉几十个依赖不划算；改为把测不到的6条写进人工检查清单"}
+{"at":"2026-07-17T01:15:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-003","event":"task_done","detail":"通过：149条测试全过；诚实记录只有4/10变异被自动抓到"}

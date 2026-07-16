@@ -1,23 +1,14 @@
-// core.js — shared JSON viewer (content-script takeover + viewer page). window.JK.
+// core.js — the orchestrator. Owns the parsed value and the view state; everything visual
+// lives in toolbar / tree / rail / search / status. window.JK.mountViewer.
 //
 // Layout: toolbar · breadcrumb · [structure rail | tree] · status bar.
-// Features: collapsible tree, per-node hover copy (value / path / subtree),
-// real search (highlight + count + jump + auto-expand), manual theme toggle
-// (remembered), Pretty/Raw/Min, download, smart rail (scroll-spy, auto-hidden
-// for flat JSON), and a large-file guard (tree built on demand). All parsing/
-// serializing via JSONBig so big integers stay exact.
+// All parsing/serializing goes through JSONBig so big integers stay exact.
 (function (global) {
   "use strict";
   const JK = (global.JK = global.JK || {});
   const JSONBig = global.JSONBig;
-  const { esc, escAttr, isContainer, humanSize, store, normalize } = JK.util;
+  const { esc, isContainer, humanSize, store, normalize } = JK.util;
   const LARGE = 1_000_000; // chars; above this, build the tree on demand to avoid freezing the tab
-
-  function applyTheme(rootEl, mode) {
-    const set = (el) => { if (!el) return; if (mode === "auto") el.removeAttribute("data-jk-theme"); else el.setAttribute("data-jk-theme", mode); };
-    set(rootEl.querySelector(".jk-wrap"));
-    set(document.documentElement);
-  }
 
   function download(name, text) {
     const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
@@ -26,14 +17,27 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  const SHELL =
+    '<div class="jk-wrap jk-scope">' +
+      "{BAR}" +
+      '<div class="jk-crumb jk-mono" data-crumb>root</div>' +
+      '<div class="jk-main">' +
+        '<aside class="jk-rail" data-rail hidden></aside>' +
+        '<div class="jk-scroll"><div data-pretty></div><pre class="jk-raw jk-mono" data-raw hidden></pre></div>' +
+      "</div>" +
+      '<div class="jk-status jk-mono" data-status></div>' +
+    "</div>";
+
   function mountViewer(rootEl, rawText, opts) {
     opts = opts || {};
     // Fail before the caller commits. content.js wipes the host page the moment this returns
-    // true, but the tree is built later, from an async storage callback — so a missing
-    // tree.js used to mean: page erased, then a TypeError nobody catches, then a blank panel
-    // with no explanation. Its `!window.JK` guard can't help; util.js defines JK, so the
-    // guard passes even when nothing else loaded.
-    if (!JK.tree || typeof JK.tree.build !== "function") return false;
+    // true, but the tree is built later, from an async storage callback — so a missing module
+    // used to mean: page erased, then a TypeError nobody catches, then a blank panel. Its
+    // `!window.JK` guard can't help; util.js defines JK, so the guard passes regardless.
+    for (const m of ["tree", "toolbar", "search", "rail", "status"]) {
+      if (!JK[m]) return false;
+    }
+
     let value;
     const diag = { dupKeys: [], bigInts: 0, lossy: [] };
     try { value = JSONBig.parse(normalize(rawText), diag); }
@@ -43,8 +47,8 @@
       return false;
     }
 
-    // Sort-keys (recursive, arrays keep order) toggles a sorted copy used by the
-    // tree AND by copy/pretty/min so what you see equals what you copy.
+    // Sort-keys (recursive, arrays keep order) toggles a sorted copy used by the tree AND by
+    // copy/pretty/min, so what you see equals what you copy.
     const sortValue = (v) => {
       if (Array.isArray(v)) return v.map(sortValue);
       if (v && typeof v === "object" && typeof v !== "bigint") {
@@ -53,103 +57,94 @@
       return v;
     };
     let sorted = false, displayValue = value, pretty, minified;
-    const recompute = () => { displayValue = sorted ? sortValue(value) : value; pretty = JSONBig.stringify(displayValue, 2); minified = JSONBig.stringify(displayValue); };
+    const recompute = () => {
+      displayValue = sorted ? sortValue(value) : value;
+      pretty = JSONBig.stringify(displayValue, 2);
+      minified = JSONBig.stringify(displayValue);
+    };
     recompute();
+
     const original = (opts.originalText != null ? opts.originalText : rawText).trim();
     const topInfo = isContainer(value) ? (Array.isArray(value) ? value.length + " items" : Object.keys(value).length + " keys") : "value";
     const heavy = rawText.length > LARGE;
-
-    // Correctness report — the moat: surface what other viewers silently get wrong.
     const dupes = [...new Set(diag.dupKeys)];
-    const chipHTML = diag.bigInts ? "✓ " + diag.bigInts + " big-ints exact" : "✓ big-ints precise";
-    const warnHTML = dupes.length
-      ? '<span class="jk-warn" title="JSON spec keeps only the last value of a duplicated key; other viewers drop the rest silently">⚠ ' +
-        dupes.length + " duplicate key" + (dupes.length > 1 ? "s" : "") + ": " +
-        dupes.slice(0, 4).map((k) => '"' + esc(k) + '"').join(", ") + (dupes.length > 4 ? "…" : "") + " — last value shown</span>"
-      : "";
 
-    rootEl.innerHTML =
-      '<div class="jk-wrap jk-scope">' +
-        '<div class="jk-bar">' +
-          '<button class="jk-btn" data-act="copy"><svg class="jk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy JSON</button>' +
-          '<div class="jk-seg"><button class="on" data-act="pretty">Pretty</button><button data-act="raw">Raw</button><button data-act="min">Min</button></div>' +
-          '<button class="jk-btn" data-act="fold" style="display:none">⤢ Collapse all</button>' +
-          '<button class="jk-btn" data-act="sort" title="Sort keys A→Z (recursive)">⇅ Sort</button>' +
-          '<div class="jk-search"><svg class="jk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>' +
-            '<input placeholder="Search keys & values"><span class="jk-find-n" data-find hidden></span>' +
-            '<button class="jk-find-b" data-find-prev title="Previous (Shift+Enter)" hidden>↑</button><button class="jk-find-b" data-find-next title="Next (Enter)" hidden>↓</button><kbd>/</kbd></div>' +
-          '<button class="jk-btn jk-icon" data-act="dl" title="Download .json">⤓</button>' +
-          '<button class="jk-btn jk-icon" data-act="theme" title="Theme: auto">◐</button>' +
-          '<select class="jk-skin" data-act="skin" title="Color theme"><option value="default">Default</option><option value="solarized">Solarized</option><option value="monokai">Monokai</option><option value="github">GitHub</option></select>' +
-          '<div class="jk-meta"><span class="jk-mono">' + humanSize(rawText.length) + " · " + topInfo + '</span><span class="jk-chip">' + chipHTML + "</span></div>" +
-          '<span class="jk-flash" data-flash></span>' +
-        "</div>" +
-        '<div class="jk-crumb jk-mono" data-crumb>root</div>' +
-        '<div class="jk-main">' +
-          '<aside class="jk-rail" data-rail hidden></aside>' +
-          '<div class="jk-scroll"><div data-pretty></div><pre class="jk-raw jk-mono" data-raw hidden></pre></div>' +
-        "</div>" +
-        '<div class="jk-status jk-mono" data-status></div>' +
-      "</div>";
+    // Function form, not the string: in a replacement string `$&`, `$'` and `` $` `` are
+    // substitution patterns, so a toolbar label containing one would silently eat part of the
+    // markup. Today's BAR_HTML has no `$`; T-004 rewrites it.
+    rootEl.innerHTML = SHELL.replace("{BAR}", () => JK.toolbar.BAR_HTML);
 
     const $ = (s) => rootEl.querySelector(s);
     const prettyEl = $("[data-pretty]"), rawEl = $("[data-raw]"), scrollEl = $(".jk-scroll");
-    const railEl = $("[data-rail]"), crumbEl = $("[data-crumb]"), statusEl = $("[data-status]");
-    const flash = $("[data-flash]"), foldBtn = $('[data-act="fold"]');
-    const say = (t) => { flash.textContent = t; setTimeout(() => (flash.textContent = ""), 1500); };
-    const carets = () => prettyEl.querySelectorAll(".jk-caret:not(.jk-leaf)");
+    const railEl = $("[data-rail]"), crumbEl = $("[data-crumb]");
 
-    statusEl.innerHTML = heavy
-      ? '<span class="jk-ok">● valid JSON</span>' + warnHTML + '<span class="jk-st">' + humanSize(rawText.length) + ' — large file, tree built on demand</span><span class="jk-spacer"></span><span class="jk-trust">big integers kept exact · no ads · no telemetry</span>'
-      : "";
+    let treeBuilt = false, tree = null, search = null;
+    const getTree = () => tree;
 
-    // ---- tree (built immediately, or lazily for large files) ----
-    // `tree` is the live instance for this viewer; search and the rail act on it rather than
-    // on module state, so a second tree (query results, a Diff pane) can never steal them.
-    let treeBuilt = false, tree = null;
+    const status = JK.status.mount($("[data-status]"));
+    const rail = JK.rail.mount(railEl, { scrollEl });
+    const renderStatus = () => status.render({
+      dupes, nodes: tree && tree.nodes, counts: tree && tree.counts,
+      heavy, size: humanSize(rawText.length), treeBuilt,
+    });
+
     function renderTree() {
       if (treeBuilt) return;
       treeBuilt = true;
-      // No onCrumb here: core still runs its own delegated click handler for the breadcrumb.
-      // Wiring both would double-register — and tree's listener, being deeper in the DOM,
-      // fires first, so core's e.stopPropagation() no longer protects the copy buttons and
-      // clicking ⧉ would start moving the breadcrumb. The handover happens in T-003.
       tree = JK.tree.build(displayValue, prettyEl);
-      const { topLevel, counts, nodes } = tree;
-
-      const hasNested = topLevel.some((t) => !t.leaf);
-      if (hasNested && topLevel.length >= 3) {
-        railEl.hidden = false;
-        railEl.innerHTML = '<div class="jk-rail-h">STRUCTURE</div>' + topLevel.map((t, i) =>
-          '<button class="jk-rail-i" data-i="' + i + '"><span class="jk-rail-k">' + esc(String(t.key)) + "</span>" +
-          (t.leaf ? "" : '<span class="jk-rail-n">' + t.n + "</span>") + "</button>").join("");
-        railEl.querySelectorAll(".jk-rail-i").forEach((b) => b.addEventListener("click", () => {
-          const t = topLevel[+b.dataset.i];
-          scrollEl.scrollTop = t.head.offsetTop - 6;
-          t.head.classList.add("jk-hit"); setTimeout(() => t.head.classList.remove("jk-hit"), 900);
-        }));
-        let raf = 0;
-        scrollEl.addEventListener("scroll", () => {
-          if (raf) return;
-          raf = requestAnimationFrame(() => {
-            raf = 0; const y = scrollEl.scrollTop + 12; let active = 0;
-            topLevel.forEach((t, i) => { if (t.head.offsetTop <= y) active = i; });
-            railEl.querySelectorAll(".jk-rail-i").forEach((x, i) => x.classList.toggle("on", i === active));
-          });
-        });
-      }
-
-      const seg = (n, label) => (n ? '<span class="jk-st"><b>' + n + "</b> " + label + "</span>" : "");
-      statusEl.innerHTML =
-        '<span class="jk-ok">● valid JSON</span>' + warnHTML + '<span class="jk-st">' + nodes + " nodes</span>" +
-        seg(counts.object, "obj") + seg(counts.array, "arr") + seg(counts.string, "str") +
-        seg(counts.number, "num") + seg(counts.boolean, "bool") + seg(counts.null, "null") +
-        '<span class="jk-spacer"></span><span class="jk-trust">big integers kept exact · no ads · no telemetry</span>';
-
-      foldBtn.style.display = carets().length ? "" : "none";
+      rail.render(tree.topLevel);
+      renderStatus();
+      bar.setFoldable(tree.hasContainers);
     }
 
+    function setView(v) {
+      if (v === "pretty") renderTree();
+      bar.setView(v);
+      if (v === "pretty") { prettyEl.hidden = false; rawEl.hidden = true; }
+      else { prettyEl.hidden = true; rawEl.hidden = false; rawEl.textContent = v === "min" ? minified : original; }
+      store.set("jk:view", v);
+    }
+
+    // Rebuilding the tree strands everything that holds rows from the old one. resetFold and
+    // search.reset are not tidiness: without them the Collapse all label lies about a tree
+    // that no longer exists, and the match counter keeps reporting hits on detached rows.
+    function applySort() {
+      bar.setSorted(sorted);
+      recompute();
+      treeBuilt = false; tree = null; prettyEl.innerHTML = "";
+      bar.resetFold();
+      if (search) search.reset();
+      setView(bar.currentView());
+    }
+
+    // Declared after renderTree/setView because its ctx needs them, and read from inside them
+    // — safe only because nothing calls either until after this line. Anything that invokes a
+    // callback during mount() would hit the temporal dead zone.
+    const bar = JK.toolbar.mount(rootEl, {
+      onView: setView,
+      onCopy: async () => {
+        try { await navigator.clipboard.writeText(pretty); bar.setFlash("Copied valid JSON ✓"); }
+        catch { bar.setFlash("Select & ⌘C to copy"); }
+      },
+      onDownload: () => { download("data.json", pretty); bar.setFlash("Downloaded ✓"); },
+      onFold: (on) => { if (tree) on ? tree.collapseAll() : tree.expandAll(); },
+      onSort: () => { sorted = !sorted; store.set("jk:sort", sorted); applySort(); },
+    });
+
+    bar.setMeta(humanSize(rawText.length) + " · " + topInfo);
+    bar.setChip(diag.bigInts ? "✓ " + diag.bigInts + " big-ints exact" : "✓ big-ints precise");
+    renderStatus();
+
+    search = JK.search.mount(rootEl, {
+      scrollEl, getTree, renderTree,
+      ensurePretty: () => { if (bar.currentView() !== "pretty") setView("pretty"); },
+      onExpandAll: () => bar.resetFold(),
+    });
+
     // ---- per-node copy (value / path / subtree) + breadcrumb (delegated) ----
+    // core keeps this rather than tree emitting onCrumb: the copy buttons live inside rows, and
+    // one handler that can stopPropagation before the row-click fallback is what keeps clicking
+    // ⧉ from also moving the breadcrumb.
     prettyEl.addEventListener("click", async (e) => {
       const act = e.target.closest(".jk-act");
       if (act) {
@@ -157,8 +152,13 @@
         const r = act.closest(".jk-row");
         let text, label;
         if (act.dataset.t === "path") { text = r._apath; label = "path"; }
-        else { const v = r._val; text = typeof v === "string" ? v : isContainer(v) ? JSONBig.stringify(v, 2) : JSONBig.stringify(v); label = isContainer(v) ? "subtree" : "value"; }
-        try { await navigator.clipboard.writeText(text); say("Copied " + label + " ✓"); } catch { say("Copy blocked"); }
+        else {
+          const v = r._val;
+          text = typeof v === "string" ? v : isContainer(v) ? JSONBig.stringify(v, 2) : JSONBig.stringify(v);
+          label = isContainer(v) ? "subtree" : "value";
+        }
+        try { await navigator.clipboard.writeText(text); bar.setFlash("Copied " + label + " ✓"); }
+        catch { bar.setFlash("Copy blocked"); }
         if (act.dataset.t === "path" && r.dataset.path) crumbEl.textContent = r.dataset.path;
         return;
       }
@@ -166,101 +166,16 @@
       if (r && r.dataset.path) crumbEl.textContent = r.dataset.path;
     });
 
-    // ---- view (pretty|raw|min); Pretty builds the tree lazily ----
-    const segBtns = { pretty: $('[data-act="pretty"]'), raw: $('[data-act="raw"]'), min: $('[data-act="min"]') };
-    function setView(v) {
-      if (v === "pretty") renderTree();
-      Object.entries(segBtns).forEach(([k, b]) => b.classList.toggle("on", k === v));
-      if (v === "pretty") { prettyEl.hidden = false; rawEl.hidden = true; }
-      else { prettyEl.hidden = true; rawEl.hidden = false; rawEl.textContent = v === "min" ? minified : original; }
-      store.set("jk:view", v);
-    }
-    Object.keys(segBtns).forEach((k) => segBtns[k].addEventListener("click", () => setView(k)));
-
-    // ---- collapse all ----
-    let collapsed = false;
-    foldBtn.addEventListener("click", () => {
-      collapsed = !collapsed;
-      carets().forEach((c) => c._collapse && c._collapse(collapsed));
-      foldBtn.textContent = collapsed ? "⤡ Expand all" : "⤢ Collapse all";
-    });
-
-    // ---- copy whole / download ----
-    $('[data-act="copy"]').addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(pretty); say("Copied valid JSON ✓"); } catch { say("Select & ⌘C to copy"); }
-    });
-    $('[data-act="dl"]').addEventListener("click", () => { download("data.json", pretty); say("Downloaded ✓"); });
-
-    // ---- theme (auto → light → dark), remembered ----
-    const themeBtn = $('[data-act="theme"]');
-    const order = ["auto", "light", "dark"], glyph = { auto: "◐", light: "☀", dark: "☾" };
-    let theme = "auto";
-    const renderTheme = () => { themeBtn.textContent = glyph[theme]; themeBtn.title = "Theme: " + theme; applyTheme(rootEl, theme); };
-    themeBtn.addEventListener("click", () => { theme = order[(order.indexOf(theme) + 1) % 3]; renderTheme(); store.set("jk:theme", theme); });
-    store.get("jk:theme", (t) => { if (t) { theme = t; renderTheme(); } });
-    renderTheme();
-
-    // ---- sort keys (recursive), remembered ----
-    const sortBtn = $('[data-act="sort"]');
-    function applySort() {
-      sortBtn.classList.toggle("on", sorted);
-      recompute();
-      treeBuilt = false; prettyEl.innerHTML = "";
-      const cur = Object.keys(segBtns).find((k) => segBtns[k].classList.contains("on")) || "pretty";
-      setView(cur);
-    }
-    sortBtn.addEventListener("click", () => { sorted = !sorted; store.set("jk:sort", sorted); applySort(); });
     store.get("jk:sort", (v) => { if (v) { sorted = true; applySort(); } });
-
-    // ---- color skin (retints syntax colors over the light/dark base), remembered ----
-    const skinSel = $('[data-act="skin"]');
-    const applySkin = (s) => {
-      const set = (el) => { if (!el) return; if (s === "default") el.removeAttribute("data-jk-skin"); else el.setAttribute("data-jk-skin", s); };
-      set(rootEl.querySelector(".jk-wrap")); set(document.documentElement);
-    };
-    skinSel.addEventListener("change", () => { applySkin(skinSel.value); store.set("jk:skin", skinSel.value); });
-    store.get("jk:skin", (s) => { if (s) { skinSel.value = s; applySkin(s); } });
-
-    // ---- search (highlight + count + jump + auto-expand) ----
-    const searchInput = $(".jk-search input"), findN = $("[data-find]"), prevB = $("[data-find-prev]"), nextB = $("[data-find-next]");
-    let matches = [], cur = -1;
-    const showFind = (on) => [findN, prevB, nextB].forEach((el) => (el.hidden = !on));
-    function goto(i) {
-      if (!matches.length) return;
-      cur = (i + matches.length) % matches.length;
-      matches.forEach((r) => r.classList.remove("jk-current"));
-      const r = matches[cur]; r.classList.add("jk-current");
-      scrollEl.scrollTop = r.offsetTop - scrollEl.clientHeight / 2;
-      findN.textContent = cur + 1 + "/" + matches.length;
-    }
-    function runSearch(q) {
-      renderTree(); // search needs the tree
-      if (segBtns.pretty && !segBtns.pretty.classList.contains("on")) setView("pretty");
-      prettyEl.querySelectorAll(".jk-row").forEach((r) => r.classList.remove("jk-dim", "jk-current"));
-      if (!q) { matches = []; cur = -1; showFind(false); return; }
-      carets().forEach((c) => c._collapse && c._collapse(false));
-      matches = [...prettyEl.querySelectorAll(".jk-row")].filter((r) => r.textContent.toLowerCase().includes(q));
-      prettyEl.querySelectorAll(".jk-row").forEach((r) => { if (!matches.includes(r)) r.classList.add("jk-dim"); });
-      showFind(true);
-      findN.textContent = matches.length ? "1/" + matches.length : "0";
-      cur = -1; if (matches.length) goto(0);
-    }
-    searchInput.addEventListener("input", (e) => runSearch(e.target.value.trim().toLowerCase()));
-    searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); goto(cur + (e.shiftKey ? -1 : 1)); } });
-    nextB.addEventListener("click", () => goto(cur + 1));
-    prevB.addEventListener("click", () => goto(cur - 1));
-    rootEl.addEventListener("keydown", (e) => { if (e.key === "/" && document.activeElement !== searchInput) { e.preventDefault(); searchInput.focus(); } });
 
     // initial view: large files start in Raw (tree on demand); else saved or Pretty
     if (heavy) setView("raw");
-    else store.get("jk:view", (v) => setView(v && segBtns[v] ? v : "pretty"));
+    else store.get("jk:view", (v) => setView(v === "raw" || v === "min" ? v : "pretty"));
 
     return true;
   }
 
-  // Merge, don't assign. `global.JK = {...}` here would erase JK.util and JK.tree, which load
-  // first — and content.js's `!window.JK` guard would sail right through, because JK exists;
-  // it just has no tree on it.
+  // Merge, don't assign. `global.JK = {...}` here would erase the modules loaded before it.
   JK.mountViewer = mountViewer;
   // JK.normalize is set by util.js.
 })(typeof window !== "undefined" ? window : globalThis);

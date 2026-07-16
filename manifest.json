@@ -24,6 +24,10 @@
         "jsonbig.js",
         "util.js",
         "tree.js",
+        "toolbar.js",
+        "search.js",
+        "rail.js",
+        "status.js",
         "core.js",
         "content.js"
       ],

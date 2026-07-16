@@ -23,6 +23,14 @@ node --test "tests/*.test.mjs"     # 引号必须有
 - 改动存量模块前后各跑一次。**变红 = 碰坏了老行为**，不是"测试过时了"。
 - browser_driver: chrome-mcp（cm-qa-engineer 读取本字段；本项目是扩展，Playwright 需额外加载解压扩展的配置）
 
+### ⚠ 自动化测试测不到什么（别高估它）
+
+产品用 `innerHTML` 字符串建 UI，而 `tests/_dom.mjs` 是手写桩、**不解析 HTML** —— 所以 `$('[data-act="fold"]')` 这类查询拿到的是幻影元素。**凡依赖工具栏按钮的行为，自动化测试一律测不到**（实测：把 Collapse all 变成死键、删掉 `rail.render()`、`currentView()` 硬编码 —— 变异全部存活）。
+
+不引 jsdom 是有意的：这个扩展的立身之本是零依赖、无远程代码、审核可读，为测试拉进几十个传递依赖与之冲突。
+
+**代价是下面第 11–15 项必须人工跑，它们是那一层唯一的网。**
+
 ## 手动冒烟清单（每次发版前全跑，改哪块至少跑对应项）
 
 1. **接管**：起本地 JSON（`python3 -m http.server` + 一个 .json）→ 访问 → 页面被树视图接管。
@@ -35,6 +43,14 @@ node --test "tests/*.test.mjs"     # 引号必须有
 8. **大文件不卡**：> 1MB JSON → 默认 Raw、标签页不冻结；切 Pretty 才建树。
 9. **XSS**：喂 `{"<img src=x onerror=alert(1)>": "<script>alert(1)</script>"}` → 页面**无弹窗**，恶意串以纯文本显示（含 hover title 属性内）。
 10. **popup → viewer**：粘贴框输入 → 打开 viewer 且内容已渲染；`jk:pending` 已被清除。
+
+> 以下 11–15 项覆盖自动化测试**结构性测不到**的工具栏交互层（见上）。改了 `toolbar.js`/`search.js`/`rail.js`/`core.js` 的装配就必须跑。每一项都对应一个实测存活过的变异 —— 不是假想。
+
+11. **Collapse all 不是死键**：打开嵌套 JSON → 点 `⤢ Collapse all` → 树**真的折叠**、标签变 `⤡ Expand all` → 再点 → 真的展开。（变异「删掉 `ctx.onFold`」自动化测试抓不到。）
+12. **Collapse all 的显隐**：喂 `{"a":1,"b":2}`（纯标量顶层）→ 按钮**不出现**；喂嵌套 JSON → 出现。（变异「删掉 `setFoldable`」抓不到。）
+13. **结构栏渲染**：喂 3 个以上顶层 key 且有嵌套的 JSON → 左侧 `STRUCTURE` 栏出现、点击能跳、滚动时高亮跟随。（变异「删掉 `rail.render`」抓不到。）
+14. **Raw 下搜索能切回**：切到 Raw → 在搜索框输入 → **自动切回 Pretty 并高亮命中**。（变异「`ensurePretty` 空操作」抓不到。）
+15. **排序不留悬空状态**：搜一个词（计数显示 `1/N`）→ 点 `⇅ Sort` → **计数清空、搜索框清空**，不再报「1/N」也不再有高亮。折叠后点 Sort → 折叠按钮回到 `⤢ Collapse all`，**一次点击就能折叠**（不是两次）。
 
 ## 正确性夹具
 

@@ -33,7 +33,7 @@
   - `tree.js` 同步补两处（jumpTo 与 feature 2/3 的前置）：**容器根行补 `apath = ""`**（现状 `core.js:127` 只传 3 参 → 根行无 `_apath`）；`build` 增加 `{ basePath, onCrumb }` 入参。
   - `util.js` 新增 `isIntegerLike(v)`（feature 2/3 类型判定共用）。
   - 完成后复跑 T-001 基线 + 冒烟清单第 1/2/3/7 项（接管 / 不误伤普通页 / 大整数保真 / **XSSI+JSONP 容错**）。
-- [ ] T-003: 核对闭包变量归属 → 拆出 `toolbar.js` / `search.js` / `rail.js` / `status.js`，`core.js` 收敛为编排层 ~1h30
+- [x] T-003: 核对闭包变量归属 → 拆出 `toolbar.js` / `search.js` / `rail.js` / `status.js`，`core.js` 收敛为编排层 ~1h30
   - 涉及模块: `core.js`、上述 4 个新文件、`manifest.json`、`viewer.html`
   - **动手前先核对 design.md 的「mountViewer 闭包变量归属」表** —— 逐个确认 `_collapse`/`carets`/`scrollEl`/`crumbEl`/`displayValue`/`diag` 的去处。跳过这步会在"保持契约不变"与"保持行为不变"之间被迫二选一。
   - `tree.build` 的返回值必须导出 `expandAll`/`collapseAll`/`hasContainers`/`rows` —— 搜索的自动展开（`core.js:352`）与 Collapse all 的标签切换/自动隐藏（`core.js:296`/`260`）都依赖它们，缺了即行为退化。
