@@ -23,6 +23,7 @@ class El {
     this.style = {};
     this._attrs = {};
     this._q = new Map();
+    this._ls = {};
     this.hidden = false;
     this.value = "";
     this.children = [];
@@ -53,11 +54,16 @@ class El {
     return this._q.get(sel);
   }
   querySelectorAll() { return []; }
-  addEventListener() {}
+  addEventListener(t, fn) { this._on(t, fn); }
   setAttribute(k, v) { this._attrs[k] = String(v); }
   removeAttribute(k) { delete this._attrs[k]; }
   getAttribute(k) { return this._attrs[k] ?? null; }
   closest() { return null; }
+  // 记住监听器并提供 _click —— 空的 addEventListener 会把回调全丢掉，
+  // 于是「点了会怎样」这类断言永远测不到（L-007：桩留不住的状态 = 测不到的行为）。
+  _on(type, fn) { (this._ls[type] || (this._ls[type] = [])).push(fn); }
+  _click() { const e = { target: this, stopPropagation() {}, preventDefault() {} };
+    (this._ls.click || []).forEach((f) => f(e)); }
   // 把整棵桩树的 innerHTML 拼起来 —— 断言就对着这串文本做。
   collectHTML() {
     return this._html + this.children.map((c) => (c.collectHTML ? c.collectHTML() : "")).join("");
@@ -65,7 +71,19 @@ class El {
 }
 
 export function installDOM() {
-  globalThis.document = { createElement: (t) => new El(t) };
+  // document 不是 El，得有自己的监听器表 —— 溢出菜单靠 document 上的 click 来关闭。
+  const docLs = {};
+  globalThis.document = {
+    createElement: (t) => new El(t),
+    addEventListener(type, fn) { (docLs[type] || (docLs[type] = [])).push(fn); },
+    removeEventListener(type, fn) {
+      const a = docLs[type]; if (!a) return;
+      const i = a.indexOf(fn); if (i >= 0) a.splice(i, 1);
+    },
+    documentElement: new El("html"),
+    _fire(type) { (docLs[type] || []).forEach((f) => f({ target: null, stopPropagation() {} })); },
+    _count(type) { return (docLs[type] || []).length; },
+  };
   return { El };
 }
 

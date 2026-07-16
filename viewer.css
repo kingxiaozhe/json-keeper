@@ -52,6 +52,29 @@ html.jk-active .jk-root { height:100vh; }
 .jk-btn.jk-primary { background:var(--jk-accent); border-color:var(--jk-accent); color:#fff; }
 .jk-btn.jk-primary:hover { color:#fff; filter:brightness(1.06); }
 .jk-ic { width:14px; height:14px; }
+/* Sorting is remembered across sessions and Copy JSON hands back the sorted order, so the fact
+   has to live in the strip that never moves — not behind the ⋯ menu. Warning-toned, not error:
+   sorting is a feature the user asked for, it just must not be invisible. */
+.jk-chip-sort { color:var(--jk-num); border-color:color-mix(in srgb, var(--jk-num) 35%, transparent); }
+.jk-chip-sort[hidden] { display:none; }
+
+/* overflow menu — where every occasional control lives, and where later features hang theirs.
+   The popup must sit above the tree (which paints its own rows), hence the z-index. */
+.jk-menu { position:relative; flex:0 0 auto; }
+.jk-menu-pop { position:absolute; top:calc(100% + 6px); right:0; z-index:20; min-width:200px;
+  padding:5px; background:var(--jk-panel); border:1px solid var(--jk-border2); border-radius:9px;
+  box-shadow:var(--jk-shadow); display:flex; flex-direction:column; gap:2px; }
+.jk-menu-g { display:flex; flex-direction:column; gap:2px; }
+.jk-menu-g + .jk-menu-g { margin-top:5px; padding-top:5px; border-top:1px solid var(--jk-border); }
+.jk-menu-i { font:inherit; font-size:12.5px; text-align:left; white-space:nowrap; padding:6px 9px;
+  border:0; border-radius:6px; background:transparent; color:var(--jk-fg); cursor:pointer; }
+.jk-menu-i:hover { background:var(--jk-panel2); }
+.jk-menu-i:focus-visible { outline:2px solid var(--jk-accent); outline-offset:-2px; }
+.jk-menu-i.on { color:var(--jk-accent); background:var(--jk-accent-soft); }
+.jk-menu-i[hidden] { display:none; }
+.jk-menu-row { display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:default; }
+.jk-menu-row:hover { background:transparent; }
+
 .jk-seg { display:flex; border:1px solid var(--jk-border2); border-radius:7px; overflow:hidden; }
 .jk-seg button { font:inherit; font-size:12.5px; font-weight:540; white-space:nowrap; padding:6px 11px; border:0; background:var(--jk-panel); color:var(--jk-dim); cursor:pointer; }
 .jk-seg button.on { background:var(--jk-accent-soft); color:var(--jk-accent); }

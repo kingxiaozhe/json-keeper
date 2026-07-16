@@ -49,7 +49,7 @@
 
 ### 功能 2: 工具栏信息架构（F-003/F-004）
 
-- [ ] T-004: 实现三段式工具栏 + `⋯` 溢出菜单 + `addMenuItem` 契约 ~1h
+- [x] T-004: 实现三段式工具栏 + `⋯` 溢出菜单 + `addMenuItem` 契约 ~1h
   - 涉及模块: `toolbar.js`、`viewer.css`
   - Collapse all / Sort / Download / 主题 / 配色 收进菜单；Copy JSON、视图分段器、搜索框、元信息+信任徽章常驻。
   - 信任徽章 `✓ N big-ints exact` 常驻右侧，不得进菜单。

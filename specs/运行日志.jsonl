@@ -25,3 +25,7 @@
 {"at":"2026-07-17T02:05:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-003b","event":"review","detail":"第1轮审查：独立打了17个靶，10个存活；挑出4个问题（含我的测试断言与实际相反），全部接受","rounds":1,"blocked":4,"channel":"子agent(降级)"}
 {"at":"2026-07-17T02:07:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-003b","event":"decision","detail":"删掉自己写的安慰剂测试而不是修它：它断言的前提与生产相反，改对了也测不到东西；改由人工清单第16-19项兜底"}
 {"at":"2026-07-17T02:10:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-003b","event":"task_done","detail":"通过：160条测试全过；顺带修了两个老毛病（Raw下点结构栏没反应、折叠块漏内容）"}
+{"at":"2026-07-17T02:50:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-004","event":"review","detail":"第1轮审查：挑出6个问题，含2个我造的回归（Raw下折叠键会撒谎、排序状态藏进菜单导致静默重排），全部接受","rounds":1,"blocked":6,"channel":"子agent(降级)"}
+{"at":"2026-07-17T02:52:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-004","event":"decision","detail":"排序状态提到常驻区加徽章：保留功能与记忆，但不能让用户不知情地复制走重排过的JSON；放弃了取消持久化（那是砍功能）"}
+{"at":"2026-07-17T02:53:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-004","event":"decision","detail":"摘掉ARIA的role=menu而不是去实现它：低频菜单不值得做完整键盘控件，且select当menu子节点是结构违规；Tab和Esc本来就能用"}
+{"at":"2026-07-17T02:55:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-004","event":"task_done","detail":"通过：195条测试全过；换肤从零覆盖变成4个变异全抓"}
