@@ -36,6 +36,7 @@
     opts = opts || {};
     const basePath = opts.basePath || "";
     const onCrumb = opts.onCrumb;
+    const scrollEl = opts.scrollEl;
 
     mount.innerHTML = "";
     const tree = document.createElement("div");
@@ -44,6 +45,11 @@
     const byPath = new Map();
     const counts = { string: 0, number: 0, boolean: 0, null: 0, object: 0, array: 0 };
     let line = 1, nodes = 0;
+    // Suppresses the re-hide pass during expandAll/collapseAll, where every caret is being set
+    // anyway and the pass would only fight the loop.
+    let bulk = false;
+    const reassertCollapsed = () =>
+      carets.forEach((c) => { if (c.classList.contains("jk-collapsed")) c._collapse(true); });
 
     const tally = (v) => {
       nodes++;
@@ -102,14 +108,23 @@
         row(depth, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + close + "</span>" + comma);
         const blockRows = rows.slice(startIdx);
         const caret = head.querySelector(".jk-caret"), prev = head.querySelector(".jk-prev"), count = head.querySelector(".jk-count");
-        caret._collapse = (on) => { caret.classList.toggle("jk-collapsed", on); blockRows.forEach((r) => (r.style.display = on ? "none" : "")); prev.hidden = !on; count.hidden = on; };
+        caret._collapse = (on) => {
+          caret.classList.toggle("jk-collapsed", on);
+          blockRows.forEach((r) => (r.style.display = on ? "none" : ""));
+          prev.hidden = !on;
+          count.hidden = on;
+          // blockRows is every descendant, so expanding also un-hides rows sitting inside
+          // blocks that are themselves still collapsed — a caret claiming to be shut with its
+          // contents on display. Put those back.
+          if (!on && !bulk) reassertCollapsed();
+        };
         caret._depth = depth;
         carets.push(caret);
         caret.addEventListener("click", (e) => { e.stopPropagation(); caret._collapse(!caret.classList.contains("jk-collapsed")); });
-        if (depth === 1) topLevel.push({ key: arr ? "[" + key + "]" : key, head, n: entries.length });
+        if (depth === 1) topLevel.push({ key: arr ? "[" + key + "]" : key, head, n: entries.length, apath });
       } else {
         const r = row(depth, '<span class="jk-caret jk-leaf">▾</span>' + keyHTML + valueHTML(val) + comma, crumb, apath, val, true);
-        if (depth === 1) topLevel.push({ key: key === null ? "·" : key, head: r, leaf: true });
+        if (depth === 1) topLevel.push({ key: key === null ? "·" : key, head: r, leaf: true, apath });
       }
     }
 
@@ -138,25 +153,52 @@
       });
     }
 
-    const setAll = (on) => carets.forEach((c) => c._collapse(on));
+    const setAll = (on) => { bulk = true; carets.forEach((c) => c._collapse(on)); bulk = false; };
+
+    // Expand every ancestor of a row, so a jump target inside a collapsed block is actually on
+    // screen. Ancestors are the carets above it with a smaller depth — cheap to find by walking
+    // back through rows rather than threading parent links through the build.
+    function expandTo(rowEl) {
+      const idx = rows.indexOf(rowEl);
+      if (idx < 0) return;
+      let want = rowEl._depth;
+      for (let k = idx; k >= 0 && want > 0; k--) {
+        const c = rows[k].querySelector(".jk-caret");
+        if (c && c._collapse && rows[k]._depth < want) { c._collapse(false); want = rows[k]._depth; }
+      }
+    }
+
+    // jumpTo(apath) — scroll to a node and flag it.
+    //
+    // The rail's older `scrollTop = head.offsetTop - 6` only ever worked because its targets are
+    // top-level rows, which are never hidden. An arbitrary node can sit inside a collapsed
+    // block, and a display:none row reports offsetTop 0 — so without expanding first, a jump
+    // lands at the top of the page with the highlight on something invisible. The rail now
+    // routes through here too, so there is one implementation rather than two.
+    //
+    // align "center" suits an arbitrary node; "top" preserves the rail's original framing.
+    function jumpTo(apath, o) {
+      const row = byPath.get(apath);
+      if (!row) return false;
+      expandTo(row);
+      if (scrollEl) {
+        const top = (o && o.align === "top")
+          ? row.offsetTop - 6
+          : row.offsetTop - scrollEl.clientHeight / 2;
+        scrollEl.scrollTop = Math.max(0, top);
+      }
+      row.classList.add("jk-hit");
+      setTimeout(() => row.classList.remove("jk-hit"), 900);
+      return true;
+    }
 
     return {
       mount, rows, topLevel, counts, nodes, byPath,
       hasContainers: carets.length > 0,
       expandAll: () => setAll(false),
       collapseAll: () => setAll(true),
-      // Expand every ancestor of a row, so a jump target inside a collapsed block is actually
-      // on screen. Ancestors are the carets above it with a smaller depth — cheap to find by
-      // walking back through rows rather than threading parent links through the build.
-      expandTo(rowEl) {
-        const idx = rows.indexOf(rowEl);
-        if (idx < 0) return;
-        let want = rowEl._depth;
-        for (let k = idx; k >= 0 && want > 0; k--) {
-          const c = rows[k].querySelector(".jk-caret");
-          if (c && c._collapse && rows[k]._depth < want) { c._collapse(false); want = rows[k]._depth; }
-        }
-      },
+      expandTo,
+      jumpTo,
       destroy() { mount.innerHTML = ""; },
     };
   }

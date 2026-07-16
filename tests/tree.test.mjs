@@ -210,8 +210,8 @@ test("折叠机制 —— 真的隐藏子行、真的切预览", async (t) => {
   });
 });
 
-test("expandTo —— jumpTo 的地基（T-003b 会直接建在它上面）", async (t) => {
-  await t.test("只展开目标的祖先链，不动兄弟", () => {
+test("expandTo —— jumpTo 的地基", async (t) => {
+  await t.test("展开目标的祖先链，目标变可见", () => {
     const tr = buildTree({ app: { db: { conn: { host: "h" }, pool: 1 } }, log: { level: "x" } }, makeMount());
     tr.collapseAll();
     const target = tr.byPath.get("app.db.conn.host");
@@ -220,10 +220,101 @@ test("expandTo —— jumpTo 的地基（T-003b 会直接建在它上面）", as
     assert.notEqual(target.style.display, "none", "目标行必须可见，否则 jumpTo 会滚到一个隐藏行");
   });
 
+  // 这条原来的标题写着"不动兄弟"，但断言只查了目标 —— 标题在撒谎，而底下真的有 bug：
+  // _collapse 的 blockRows 是**全部后代**，展开外层会连内层仍折叠的块一起露出来。
+  // 结果是 caret 显示折叠、内容却露着。折叠全部后手动点开一个块，今天就能复现。
+  await t.test("不把仍折叠的内层块一起露出来（_collapse 的 blockRows 是全部后代）", () => {
+    const tr = buildTree({ app: { db: { conn: { host: "h" } }, cache: { ttl: 9 } }, log: { level: "x" } }, makeMount());
+    tr.collapseAll();
+    tr.expandTo(tr.byPath.get("app.db.conn.host"));
+    assert.equal(tr.byPath.get("app.db.conn.host").style.display, "", "目标可见");
+    assert.equal(tr.byPath.get("app.cache.ttl").style.display, "none",
+      "app.cache 仍是折叠的，它的内容不该露出来");
+    assert.equal(tr.byPath.get("log.level").style.display, "none", "不相干的分支更不该露");
+  });
+
+  await t.test("手动展开一个块时同样不泄漏（不经 jumpTo 也能复现的路径）", () => {
+    const tr = buildTree({ app: { db: { x: 1 } , cache: { y: 2 } } }, makeMount());
+    tr.collapseAll();
+    tr.byPath.get("app").querySelector(".jk-caret")._collapse(false); // 只展开 app
+    assert.equal(tr.byPath.get("app.db.x").style.display, "none", "app.db 仍折叠，内容不该露");
+  });
+
+  // 反向断言 —— 缺了它，把祖先判定 rows[k]._depth < want 改成 <= 会误展开同深度的兄弟块，
+  // 而 160 条测试全绿（对抗审查实测）。只断言"目标可见了"是不够的：一个把整棵树全展开的
+  // 实现同样能让目标可见。
+  await t.test("同深度的兄弟块不被误展开（祖先判定必须是严格小于）", () => {
+    const tr = buildTree({ a: { x: 1 }, b: { y: 2 }, c: 3 }, makeMount());
+    tr.collapseAll();
+    tr.expandTo(tr.byPath.get("b.y"));
+    assert.equal(tr.byPath.get("b.y").style.display, "", "目标可见");
+    assert.equal(tr.byPath.get("a.x").style.display, "none", "兄弟块 a 不该被展开");
+  });
+
+  await t.test("expandAll 之后一切可见（重新断言：修复不能把批量展开搞坏）", () => {
+    const tr = buildTree({ app: { db: { x: 1 }, cache: { y: 2 } } }, makeMount());
+    tr.collapseAll();
+    tr.expandAll();
+    assert.equal(tr.byPath.get("app.db.x").style.display, "");
+    assert.equal(tr.byPath.get("app.cache.y").style.display, "");
+  });
+
   await t.test("对不在本树的行安全返回", () => {
     const tr = buildTree({ a: 1 }, makeMount());
     const alien = buildTree({ z: 9 }, makeMount()).rows[0];
     assert.doesNotThrow(() => tr.expandTo(alien));
+  });
+});
+
+// T-003b。靶子先于测试选定（L-009）：这个改动最可能怎么坏？
+// ① 跳到折叠块里的节点 → 不展开 → 滚到页顶、高亮在隐藏行上
+// ② apath 不存在 → 应安全返回 false，不是抛异常
+// ③ align 用错 → rail 的取景变了
+// ④ Sort 重建后 byPath 是旧的 → 跳到 detached 行
+test("jumpTo —— feature 2 的表格互跳与 feature 3 的校验定位都建在它上面", async (t) => {
+  const mkScroll = () => ({ scrollTop: 0, clientHeight: 100, addEventListener() {} });
+
+  await t.test("跳到折叠块内部的节点时先展开祖先 —— 否则滚到页顶、高亮在隐藏行", () => {
+    const scrollEl = mkScroll();
+    const tr = buildTree({ app: { db: { conn: { host: "h" } } } }, makeMount(), { scrollEl });
+    tr.collapseAll();
+    const target = tr.byPath.get("app.db.conn.host");
+    assert.equal(target.style.display, "none", "前提：折叠后目标是隐藏的");
+    assert.equal(tr.jumpTo("app.db.conn.host"), true);
+    assert.notEqual(target.style.display, "none", "jumpTo 必须展开祖先链");
+    assert.ok(target.classList.contains("jk-hit"), "必须高亮目标");
+  });
+
+  await t.test("apath 不存在时返回 false，不抛", () => {
+    const tr = buildTree({ a: 1 }, makeMount(), { scrollEl: mkScroll() });
+    assert.equal(tr.jumpTo("nope.nothere"), false);
+  });
+
+  await t.test("align:top 用 rail 的取景（-6），默认居中", () => {
+    const scrollEl = mkScroll();
+    const tr = buildTree({ a: { b: 1 }, c: 2, d: 3 }, makeMount(), { scrollEl });
+    tr.byPath.get("c").offsetTop = 500;
+    tr.jumpTo("c", { align: "top" });
+    assert.equal(scrollEl.scrollTop, 494, "align:top 应为 offsetTop - 6");
+    tr.jumpTo("c");
+    assert.equal(scrollEl.scrollTop, 450, "默认应居中：offsetTop - clientHeight/2");
+  });
+
+  await t.test("不会滚出负值（目标在顶部时）", () => {
+    const scrollEl = mkScroll();
+    const tr = buildTree({ a: 1 }, makeMount(), { scrollEl });
+    tr.jumpTo("a");
+    assert.ok(scrollEl.scrollTop >= 0, "负的 scrollTop 是无意义的");
+  });
+
+  await t.test("没传 scrollEl 也不炸（子树面板等场景没有滚动容器）", () => {
+    const tr = buildTree({ a: 1 }, makeMount());
+    assert.doesNotThrow(() => tr.jumpTo("a"));
+  });
+
+  await t.test("topLevel 带 apath —— rail 靠它跳转", () => {
+    const tr = buildTree({ a: { x: 1 }, b: { y: 2 }, c: 3 }, makeMount(), { scrollEl: mkScroll() });
+    assert.deepEqual(tr.topLevel.map((t) => t.apath), ["a", "b", "c"]);
   });
 });
 

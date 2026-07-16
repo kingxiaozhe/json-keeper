@@ -40,7 +40,7 @@
   - 面包屑元素由 `core.js` 持有，tree 经 `onCrumb` 回传路径（面包屑由行点击驱动，不是 rail 的产物）。
   - 保持 `mountViewer` / `normalize` 对外契约不变（`content.js` 依赖返回值 `false` 不替换页面）。
   - 验证 `wc -l *.js` 无文件 > 400 行。
-- [ ] T-003b: 实现 `JK.tree.jumpTo(apath)` + apath→row 反查 + 重建失效 ~1h
+- [x] T-003b: 实现 `JK.tree.jumpTo(apath)` + apath→row 反查 + 重建失效 ~1h
   - 涉及模块: `tree.js`、`core.js`
   - **抄 `runSearch`（`core.js:347-352`）的做法，不要抄 `rail.js`** —— rail 的 `offsetTop` 定位只对永不隐藏的顶层节点成立。
   - 必须五步齐全: `renderTree()` → `setView("pretty")` → **展开祖先链** → 滚动 → `jk-hit` 高亮。

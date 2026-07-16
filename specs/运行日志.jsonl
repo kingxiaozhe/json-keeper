@@ -22,3 +22,6 @@
 {"at":"2026-07-17T01:10:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-003","event":"review","detail":"第1轮审查：拆分零回归，但挑出5个问题，1个严重（我的测试是戏台，12个变异跑掉10个），全部接受","rounds":1,"blocked":5,"channel":"子agent(降级)"}
 {"at":"2026-07-17T01:12:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-003","event":"decision","detail":"不引jsdom：产品卖点是零依赖无远程代码，为测试拉几十个依赖不划算；改为把测不到的6条写进人工检查清单"}
 {"at":"2026-07-17T01:15:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-003","event":"task_done","detail":"通过：149条测试全过；诚实记录只有4/10变异被自动抓到"}
+{"at":"2026-07-17T02:05:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-003b","event":"review","detail":"第1轮审查：独立打了17个靶，10个存活；挑出4个问题（含我的测试断言与实际相反），全部接受","rounds":1,"blocked":4,"channel":"子agent(降级)"}
+{"at":"2026-07-17T02:07:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-003b","event":"decision","detail":"删掉自己写的安慰剂测试而不是修它：它断言的前提与生产相反，改对了也测不到东西；改由人工清单第16-19项兜底"}
+{"at":"2026-07-17T02:10:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-003b","event":"task_done","detail":"通过：160条测试全过；顺带修了两个老毛病（Raw下点结构栏没反应、折叠块漏内容）"}

@@ -24,10 +24,10 @@
         '<button class="jk-rail-i" data-i="' + i + '"><span class="jk-rail-k">' + esc(String(t.key)) + "</span>" +
         (t.leaf ? "" : '<span class="jk-rail-n">' + t.n + "</span>") + "</button>").join("");
       railEl.querySelectorAll(".jk-rail-i").forEach((b) => b.addEventListener("click", () => {
-        const t = items[+b.dataset.i];
-        scrollEl.scrollTop = t.head.offsetTop - 6;
-        t.head.classList.add("jk-hit");
-        setTimeout(() => t.head.classList.remove("jk-hit"), 900);
+        // Goes through core's jumpTo rather than scrolling here. One implementation instead of
+        // two, and it fixes the outline being clickable in Raw view while doing nothing visible
+        // — the rail stays on screen there, but the rows it scrolled to were hidden.
+        ctx.jumpTo(items[+b.dataset.i].apath, { align: "top" });
       }));
       return true;
     }

@@ -82,7 +82,7 @@
     const getTree = () => tree;
 
     const status = JK.status.mount($("[data-status]"));
-    const rail = JK.rail.mount(railEl, { scrollEl });
+    const rail = JK.rail.mount(railEl, { scrollEl, jumpTo: jumpToPath });
     const renderStatus = () => status.render({
       dupes, nodes: tree && tree.nodes, counts: tree && tree.counts,
       heavy, size: humanSize(rawText.length), treeBuilt,
@@ -91,18 +91,32 @@
     function renderTree() {
       if (treeBuilt) return;
       treeBuilt = true;
-      tree = JK.tree.build(displayValue, prettyEl);
+      tree = JK.tree.build(displayValue, prettyEl, { scrollEl });
       rail.render(tree.topLevel);
       renderStatus();
       bar.setFoldable(tree.hasContainers);
     }
 
-    function setView(v) {
+    // The single entry point for jumping to a node. The tree can expand and scroll itself, but
+    // only core knows the tree might not be built (large files open in Raw) or that the view
+    // isn't showing it — the rail stays visible in Raw, so clicking an outline entry used to
+    // scroll a hidden element and appear to do nothing at all.
+    // The table's cell clicks (feature 2) and the validator's error list (feature 3) land here.
+    function jumpToPath(apath, o) {
+      renderTree();
+      if (bar.currentView() !== "pretty") setView("pretty", false);
+      return tree ? tree.jumpTo(apath, o) : false;
+    }
+
+    // persist=false for view changes the user didn't ask for. Jumping to a node has to show the
+    // tree, but it's navigation — it shouldn't quietly rewrite which view every future JSON
+    // opens in. (The search box has persisted since before the split; left alone here.)
+    function setView(v, persist) {
       if (v === "pretty") renderTree();
       bar.setView(v);
       if (v === "pretty") { prettyEl.hidden = false; rawEl.hidden = true; }
       else { prettyEl.hidden = true; rawEl.hidden = false; rawEl.textContent = v === "min" ? minified : original; }
-      store.set("jk:view", v);
+      if (persist !== false) store.set("jk:view", v);
     }
 
     // Rebuilding the tree strands everything that holds rows from the old one. resetFold and

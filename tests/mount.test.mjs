@@ -5,11 +5,16 @@
 // **能测的**：接管契约（true/false）、依赖检查、三个信任信号的渲染、状态栏形态、
 // storage 恢复分支（排序/视图/大文件降级）、rail 的显隐判定。
 //
-// **测不到的**（结构性，不是懒）：任何依赖工具栏按钮的行为 —— Collapse all、视图分段器、
-// 搜索框。产品用 `innerHTML` 字符串建 UI，而 `_dom.mjs` 是手写桩、**不解析 HTML**，
-// 于是 `$('[data-act="fold"]')` 拿到的是幻影元素。实测：删掉 `bar.setFoldable()`、
-// 删掉 `rail.render()`、把 Collapse all 变成死键、`currentView()` 硬编码 —— 这些变异
-// **全部存活**。
+// **测不到的**（结构性，不是懒）：任何依赖工具栏按钮或结构栏按钮的行为 —— Collapse all、
+// 视图分段器、搜索框、**rail 点击 → jumpToPath → tree.jumpTo 整条链**。
+// 产品用 `innerHTML` 字符串建 UI，而 `_dom.mjs` 是手写桩、**不解析 HTML**，于是
+// `$('[data-act="fold"]')` 拿到的是幻影元素，`querySelectorAll()` 恒返回 `[]` ——
+// rail 的点击监听在测试里**从未挂上**。
+//
+// 实测存活的变异（对抗审查，不是假想）：删掉 `bar.setFoldable()`、删掉 `rail.render()`、
+// Collapse all 变死键、`currentView()` 硬编码、**core 漏传 `jumpTo` 给 rail（结构栏直接抛异常死掉）**、
+// `jumpToPath` 删掉 `renderTree()`、删掉 `setView("pretty")`、`tree.build` 漏传 `scrollEl`、
+// rail 点击写死 `items[0]`。**全部 160 条测试照样绿。**
 //
 // 这些行为归 `.claude/rules/testing.md` 的手动冒烟清单管（那里已按此加了对应项）。
 // 不引 jsdom 是有意的：这个扩展的立身之本是零依赖、无远程代码、审核可读。
@@ -211,6 +216,13 @@ test("排序与搜索 —— 靠假 chrome.storage 才可达的那一半", async
       assert.match(root.querySelector("[data-status]").innerHTML, /large file/);
     } finally { c.uninstall(); }
   });
+
+  // 这里原本有一条「Raw 视图下跳转会先切回 Pretty」—— 已删除，它是安慰剂：
+  // ① 它从头到尾**没有触发跳转**，只断言了两个前提（删掉 setView("pretty") 整行，它照样绿）；
+  // ② 更糟的是第二个断言与生产**相反**：jk:view=raw 新开时 rail.render 一次都不会调
+  //    （renderTree 只在 setView("pretty") 里调），生产里 railEl.hidden 是 true。
+  //    测试读到 false 纯粹因为桩不解析 SHELL 的 hidden 属性、El.hidden 默认 false。
+  // rail 的点击路径结构性测不到（按钮是幻影元素，L-010）→ 已进冒烟清单第 16–18 项。
 
   await t.test("异步投递（真实 Chrome 的行为）下同样正确", () => {
     const c = installChrome({ "jk:view": "raw" }, { async: true });
