@@ -8,134 +8,10 @@
 // serializing via JSONBig so big integers stay exact.
 (function (global) {
   "use strict";
+  const JK = (global.JK = global.JK || {});
   const JSONBig = global.JSONBig;
-  // esc() for text-node content; escAttr() also neutralizes quotes for use inside
-  // double-quoted HTML attributes (without it, a crafted JSON key could break out
-  // of a title="" attribute and inject markup — an XSS in the viewed page).
-  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-  const escAttr = (s) => esc(s).replace(/"/g, "&quot;");
-  const isContainer = (v) => v && typeof v === "object" && typeof v !== "bigint";
-  const humanSize = (n) => (n < 1024 ? n + " B" : n < 1048576 ? (n / 1024).toFixed(1) + " KB" : (n / 1048576).toFixed(1) + " MB");
-  const idKey = (k) => /^[A-Za-z_$][\w$]*$/.test(k);
+  const { esc, escAttr, isContainer, humanSize, store, normalize } = JK.util;
   const LARGE = 1_000_000; // chars; above this, build the tree on demand to avoid freezing the tab
-
-  const store = {
-    get(k, cb) { try { chrome.storage.local.get(k, (r) => cb(r && r[k])); } catch { cb(undefined); } },
-    set(k, v) { try { chrome.storage.local.set({ [k]: v }); } catch {} },
-  };
-
-  // Strip XSSI guard prefixes ( )]}' , while(1); , for(;;); ) and unwrap JSONP
-  // ( callback({...}) ) so real-world API responses parse instead of erroring.
-  function normalize(text) {
-    let t = String(text).trim();
-    t = t.replace(/^(\)\]\}'?,?|while\s*\(1\);?|for\s*\(;;\);?)\s*/, "").trim();
-    const m = t.match(/^[\w.$]+\s*\(([\s\S]*)\)\s*;?\s*$/);
-    if (m) { const inner = m[1].trim(); if (/^[[{"]/.test(inner)) return inner; }
-    return t;
-  }
-
-  function valueHTML(v) {
-    if (v === null) return '<span class="jk-null">null</span>';
-    const t = typeof v;
-    if (t === "bigint") return '<span class="jk-num jk-precise" title="kept as an exact integer — never rounded to a float">' + v.toString() + "</span>";
-    if (t === "number") return '<span class="jk-num">' + String(v) + "</span>";
-    if (t === "boolean") return '<span class="jk-bool">' + v + "</span>";
-    if (t === "string") return '<span class="jk-str">' + esc(JSONBig.stringify(v)) + "</span>";
-    return "";
-  }
-
-  // accessor path segment (valid-ish JS): .key for identifiers, ["..."] (JSON-escaped) otherwise
-  function childAccessor(parent, key, arr) {
-    if (arr) return parent + "[" + key + "]";
-    if (idKey(key)) return parent ? parent + "." + key : key;
-    return parent + "[" + JSON.stringify(key) + "]";
-  }
-
-  function buildTree(value, mount) {
-    mount.innerHTML = "";
-    const tree = document.createElement("div");
-    tree.className = "jk-tree";
-    const rows = [], topLevel = [];
-    const counts = { string: 0, number: 0, boolean: 0, null: 0, object: 0, array: 0 };
-    let line = 1, nodes = 0;
-
-    const tally = (v) => {
-      nodes++;
-      if (v === null) counts.null++;
-      else if (Array.isArray(v)) counts.array++;
-      else if (typeof v === "object" && typeof v !== "bigint") counts.object++;
-      else if (typeof v === "bigint" || typeof v === "number") counts.number++;
-      else counts[typeof v]++;
-    };
-
-    function row(depth, inner, crumb, apath, val, actionable) {
-      const r = document.createElement("div");
-      r.className = "jk-row";
-      if (crumb) r.dataset.path = crumb;
-      if (apath !== undefined) { r._apath = apath; r._val = val; }
-      const g = document.createElement("span");
-      g.className = "jk-gutter jk-mono";
-      g.textContent = line++;
-      const c = document.createElement("span");
-      c.className = "jk-content";
-      c.innerHTML = '<span class="jk-ind">' + "  ".repeat(depth) + "</span>" + inner;
-      r.append(g, c);
-      if (actionable) {
-        const a = document.createElement("span");
-        a.className = "jk-acts";
-        a.innerHTML =
-          '<button class="jk-act" data-t="copy" title="Copy ' + (isContainer(val) ? "subtree" : "value") + '">⧉</button>' +
-          '<button class="jk-act" data-t="path" title="Copy path: ' + escAttr(apath) + '">path</button>';
-        r.appendChild(a);
-      }
-      rows.push(r);
-      tree.appendChild(r);
-      return r;
-    }
-
-    function walk(key, val, depth, isLast, crumb, apath) {
-      tally(val);
-      const comma = isLast ? "" : '<span class="jk-pun">,</span>';
-      const keyHTML = key !== null ? '<span class="jk-key">"' + esc(key) + '"</span><span class="jk-pun">: </span>' : "";
-      if (isContainer(val)) {
-        const arr = Array.isArray(val);
-        const entries = arr ? val.map((v, i) => [i, v]) : Object.entries(val);
-        const open = arr ? "[" : "{", close = arr ? "]" : "}";
-        const head = row(depth,
-          '<span class="jk-caret">▾</span>' + keyHTML + '<span class="jk-pun">' + open + "</span>" +
-          '<span class="jk-count">' + entries.length + (arr ? " items" : " keys") + "</span>" +
-          '<span class="jk-prev" hidden> … ' + close + comma + "</span>", crumb, apath, val, true);
-        const startIdx = rows.length;
-        entries.forEach(([k, v], i) => walk(arr ? null : k, v, depth + 1, i === entries.length - 1,
-          crumb + (arr ? "[" + k + "]" : " › " + k), childAccessor(apath, k, arr)));
-        row(depth, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + close + "</span>" + comma);
-        const blockRows = rows.slice(startIdx);
-        const caret = head.querySelector(".jk-caret"), prev = head.querySelector(".jk-prev"), count = head.querySelector(".jk-count");
-        caret._collapse = (on) => { caret.classList.toggle("jk-collapsed", on); blockRows.forEach((r) => (r.style.display = on ? "none" : "")); prev.hidden = !on; count.hidden = on; };
-        caret.addEventListener("click", (e) => { e.stopPropagation(); caret._collapse(!caret.classList.contains("jk-collapsed")); });
-        if (depth === 1) topLevel.push({ key: arr ? "[" + key + "]" : key, head, n: entries.length });
-      } else {
-        const r = row(depth, '<span class="jk-caret jk-leaf">▾</span>' + keyHTML + valueHTML(val) + comma, crumb, apath, val, true);
-        if (depth === 1) topLevel.push({ key: key === null ? "·" : key, head: r, leaf: true });
-      }
-    }
-
-    if (isContainer(value)) {
-      tally(value);
-      const arr = Array.isArray(value);
-      const entries = arr ? value.map((v, i) => [i, v]) : Object.entries(value);
-      row(0, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + (arr ? "[" : "{") + "</span>" +
-        '<span class="jk-count">' + entries.length + (arr ? " items" : " keys") + "</span>", "root");
-      entries.forEach(([k, v], i) => walk(arr ? null : k, v, 1, i === entries.length - 1,
-        arr ? "root[" + k + "]" : "root › " + k, childAccessor("", k, arr)));
-      row(0, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + (arr ? "]" : "}") + "</span>");
-    } else {
-      tally(value);
-      row(0, '<span class="jk-caret jk-leaf">▾</span>' + valueHTML(value), "root", "", value, true);
-    }
-    mount.appendChild(tree);
-    return { topLevel, counts, nodes };
-  }
 
   function applyTheme(rootEl, mode) {
     const set = (el) => { if (!el) return; if (mode === "auto") el.removeAttribute("data-jk-theme"); else el.setAttribute("data-jk-theme", mode); };
@@ -152,6 +28,12 @@
 
   function mountViewer(rootEl, rawText, opts) {
     opts = opts || {};
+    // Fail before the caller commits. content.js wipes the host page the moment this returns
+    // true, but the tree is built later, from an async storage callback — so a missing
+    // tree.js used to mean: page erased, then a TypeError nobody catches, then a blank panel
+    // with no explanation. Its `!window.JK` guard can't help; util.js defines JK, so the
+    // guard passes even when nothing else loaded.
+    if (!JK.tree || typeof JK.tree.build !== "function") return false;
     let value;
     const diag = { dupKeys: [], bigInts: 0, lossy: [] };
     try { value = JSONBig.parse(normalize(rawText), diag); }
@@ -222,11 +104,18 @@
       : "";
 
     // ---- tree (built immediately, or lazily for large files) ----
-    let treeBuilt = false;
+    // `tree` is the live instance for this viewer; search and the rail act on it rather than
+    // on module state, so a second tree (query results, a Diff pane) can never steal them.
+    let treeBuilt = false, tree = null;
     function renderTree() {
       if (treeBuilt) return;
       treeBuilt = true;
-      const { topLevel, counts, nodes } = buildTree(displayValue, prettyEl);
+      // No onCrumb here: core still runs its own delegated click handler for the breadcrumb.
+      // Wiring both would double-register — and tree's listener, being deeper in the DOM,
+      // fires first, so core's e.stopPropagation() no longer protects the copy buttons and
+      // clicking ⧉ would start moving the breadcrumb. The handover happens in T-003.
+      tree = JK.tree.build(displayValue, prettyEl);
+      const { topLevel, counts, nodes } = tree;
 
       const hasNested = topLevel.some((t) => !t.leaf);
       if (hasNested && topLevel.length >= 3) {
@@ -369,5 +258,9 @@
     return true;
   }
 
-  global.JK = { mountViewer, normalize };
+  // Merge, don't assign. `global.JK = {...}` here would erase JK.util and JK.tree, which load
+  // first — and content.js's `!window.JK` guard would sail right through, because JK exists;
+  // it just has no tree on it.
+  JK.mountViewer = mountViewer;
+  // JK.normalize is set by util.js.
 })(typeof window !== "undefined" ? window : globalThis);

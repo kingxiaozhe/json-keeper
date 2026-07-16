@@ -6,10 +6,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { installDOM, makeMount } from "./_dom.mjs";
-import { loadInternals } from "./_load.mjs";
+import { loadJK } from "./_load.mjs";
 
-installDOM();
-const { buildTree, valueHTML, childAccessor } = loadInternals();
+installDOM(); // tree.js 顶层不碰 DOM，但 build() 要 —— 先装桩再加载，顺序无所谓，保险起见如此
+const { build: buildTree, valueHTML, childAccessor } = loadJK().tree;
 
 const html = (value) => {
   const mount = makeMount();
@@ -131,11 +131,117 @@ test("buildTree 返回值 — T-003 要在此基础上加 expandAll/collapseAll/
   });
 });
 
-test("[现状缺陷] 容器根行没有 apath —— T-002 要补 apath=\"\"，feature 3 的 AC-207 依赖它", () => {
-  // core.js:127 的 row(0, ..., "root") 只传 3 个参数 → apath 为 undefined → 根行没有 _apath。
-  // 标量根行（core.js:134）却传了 ""。这条断言在 T-002 补齐后会**有意**变红 —— 那正是改动生效的信号。
+test("容器根行有 apath（原为 undefined —— T-002 补齐，feature 3 的 AC-207 依赖它）", () => {
+  // 拆分前 row(0, ..., "root") 只传 3 个参数 → 根行没有 _apath，而标量根行却传了 ""。
+  // 于是"校验器报告顶层缺 key → 树上标红 root"这件事根本没有行可指。现已统一。
   const mount = makeMount();
   buildTree({ a: 1 }, mount);
   const rootRow = mount.children[0].children[0];
-  assert.equal(rootRow._apath, undefined, "现状：容器根行无 _apath");
+  assert.equal(rootRow._apath, "", "容器根行的 apath 应为空串，与标量根行一致");
+});
+
+test("basePath —— 查询结果树的路径基址（feature 2 的 F-105 依赖它）", async (t) => {
+  await t.test("不传 basePath 时行为与拆分前一致", () => {
+    const mount = makeMount();
+    const r = buildTree({ email: "a@b.c" }, mount);
+    assert.equal(r.byPath.get("email")._apath, "email");
+  });
+
+  await t.test("传 basePath 时子路径带上基址 —— 否则复制出的路径是假的", () => {
+    const mount = makeMount();
+    const r = buildTree({ email: "a@b.c" }, mount, { basePath: "users[0]" });
+    assert.ok(r.byPath.has("users[0].email"), `实得: ${[...r.byPath.keys()]}`);
+    assert.equal(r.byPath.get("users[0]")._apath, "users[0]", "根行的 apath 即基址本身");
+  });
+});
+
+test("实例句柄 —— 多棵树共存的前提（Diff 左右两棵 / 结果树 / 子树面板）", async (t) => {
+  await t.test("build 返回实例而非模块级状态", () => {
+    const a = buildTree({ x: { y: 1 } }, makeMount());
+    const b = buildTree({ p: { q: 2 } }, makeMount());
+    assert.notEqual(a.byPath, b.byPath, "两棵树必须各自持有索引");
+    assert.ok(a.byPath.has("x") && !a.byPath.has("p"));
+    assert.ok(b.byPath.has("p") && !b.byPath.has("x"));
+  });
+
+  await t.test("hasContainers —— Collapse all 按钮的显隐依据（原为查 DOM 的 carets().length）", () => {
+    assert.equal(buildTree({ a: 1, b: 2 }, makeMount()).hasContainers, false, "纯标量顶层：无可折叠块");
+    assert.equal(buildTree({ a: { b: 1 } }, makeMount()).hasContainers, true);
+  });
+
+  await t.test("expandAll / collapseAll 可用（搜索的自动展开、Collapse all 都要它）", () => {
+    const t1 = buildTree({ a: { b: 1 } }, makeMount());
+    assert.equal(typeof t1.expandAll, "function");
+    assert.equal(typeof t1.collapseAll, "function");
+    assert.doesNotThrow(() => { t1.collapseAll(); t1.expandAll(); });
+  });
+});
+
+// 以下针对 T-002 **新长出来**的 API。对抗审查用 5 个存活变异证明它们此前完全裸奔 ——
+// 根因是 DOM 桩的 querySelector 每次返回新元素，caret 上的 _collapse 立刻丢失，
+// 于是折叠相关的断言全都空转。桩改成按选择器记忆化后才测得到。这是 L-001 的小范围重演。
+test("折叠机制 —— 真的隐藏子行、真的切预览", async (t) => {
+  const findRow = (tree, pred) => tree.rows.find(pred);
+
+  await t.test("collapseAll 把子行 display 设为 none", () => {
+    const tr = buildTree({ a: { b: 1, c: 2 } }, makeMount());
+    tr.collapseAll();
+    const hidden = tr.rows.filter((r) => r.style.display === "none");
+    assert.ok(hidden.length > 0, "折叠后必须有行被隐藏，否则 Collapse all 是空的");
+  });
+
+  await t.test("expandAll 把子行放回来", () => {
+    const tr = buildTree({ a: { b: 1, c: 2 } }, makeMount());
+    tr.collapseAll();
+    tr.expandAll();
+    assert.equal(tr.rows.filter((r) => r.style.display === "none").length, 0);
+  });
+
+  await t.test("折叠时显示 … } 预览、隐藏计数（否则折叠后看不出里面有东西）", () => {
+    const tr = buildTree({ a: { b: 1 } }, makeMount());
+    const head = findRow(tr, (r) => r.querySelector(".jk-caret")._collapse);
+    const prev = head.querySelector(".jk-prev"), count = head.querySelector(".jk-count");
+    tr.collapseAll();
+    assert.equal(prev.hidden, false, "折叠时预览要显示");
+    assert.equal(count.hidden, true, "折叠时计数要隐藏");
+    tr.expandAll();
+    assert.equal(prev.hidden, true);
+    assert.equal(count.hidden, false);
+  });
+});
+
+test("expandTo —— jumpTo 的地基（T-003b 会直接建在它上面）", async (t) => {
+  await t.test("只展开目标的祖先链，不动兄弟", () => {
+    const tr = buildTree({ app: { db: { conn: { host: "h" }, pool: 1 } }, log: { level: "x" } }, makeMount());
+    tr.collapseAll();
+    const target = tr.byPath.get("app.db.conn.host");
+    assert.ok(target, `找不到目标行: ${[...tr.byPath.keys()]}`);
+    tr.expandTo(target);
+    assert.notEqual(target.style.display, "none", "目标行必须可见，否则 jumpTo 会滚到一个隐藏行");
+  });
+
+  await t.test("对不在本树的行安全返回", () => {
+    const tr = buildTree({ a: 1 }, makeMount());
+    const alien = buildTree({ z: 9 }, makeMount()).rows[0];
+    assert.doesNotThrow(() => tr.expandTo(alien));
+  });
+});
+
+test("byPath —— apath→row 反查（jumpTo / markInvalid 都靠它）", async (t) => {
+  await t.test("每个节点可按 apath 反查到行", () => {
+    const tr = buildTree({ a: { b: 1 } }, makeMount());
+    assert.equal(tr.byPath.get("a.b")._apath, "a.b");
+    assert.equal(tr.byPath.get("a")._apath, "a");
+  });
+
+  await t.test("容器 apath 映射到头行而非闭合行（first-row-wins）", () => {
+    const tr = buildTree({ a: { b: 1 } }, makeMount());
+    const head = tr.byPath.get("a");
+    assert.ok(head.querySelector(".jk-caret")._collapse, "必须是带折叠能力的头行");
+  });
+
+  await t.test("数组索引可反查", () => {
+    const tr = buildTree({ xs: [10, 20] }, makeMount());
+    assert.equal(tr.byPath.get("xs[1]")._val, 20);
+  });
 });

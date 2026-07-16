@@ -15,7 +15,10 @@ class El {
     this._html = "";
     this.dataset = {};
     this.style = {};
+    this._attrs = {};
+    this._q = new Map();
     this.hidden = false;
+    this.value = "";
     this.children = [];
     this.offsetTop = 0;
     this.classList = {
@@ -30,9 +33,19 @@ class El {
   get innerHTML() { return this._html; }
   append(...kids) { this.children.push(...kids); }
   appendChild(k) { this.children.push(k); return k; }
-  querySelector() { return new El("span"); }
+  // 按 (元素, 选择器) 记忆化 —— 必须的，不是优化。
+  // 每次返回新元素时，caret 上挂的 _collapse 会立刻被丢弃，于是 expandTo/collapseAll
+  // 在测试里永远空转、变异永远抓不到。对抗审查用 5 个存活变异证明了这一点（L-001 重演）。
+  querySelector(sel) {
+    if (!this._q.has(sel)) this._q.set(sel, new El("span"));
+    return this._q.get(sel);
+  }
   querySelectorAll() { return []; }
   addEventListener() {}
+  setAttribute(k, v) { this._attrs[k] = String(v); }
+  removeAttribute(k) { delete this._attrs[k]; }
+  getAttribute(k) { return this._attrs[k] ?? null; }
+  closest() { return null; }
   // 把整棵桩树的 innerHTML 拼起来 —— 断言就对着这串文本做。
   collectHTML() {
     return this._html + this.children.map((c) => (c.collectHTML ? c.collectHTML() : "")).join("");

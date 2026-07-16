@@ -3,17 +3,43 @@
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtr4CuVrMPSpVepWIidIqPGCWz+P9UAsSxhLQso9ELXOOO3H7iyBzTLyX+Fzn+JnOeblKErAjTSvu1IcigKGtcJ23a5R6WJPv2ODtIfQaiCeKVqcN1uaWtMMFL3KRgl/b05UAVr61Ss2yXlvExjVELlsO4FNcqiiFpFhbTyIlg8LQ+ClF968hCdNrEDk54AAtFQDixiISfdrxw4Rh3E7wWwqJ4a9QnUrB5yhuOe4oYX2xyxVRyeF/P4EfqJ+Gs/M2mbld0DcURU/enEtD08ynTPiikzRQvS2JNNcqLvMtL90C6C9kWCOlroZ3u03UqvwNj0VwXxxUO2u+ChKSPZfWEQIDAQAB",
   "name": "JSON Keeper",
   "version": "0.8.0",
-  "description": "View, format and copy JSON — with an obvious paste box, one-click valid-JSON copy, and big integers that never lose precision.",
-  "permissions": ["storage"],
-  "host_permissions": ["http://*/*", "https://*/*", "file:///*"],
+  "description": "View, format and copy JSON \u2014 with an obvious paste box, one-click valid-JSON copy, and big integers that never lose precision.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*",
+    "file:///*"
+  ],
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*", "file:///*"],
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "file:///*"
+      ],
       "run_at": "document_end",
-      "js": ["jsonbig.js", "core.js", "content.js"],
-      "css": ["viewer.css"]
+      "js": [
+        "jsonbig.js",
+        "util.js",
+        "tree.js",
+        "core.js",
+        "content.js"
+      ],
+      "css": [
+        "viewer.css"
+      ]
     }
   ],
-  "action": { "default_popup": "popup.html", "default_title": "JSON Keeper" },
-  "icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" }
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "JSON Keeper"
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
 }

@@ -3,16 +3,16 @@
 // 这是全项目唯一的 XSS 防线：content script 把**任意网站**的 JSON 拼进 innerHTML。
 // esc 管文本位置，escAttr 额外中和引号（否则一个精心构造的 key 就能从 title="" 里逃出来注入）。
 //
-// 现在它们是 core.js 的内部 const，没导出 —— loadInternals() 用加宽导出行的方式取件。
-// T-002 把它们移到 util.js 导出后，本文件改为 import util.js，断言必须原样通过。
+// T-002 起它们住在 util.js 并正经导出（此前是 core.js 的内部 const，靠加宽导出行才取得到）。
+// 断言与拆分前**一字未改** —— 这正是防护网要证明的：搬家没有改变行为。
 //
 // 注意：本文件只验函数**本身**。调用点（真正的 XSS 防线装没装）在 tree.test.mjs ——
-// 那是对抗审查抓到的洞：只测函数时，把 core.js 的 esc(key) 改成裸 key，这里照样全绿。
+// 那是对抗审查抓到的洞：只测函数时，把 esc(key) 改成裸 key，这里照样全绿。
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadInternals } from "./_load.mjs";
+import { loadJK } from "./_load.mjs";
 
-const { esc, escAttr } = loadInternals();
+const { esc, escAttr } = loadJK().util;
 
 test("esc — 文本位置转义", async (t) => {
   await t.test("尖括号与和号", () => {

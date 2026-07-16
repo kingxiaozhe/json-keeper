@@ -1,15 +1,15 @@
 // 防护网基线 — normalize() 的现状行为（T-001）。
 //
-// T-002 会把 normalize 从 core.js 搬到 util.js（因为 popup 也要用它做就地试解析）。
-// 搬完后本文件的 import 改指 util.js，断言原样不动 —— 那正是这张网要抓的回归。
+// T-002 起 normalize 住在 util.js（popup 要用它做就地试解析，不该为一个正则加载整个 viewer 栈）。
+// 断言与拆分前**一字未改**。
 //
 // 为什么重要：normalize 是"接管门禁"的一部分（content.js 用它判断页面是不是 JSON），
 // 也是产品宣传的容错能力（冒烟清单第 7 项）。它错了，要么该接管的不接管，要么误伤普通页面。
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadInternals } from "./_load.mjs";
+import { loadJK } from "./_load.mjs";
 
-const { normalize } = loadInternals();
+const { normalize } = loadJK();
 
 test("XSSI 前缀剥离 —— 真实 API 的防盗链前缀", async (t) => {
   await t.test(")]}' 前缀", () => {

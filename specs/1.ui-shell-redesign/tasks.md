@@ -26,7 +26,7 @@
 
 ### 功能 1: core.js 模块拆分（F-013）
 
-- [ ] T-002: 拆出 `util.js`（含 **`normalize`**）与 `tree.js`，更新 `manifest.json` / `viewer.html` 加载顺序 ~1h
+- [x] T-002: 拆出 `util.js`（含 **`normalize`**）与 `tree.js`，更新 `manifest.json` / `viewer.html` 加载顺序 ~1h（实际 ~1h30，含对抗审查后的返工）
   - 涉及模块: `core.js`、`util.js`(新)、`tree.js`(新)、`manifest.json`、`viewer.html`
   - **必须用命名空间合并写法** `var JK = (global.JK = global.JK || {})`，**禁止** `global.JK = {...}` 整对象赋值 —— 现状 `core.js:372` 正是整对象赋值，照搬会把先加载的子模块整体覆盖，导致 `JK.tree.build` 抛 TypeError、接管 100% 失效。
   - `normalize` 归 `util.js`（纯字符串函数，`content.js` 与 popup 都要用），**不留在编排层**。
@@ -104,7 +104,7 @@
 
 ## 风险点
 
-- **拆分静默失效**: 加载顺序错 → `window.JK` 未定义 → `content.js` 安静 return，页面不接管且**无任何报错**。T-001 基线与冒烟第 1 项是唯一防线。
+- ~~**拆分静默失效**: 加载顺序错 → `window.JK` 未定义 → `content.js` 安静 return~~ **（T-002 已证伪且已处置）**：真实情况比这严重得多 —— `util.js` 一加载就建了 `window.JK`，守卫**恒真**；漏登记 `tree.js` 时 `mountViewer` 会先 `return true`（建树在异步 storage 回调里），content.js 据此**清空整个页面**，然后回调抛 TypeError。不是"安静不接管"，是**毁页面**。已修：`mountViewer` 入口检查 `JK.tree` 并返回 false，`content.js` 守卫改查 `mountViewer` 类型；`loader.test.mjs` 按 manifest 驱动加载盯着这条路。见 LESSONS L-006。
 - **设计稿不可直接用**: 稿件依赖 Tailwind CDN + Google Fonts，与零网络红线冲突且 MV3 CSP 会拦。T-005 的实际工作量是"翻译"而非"复制"，预估 1h 可能偏乐观。
 - **基准自带缺陷**: 三张稿全深色、popup 尺寸错、viewer 页无粘贴区 —— 已定为结构基准，不还原这些缺陷；但执行时容易被稿件带偏，T-011 核对以 requirements.md 的 AC 为准，稿件为辅。
 - **无测试资产**: 本 feature 从零建测试骨架，T-001 的 1h 预估含框架搭建，可能偏乐观。

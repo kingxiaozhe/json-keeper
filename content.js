@@ -20,7 +20,10 @@
   const cleaned = window.JK && window.JK.normalize ? window.JK.normalize(rawText) : rawText;
   const looksJson = /^[[{]/.test(cleaned) && /[\]}]$/.test(cleaned);
   const isJsonDoc = ct.includes("json") || (onlyPre && looksJson);
-  if (!isJsonDoc || !rawText || !window.JK) return;
+  // `window.JK` alone stopped meaning "the viewer loaded" once it was split across files —
+  // util.js creates the namespace, so JK exists even if core.js never ran. Check the entry
+  // point itself. (mountViewer does its own dependency check too; this is the outer door.)
+  if (!isJsonDoc || !rawText || !window.JK || typeof window.JK.mountViewer !== "function") return;
 
   // Parse into a detached container first; bail untouched if it isn't valid JSON.
   const root = document.createElement("div");

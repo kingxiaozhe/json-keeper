@@ -15,3 +15,7 @@
 {"at":"2026-07-16T23:28:30","node":"N3","feature":"1.ui-shell-redesign","task":"T-001b","event":"decision","detail":"现在就修不押后到功能5：核实发现我们比原生JSON还宽松地吐垃圾，且只需改几行；放弃了押后（等于明知故犯继续发货）"}
 {"at":"2026-07-16T23:29:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-001b","event":"decision","detail":"1e999 溢出不拒绝只记录：原生也返回Infinity，拒绝会比原生更严可能误伤；放弃了直接报错"}
 {"at":"2026-07-16T23:32:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-001b","event":"task_done","detail":"通过：95条测试全过，与原生行为对齐，大整数精度没受影响"}
+{"at":"2026-07-17T00:00:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-002","event":"review","detail":"第1轮审查：搬运本身零差异，但挑出4个问题，1个严重（拆分会导致清空用户页面），全部接受并修","rounds":1,"blocked":4,"channel":"子agent(降级)"}
+{"at":"2026-07-17T00:02:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-002","event":"decision","detail":"删掉byPath的空转守卫而不是补测试：查证是死代码，留着会骗读代码的人"}
+{"at":"2026-07-17T00:03:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-002","event":"decision","detail":"撤回提前接上的面包屑回调：会导致点复制按钮改面包屑，交还给下个任务"}
+{"at":"2026-07-17T00:05:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-002","event":"task_done","detail":"通过：113条测试全过，主文件373降到266行"}
