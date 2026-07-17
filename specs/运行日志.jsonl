@@ -42,3 +42,9 @@
 {"at":"2026-07-17T06:36:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-008","event":"error","detail":"审查员误跑git checkout清掉了我未提交的改动，它从备份还原了；我逐项核实文件完好"}
 {"at":"2026-07-17T06:37:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-008","event":"decision","detail":"报错文案改用纯文本渲染而不是留转义函数：没有解释HTML的地方就没有注入面，防御要靠人记住，消除不用"}
 {"at":"2026-07-17T06:40:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-008","event":"task_done","detail":"通过：318条测试全过；粘完立刻点就能用了"}
+{"at":"2026-07-17T00:10:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-009","event":"review","detail":"对抗审查回来：11靶8抓3存活；我自报的6/6全抓是循环论证，靶全落在测试覆盖的那部分","轮次":1,"拦截数":4,"通道":"子agent(降级)"}
+{"at":"2026-07-17T00:12:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-009","event":"decision","detail":"计数0/0补上实现；初始态改用异步假storage来测；DOM顺序那根轴桩够不到，删掉恒真测试转手动检查清单，不留假网"}
+{"at":"2026-07-17T00:15:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-009","event":"error","detail":"电脑硬盘满了（926G卷只剩127M），连几百字节的文件都写不下，提交没能落地"}
+{"at":"2026-07-17T00:20:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-009","event":"pause","detail":"等用户清硬盘空间——代码都在，就是存不进版本库"}
+{"at":"2026-07-17T09:30:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-009","event":"resume","detail":"空间回来了（58G可用），工作区完好、337条测试全过，补提交"}
+{"at":"2026-07-17T09:31:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-009","event":"task_done","detail":"通过：空的对象/数组现在会明说自己是空的；搜不到东西时不再整页发灰"}

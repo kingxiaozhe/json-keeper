@@ -36,7 +36,10 @@ class El {
       toggle: (c, on) => (on === undefined ? (this.classList._s.has(c) ? this.classList._s.delete(c) : this.classList._s.add(c)) : on ? this.classList._s.add(c) : this.classList._s.delete(c)),
     };
   }
-  set innerHTML(v) { this._html = String(v); this.children.length = 0; }
+  // innerHTML 赋值会销毁旧子树 —— 所以记忆化的查询结果也必须一起失效，否则
+  // 反复 mount 时桩会把每次都是新元素演成同一个元素被塞了很多次，
+  // 凭空造出一个产品并不存在的泄漏（L-007：桩的保真度决定网说的是真话还是假话）。
+  set innerHTML(v) { this._html = String(v); this.children.length = 0; this._q.clear(); }
   get innerHTML() { return this._html; }
   // 聚合自身 HTML 的文本 + 全部子节点 —— 与真 DOM 的 textContent 语义一致。
   set textContent(v) { this._text = String(v); this._html = ""; this.children.length = 0; }
@@ -46,6 +49,12 @@ class El {
   }
   append(...kids) { this.children.push(...kids); }
   appendChild(k) { this.children.push(k); return k; }
+  insertBefore(k, ref) {
+    const i = ref ? this.children.indexOf(ref) : -1;
+    if (i < 0) this.children.push(k); else this.children.splice(i, 0, k);
+    return k;
+  }
+  get firstChild() { return this.children[0] || null; }
   // 按 (元素, 选择器) 记忆化 —— 必须的，不是优化。
   // 每次返回新元素时，caret 上挂的 _collapse 会立刻被丢弃，于是 expandTo/collapseAll
   // 在测试里永远空转、变异永远抓不到。对抗审查用 5 个存活变异证明了这一点（L-001 重演）。

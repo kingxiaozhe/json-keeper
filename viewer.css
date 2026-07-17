@@ -74,6 +74,13 @@ html.jk-active .jk-root { height:100vh; }
 
 .jk-scroll { flex:1 1 auto; position:relative; overflow:auto; }
 
+/* Zero hits used to mean every row at 26% opacity plus a bare "0" in the toolbar — the document
+   looked broken rather than unmatched. Nothing found, nothing dimmed; this says it in words.
+   Sticky so it stays put if the tree under it is long. */
+.jk-nohits { position:sticky; top:0; z-index:2; padding:7px 14px; font-size:12px;
+  color:var(--jk-dim); background:var(--jk-panel2); border-bottom:1px solid var(--jk-border); }
+.jk-nohits[hidden] { display:none; }
+
 /* tree */
 .jk-tree { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace; font-size:13px; line-height:1.65; padding:8px 0; }
 .jk-row { position:relative; display:flex; align-items:flex-start; padding:0 14px; white-space:pre; transition:background .25s; }
@@ -90,6 +97,8 @@ html.jk-active .jk-root { height:100vh; }
 .jk-key{color:var(--jk-key);} .jk-str{color:var(--jk-str);} .jk-num{color:var(--jk-num);}
 .jk-bool{color:var(--jk-bool);} .jk-null{color:var(--jk-null);} .jk-pun{color:var(--jk-pun);}
 .jk-count { color:var(--jk-faint); font-size:11.5px; margin-left:6px; }
+/* "0 keys" looks like "8 keys"; an empty container should not be mistaken for a failed render. */
+.jk-empty { font-style:italic; }
 .jk-prev { color:var(--jk-faint); font-style:italic; }
 .jk-precise { text-decoration: underline dotted color-mix(in srgb, var(--jk-num) 55%, transparent); text-underline-offset:3px; cursor:help; }
 /* The status bar can only count duplicates; this says which row.

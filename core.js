@@ -116,6 +116,9 @@
       bar.setView(v);
       if (v === "pretty") { prettyEl.hidden = false; rawEl.hidden = true; }
       else { prettyEl.hidden = true; rawEl.hidden = false; rawEl.textContent = v === "min" ? minified : original; }
+      // search's "no match" bar lives in the scroll container alongside the Raw pane, so it has
+      // to know when the tree it describes stops being what's on screen.
+      if (search) search.onViewChange(v);
       if (persist !== false) store.set("jk:view", v);
     }
 

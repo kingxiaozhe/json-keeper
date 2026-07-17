@@ -73,9 +73,11 @@
 - [x] T-008: popup 三态 — 空输入禁用、非法 JSON 就地报错、超长提示 ~30min
   - 涉及模块: `popup.html`、`popup.js`、`manifest.json`
   - **popup 需新引入 `jsonbig.js`** 以就地试解析（现状未引入）—— 这是本任务的主要结构改动。
-- [ ] T-009: 树的空态（空对象/空数组）+ 搜索无结果态 ~30min
-  - 涉及模块: `tree.js`、`search.js`、`viewer.css`
+- [x] T-009: 树的空态（空对象/空数组）+ 搜索无结果态 ~30min
+  - 涉及模块: `tree.js`、`search.js`、`viewer.css`、**`core.js`**（改动面溢出原描述：结果条与 Raw 面板同住 scrollEl，切视图必须由 core 通知 search 撤条）
   - 无结果时**不再给全部行加 `jk-dim`**，改为顶部无结果条 + 计数 `0/0`。
+  - 偏离：空态说明**就地替换头行计数**（`empty object`），不另起说明行 —— 计数位置本来就在头行上，空态是同一信息的不同措辞，不值得多造一行结构。
+  - 未覆盖：结果条「挂在顶部」这条轴桩够不到（scrollEl 在桩里没有孩子）→ 冒烟第 26 条。
 - [ ] T-010: 大文件降级说明 + "构建树"入口 + 建树加载态 ~30min
   - 涉及模块: `status.js`、`core.js`、`viewer.css`
   - 用 `requestAnimationFrame` 让骨架先绘制一帧再同步建树。

@@ -102,6 +102,15 @@
       return r;
     }
 
+    // "0 keys" reads exactly like "8 keys" — same treatment, so an empty container is hard to
+    // tell from a render that failed. Say it in words instead. Not as its own row: rows go into
+    // `rows`, which search matches against, and a search for "empty" would then hit a line that
+    // isn't data.
+    const countHTML = (n, arr) =>
+      n === 0
+        ? '<span class="jk-count jk-empty">' + (arr ? "empty array" : "empty object") + "</span>"
+        : '<span class="jk-count">' + n + (arr ? " items" : " keys") + "</span>";
+
     // The spec says a repeated key keeps the last value and drops the rest, silently. Every
     // other viewer lets that happen quietly; saying so on the row itself is the point.
     const dupTag = (apath) =>
@@ -119,7 +128,7 @@
         const open = arr ? "[" : "{", close = arr ? "]" : "}";
         const head = row(depth,
           '<span class="jk-caret">▾</span>' + keyHTML + '<span class="jk-pun">' + open + "</span>" +
-          '<span class="jk-count">' + entries.length + (arr ? " items" : " keys") + "</span>" +
+          countHTML(entries.length, arr) +
           '<span class="jk-prev" hidden> … ' + close + comma + "</span>" + dupTag(apath), crumb, apath, val, true);
         const startIdx = rows.length;
         entries.forEach(([k, v], i) => walk(arr ? null : k, v, depth + 1, i === entries.length - 1,
@@ -155,7 +164,7 @@
       // all, so the root row had none while a scalar root did — and a validator reporting a
       // missing top-level key had no row to point at.
       row(0, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + (arr ? "[" : "{") + "</span>" +
-        '<span class="jk-count">' + entries.length + (arr ? " items" : " keys") + "</span>", "root", basePath, value, false);
+        countHTML(entries.length, arr), "root", basePath, value, false);
       entries.forEach(([k, v], i) => walk(arr ? null : k, v, 1, i === entries.length - 1,
         arr ? "root[" + k + "]" : "root › " + k, childAccessor(basePath, k, arr)));
       row(0, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + (arr ? "]" : "}") + "</span>");
