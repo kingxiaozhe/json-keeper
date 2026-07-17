@@ -19,8 +19,14 @@
       dupes.slice(0, 4).map((k) => '"' + esc(k) + '"').join(", ") + (dupes.length > 4 ? "…" : "") + " — last value shown</span>";
   }
 
-  function mount(statusEl) {
+  function mount(statusEl, ctx) {
     const seg = (n, label) => (n ? '<span class="jk-st"><b>' + n + "</b> " + label + "</span>" : "");
+
+    // "tree built on demand" states a policy but offers no demand to make. The Pretty tab does
+    // build it, but nothing connects the sentence to the tab — so the line reads as a dead end.
+    statusEl.addEventListener("click", (e) => {
+      if (e.target.closest("[data-build]") && ctx && ctx.onBuild) ctx.onBuild();
+    });
 
     // state: { dupes[], nodes, counts, heavy, size, treeBuilt }
     // `size` is not optional — the large-file line leads with it ("1.2 MB — large file…").
@@ -29,7 +35,9 @@
       const head = '<span class="jk-ok">● valid JSON</span>' + warnHTML(s.dupes);
       if (!s.treeBuilt) {
         statusEl.innerHTML = s.heavy
-          ? head + '<span class="jk-st">' + s.size + ' — large file, tree built on demand</span><span class="jk-spacer"></span>' + TRUST
+          ? head + '<span class="jk-st">' + s.size + " — large file, tree built on demand</span>" +
+            '<button class="jk-build" data-build>Build tree</button>' +
+            '<span class="jk-spacer"></span>' + TRUST
           : "";
         return;
       }

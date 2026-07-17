@@ -130,12 +130,33 @@ html.jk-active .jk-root { height:100vh; }
 .jk-status { flex:0 0 auto; display:flex; align-items:center; gap:14px; padding:5px 14px; font-size:11px;
   background:var(--jk-bar); border-top:1px solid var(--jk-border); color:var(--jk-dim); white-space:nowrap; overflow:hidden; }
 .jk-status .jk-ok { color:var(--jk-good); font-weight:600; }
-.jk-warn { color:#b8860b; font-weight:600; }
+/* min-width:0 + ellipsis is load-bearing, not polish. .jk-status is a nowrap flex row with
+   overflow:hidden, and a nowrap text item's min-width:auto resolves to min-content — so nothing
+   shrinks and the row is simply cut off from the right. With 4 duplicate keys at 1080px that
+   amputated everything downstream: the size note, the Build tree button, and the trust line.
+   The warning is the one item here that can lose its tail and still do its job. */
+.jk-warn { color:#b8860b; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+/* Nothing downstream of the warning may be shrunk away — .jk-build is the only control in this
+   bar, and the trust line is a product promise. */
+.jk-build, .jk-trust, .jk-status .jk-st { flex:0 0 auto; }
 @media (prefers-color-scheme: dark){ :root:not([data-jk-theme]) .jk-warn, .jk-scope:not([data-jk-theme]) .jk-warn { color:#e3b341; } }
 :root[data-jk-theme="dark"] .jk-warn, .jk-scope[data-jk-theme="dark"] .jk-warn { color:#e3b341; }
 .jk-st b { color:var(--jk-fg); font-weight:600; }
 .jk-spacer { flex:1; }
 .jk-trust { color:var(--jk-faint); }
+/* The demand in "tree built on demand" — without it the sentence states a policy and offers
+   no way to invoke it. Accent-bordered because it's the one actionable thing down here. */
+.jk-build { font:inherit; font-size:11px; font-weight:600; padding:2px 9px; cursor:pointer;
+  color:var(--jk-accent); background:transparent; border:1px solid var(--jk-accent); border-radius:11px; }
+.jk-build:hover { background:var(--jk-accent-soft); }
+
+/* Skeleton shown while a large tree builds (see core.js buildDeferred). Deliberately not a
+   spinner: a spinner says "wait", this says "a tree is coming, and roughly this shape". */
+.jk-skel { padding:10px 14px; display:flex; flex-direction:column; gap:9px; }
+.jk-skel-row { height:11px; border-radius:3px; background:var(--jk-border2); animation:jk-pulse 1.3s ease-in-out infinite; }
+@keyframes jk-pulse { 0%,100% { opacity:.4 } 50% { opacity:.85 } }
+/* The pulse carries no information the static bars don't — first thing to drop when asked. */
+@media (prefers-reduced-motion: reduce) { .jk-skel-row { animation:none; opacity:.6; } }
 
 /* standalone viewer page */
 .jk-page { margin:0; background:var(--jk-canvas); color:var(--jk-fg); font-family: system-ui, sans-serif; }

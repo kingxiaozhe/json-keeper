@@ -16,7 +16,7 @@ const stripTags = (h) =>
 class El {
   constructor(tag) {
     this.tagName = String(tag).toUpperCase();
-    this.className = "";
+    this._cls = new Set();
     this._text = "";
     this._html = "";
     this.dataset = {};
@@ -29,13 +29,21 @@ class El {
     this.children = [];
     this.offsetTop = 0;
     this.classList = {
-      _s: new Set(),
-      add: (c) => this.classList._s.add(c),
-      remove: (c) => this.classList._s.delete(c),
-      contains: (c) => this.classList._s.has(c),
-      toggle: (c, on) => (on === undefined ? (this.classList._s.has(c) ? this.classList._s.delete(c) : this.classList._s.add(c)) : on ? this.classList._s.add(c) : this.classList._s.delete(c)),
+      _s: this._cls,
+      // add/remove 都是可变参数的 —— search.js 就在用 remove("jk-dim","jk-current")，
+      // 只收一个的桩会让 jk-current 永远清不掉，下一条关于它的断言会假红或假绿（L-007）。
+      add: (...cs) => cs.forEach((c) => this._cls.add(c)),
+      remove: (...cs) => cs.forEach((c) => this._cls.delete(c)),
+      contains: (c) => this._cls.has(c),
+      toggle: (c, on) => (on === undefined ? (this._cls.has(c) ? this._cls.delete(c) : this._cls.add(c)) : on ? this._cls.add(c) : this._cls.delete(c)),
     };
   }
+  // className 与 classList 是**同一份状态**（真实 DOM 里 classList 就是 className 的活视图）。
+  // 桩里各存一份的话，`el.className = "jk-row"` 之后 `classList.contains("jk-row")` 是 false ——
+  // 于是"这一行是不是树的行"这类断言恒假、恒绿，而产品里两种写法混用（建树用 className，
+  // 高亮/降调用 classList）。L-007：桩留不住的等价关系 = 测不到的行为。
+  set className(v) { this._cls.clear(); String(v).split(/\s+/).filter(Boolean).forEach((c) => this._cls.add(c)); }
+  get className() { return [...this._cls].join(" "); }
   // innerHTML 赋值会销毁旧子树 —— 所以记忆化的查询结果也必须一起失效，否则
   // 反复 mount 时桩会把每次都是新元素演成同一个元素被塞了很多次，
   // 凭空造出一个产品并不存在的泄漏（L-007：桩的保真度决定网说的是真话还是假话）。
@@ -67,7 +75,16 @@ class El {
   setAttribute(k, v) { this._attrs[k] = String(v); }
   removeAttribute(k) { delete this._attrs[k]; }
   getAttribute(k) { return this._attrs[k] ?? null; }
-  closest() { return null; }
+  // 只自匹配，不向上走（桩没有 parent 链）—— 真实 closest() 也是从自身开始查的。
+  // 支持 [data-x] 与 .cls 两种最简选择器：产品里的委托处理器全是这两种形状。
+  // 恒返回 null 的版本会让每个"点了会怎样"的委托分支静默不可达（L-007）。
+  closest(sel) {
+    const d = /^\[data-([\w-]+)\]$/.exec(sel);
+    if (d) return this.dataset[d[1].replace(/-(\w)/g, (_, c) => c.toUpperCase())] !== undefined ? this : null;
+    const c = /^\.([\w-]+)$/.exec(sel);
+    if (c) return this.className.split(/\s+/).includes(c[1]) || this.classList.contains(c[1]) ? this : null;
+    return null;
+  }
   // 记住监听器并提供 _click —— 空的 addEventListener 会把回调全丢掉，
   // 于是「点了会怎样」这类断言永远测不到（L-007：桩留不住的状态 = 测不到的行为）。
   _on(type, fn) { (this._ls[type] || (this._ls[type] = [])).push(fn); }
@@ -87,6 +104,19 @@ class El {
 export function installDOM() {
   // document 不是 El，得有自己的监听器表 —— 溢出菜单靠 document 上的 click 来关闭。
   const docLs = {};
+  // 假 requestAnimationFrame，必须能**逐帧步进**：T-010 的全部意义就是"骨架先画出来"，
+  // 而单层 rAF 的回调跑在本帧 paint **之前** —— 骨架一帧都不会出现。这根轴是时序轴，
+  // 立即执行的假 rAF 会把双层和单层演成一模一样，那根轴就废了。
+  // （rail.js 也用 rAF，但在 scroll 回调里，测试从不触发 —— 此前桩里压根没有它也没炸。）
+  let frameQ = [];
+  globalThis.requestAnimationFrame = (fn) => frameQ.push(fn);
+  globalThis.cancelAnimationFrame = () => {};
+  // 跑一帧：只跑**当前排队的**回调；帧内新排的留到下一帧（真实浏览器就是这样，
+  // 也正是双层 rAF 能跨帧的原因 —— 一次跑光就等于单层）。
+  const frame = () => { const q = frameQ; frameQ = []; q.forEach((f) => f(0)); };
+  const pendingFrames = () => frameQ.length;
+  // 帧队列是全局的：上一条测试没跑完的回调会漏进下一条，pendingFrames 就开始数别人的帧。
+  const resetFrames = () => { frameQ = []; };
   // popup.js 靠 getElementById 取元素，而那些元素来自 popup.html（桩不解析 HTML）。
   // 测试自己建元素、注册进来 —— 验的仍是 popup.js 的真实逻辑，只是把 DOM 递给它。
   const byId = new Map();
@@ -104,7 +134,7 @@ export function installDOM() {
     _fire(type) { (docLs[type] || []).forEach((f) => f({ target: null, stopPropagation() {} })); },
     _count(type) { return (docLs[type] || []).length; },
   };
-  return { El };
+  return { El, frame, pendingFrames, resetFrames };
 }
 
 // 假 chrome.storage.local —— 不是锦上添花，是必需的。

@@ -48,3 +48,8 @@
 {"at":"2026-07-17T00:20:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-009","event":"pause","detail":"等用户清硬盘空间——代码都在，就是存不进版本库"}
 {"at":"2026-07-17T09:30:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-009","event":"resume","detail":"空间回来了（58G可用），工作区完好、337条测试全过，补提交"}
 {"at":"2026-07-17T09:31:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-009","event":"task_done","detail":"通过：空的对象/数组现在会明说自己是空的；搜不到东西时不再整页发灰"}
+{"at":"2026-07-17T10:00:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-010","event":"task_start","detail":"给大文件加个'构建树'按钮，点了先出骨架再出树"}
+{"at":"2026-07-17T10:02:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-010","event":"decision","detail":"任务书里那句做法是错的（会做出一个骨架永远不出现的假实现），先按设计把任务书改对再动手"}
+{"at":"2026-07-17T10:20:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-010","event":"decision","detail":"发现一个老版本就有的毛病：打开一个大文件会把'看原文'变成以后所有文件的默认，顺手修掉"}
+{"at":"2026-07-17T10:50:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-010","event":"review","detail":"审查揪出3个问题：我修的那个毛病对'用过排序'的人还在；窄窗口下按钮会被挤没；搜索也在偷改偏好","轮次":1,"拦截数":3,"通道":"子agent(降级)"}
+{"at":"2026-07-17T11:05:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-010","event":"task_done","detail":"通过：362条测试全过；大文件现在点一下就能建树，还先给你看个占位"}

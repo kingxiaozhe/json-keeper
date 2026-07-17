@@ -70,6 +70,16 @@ node --test "tests/*.test.mjs"     # 引号必须有
 26. **搜索无结果条挂在树区顶部**：开一份**长到要滚动**的 JSON → 搜一个不存在的词 → 「No match for "…"」应**立刻可见**在树顶，不用滚到底才看到；此时**没有任何一行变暗**，工具栏计数是 `0/0`。
     > 为什么必须人来看：桩不解析 innerHTML，`scrollEl` 在桩里没有孩子，`insertBefore(…, firstChild)` 与 `appendChild` 产出完全相同 —— 把条挂到底部的变异**存活且不可测**（L-010）。
 
+27. **大文件的「Build tree」不是死键，且骨架真的被画出来**：造一份 > 5MB 的 JSON（越大越好，要让建树肉眼可见地卡）→ 打开 → 状态栏出现 `N MB — large file, tree built on demand` **和一个 Build tree 按钮** → 点它 → **先看到骨架条**（灰色占位条，会呼吸），**再**卡一下，然后出树。
+    > **这条是 T-010 的全部意义，而它只能人来验**：Node 里没有 paint。把双层 rAF 改成单层，自动化测试**照样能红**（因为我的假 rAF 逐帧步进），但**红的理由和真实后果是两回事** —— 真实后果是"骨架一帧都不出现、页面纯冻结"，那个只有眼睛能确认。若看到的是「点完直接冻住、冻完直接出树、全程没有骨架」→ 双层 rAF 被人改回单层了。
+    > 顺带验：树出来后 **Build tree 按钮消失**、状态栏换成 `N nodes` 统计；系统偏好设成「减弱动效」时骨架**不呼吸**但仍在。
+28. **大文件不篡改视图偏好**：确保当前偏好是 Pretty（开个小 JSON 确认是树视图）→ 打开一份 > 1MB 的 JSON（它会开在 Raw，正确）→ **再开那个小 JSON** → **仍应是 Pretty**。
+    > v0.8.0 起的线上 bug：`if (heavy) setView("raw")` 把系统的决定写进了用户偏好，打开一个大文件就把 Raw 变成了此后所有 JSON 的默认。同理，在大文件里点 **Build tree** 之后、或在 Raw 下**打字搜索**之后再开小 JSON，**偏好都不该被改写**（那些是手段，不是表态；想表态有 Pretty 标签，那个才存）。
+    > **必须开着 ⇅ Sort 再跑一遍这条**：`applySort` 走的是 `jk:sort` 的**异步**回调，晚于 heavy 分支执行 —— 用过一次 Sort 的人会完整地拿回这个 bug，而不开 Sort 的人一切正常。
+29. **状态栏在窄窗口下不吃掉 Build tree 与 trust 行**：造一份 **> 1MB 且带 4 个重复 key** 的 JSON（护城河的旗舰场景：大文件 + 重复 key）→ 在 **1280px 或更窄**的窗口打开（或开着 devtools）→ 状态栏从左到右应当**全部可见**：`● valid JSON`、`⚠ 4 duplicate keys…`（**可以省略号截断**）、`— large file…`、**`Build tree` 按钮**、`big integers kept exact · no ads · no telemetry`。
+    > 实测（对抗审查在真浏览器里量的）：`.jk-status` 是 `nowrap` + `overflow:hidden` 的 flex，**nowrap 文本项的 `min-width:auto` = min-content，谁都不收缩**，于是整块从右边裁掉 —— 1 个重复 key 在 < 840px、2 个在 < 950px、4 个在 < 1210px 就开始裁。1080px + 4 个重复 key 时按钮和 trust 行**完全不可见**，AC-007 与 AC-008 双双不过。修法是让 `.jk-warn` 去截断（`min-width:0` + ellipsis），它是这行里唯一"丢了尾巴还能干活"的东西。
+    > 和第 23 条同形：**两个东西抢同一块地，而 Node 里量不出宽度**。
+
 ## 正确性夹具
 
 新发现的解析边界（诡异 JSON）必须**留样**：追加到清单第 7 项的用例串，或存进 `tests/fixtures/`。本产品卖的是正确性，回归一次就伤根基。
