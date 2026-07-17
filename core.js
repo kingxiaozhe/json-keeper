@@ -41,6 +41,15 @@
         '<div class="jk-scroll"><div data-pretty></div><div class="jk-table-wrap" data-table hidden></div><pre class="jk-raw jk-mono" data-raw hidden></pre></div>' +
       "</div>" +
       '<div class="jk-status jk-mono" data-status></div>' +
+      // Subtree panel for a table's nested {…}/[N] cell (F-107). An overlay, not a jump: the value
+      // is shown in place so you don't lose the table you were reading.
+      '<div class="jk-subtree" data-subtree hidden>' +
+        '<div class="jk-subtree-card">' +
+          '<div class="jk-subtree-head"><span class="jk-subtree-path jk-mono" data-subtree-path></span>' +
+            '<button class="jk-subtree-close" data-subtree-close title="Close (Esc)">✕</button></div>' +
+          '<div class="jk-subtree-body" data-subtree-body></div>' +
+        "</div>" +
+      "</div>" +
     "</div>";
 
   // Placeholder rows shown while a large tree builds. Deliberately not a spinner: a spinner says
@@ -192,8 +201,21 @@
     // lazily and cached; recompute()/Sort invalidate it by nulling tableHandle.
     function renderTable() {
       if (tableHandle) return;
-      tableHandle = JK.table.mount(tableEl, displayValue, { onJump: jumpToPath });
+      tableHandle = JK.table.mount(tableEl, displayValue, { onJump: jumpToPath, onSubtree: openSubtree });
     }
+
+    // A table's nested cell opens its value here, in place, rather than jumping away — you keep the
+    // table you were reading (F-107). basePath makes the panel's own copy-path/rows honest.
+    const subEl = $("[data-subtree]"), subBody = $("[data-subtree-body]"), subPath = $("[data-subtree-path]");
+    function openSubtree(value, apath) {
+      subPath.textContent = apath || "(root)";
+      JK.tree.build(value, subBody, { basePath: apath });   // build clears the mount itself
+      subEl.hidden = false;
+    }
+    function closeSubtree() { subEl.hidden = true; subBody.innerHTML = ""; }
+    $("[data-subtree-close]").addEventListener("click", closeSubtree);
+    subEl.addEventListener("click", (e) => { if (e.target === subEl) closeSubtree(); }); // backdrop
+    rootEl.addEventListener("keydown", (e) => { if (e.key === "Escape" && !subEl.hidden) closeSubtree(); });
 
     function setView(v, persist) {
       // Only the large-file path is worth a skeleton — a small tree builds within the frame, and

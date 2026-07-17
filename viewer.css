@@ -126,6 +126,19 @@ html.jk-active .jk-root { height:100vh; }
 .jk-cell-nested:hover { text-decoration:underline; }
 .jk-table-more { padding:8px 12px; font-size:11.5px; color:var(--jk-dim); background:var(--jk-panel2); border-top:1px solid var(--jk-border); }
 
+/* subtree panel — a table's nested cell opens its value here, over the table (F-107) */
+.jk-subtree { position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--jk-fg) 22%, transparent); padding:32px; }
+.jk-subtree[hidden] { display:none; }
+.jk-subtree-card { display:flex; flex-direction:column; max-width:720px; max-height:100%; width:100%;
+  background:var(--jk-panel); border:1px solid var(--jk-border2); border-radius:11px; box-shadow:var(--jk-shadow); overflow:hidden; }
+.jk-subtree-head { display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--jk-border); background:var(--jk-bar); }
+.jk-subtree-path { flex:1; min-width:0; font-size:11.5px; color:var(--jk-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.jk-subtree-close { flex:0 0 auto; font:inherit; font-size:13px; line-height:1; padding:3px 8px; cursor:pointer;
+  border:1px solid var(--jk-border2); border-radius:7px; background:var(--jk-panel); color:var(--jk-dim); }
+.jk-subtree-close:hover { border-color:var(--jk-accent); color:var(--jk-accent); }
+.jk-subtree-body { overflow:auto; }
+
 /* tree */
 .jk-tree { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace; font-size:13px; line-height:1.65; padding:8px 0; }
 .jk-row { position:relative; display:flex; align-items:flex-start; padding:0 14px; white-space:pre; transition:background .25s; }

@@ -239,3 +239,10 @@
 - Sort 改 displayValue → 销毁缓存的 tableHandle 让下次重建（自检存活 → 补网，红 1）。
 - 一处 masked 变异（去掉回落的 canRender 检查）：非数组上 setView("table") 会抛，但被 store.get 的 try/catch 吞掉→回落 pretty，**防御分层互相遮盖**，按 L-008 不强补测试。
 - **stub 补 `removeEventListener`**：table 的 destroy() 要用它，缺了会让任何"销毁表格"路径抛错（Sort 就是）——真浏览器有，桩之前没有。
+| T-106 嵌套单元格 + 子树面板 | ✅ 完成 | 变异自检 | — | 0 | 嵌套走 onSubtree 开面板，标量走 onJump 跳转，两者分流 |
+| T-108 单元格→jumpTo 接线 | ✅ 完成 | 变异自检 | — | 0 | 端到端：点标量格→切 Pretty 高亮对应节点 |
+
+### T-106 / T-108 详情
+- **嵌套 vs 标量单元格分流**：嵌套（对象/数组）显示 `{…}`/`[N]`，带 `data-nested`（存值索引）→ 点击 `onSubtree(值, apath)` 开子树面板（F-107，不拍平成列）；标量带 `data-apath` → 点击 `onJump(apath)` → jumpToPath 切 Pretty 并高亮（F-105）。变异"嵌套误走 onJump"红 2。
+- **子树面板**：SHELL 加 overlay（`[hidden]` 兜底守 L-021），复用 `tree.build(value, body, {basePath: apath})` —— basePath 让面板里的复制路径honest（变异不传 basePath 红 1）。✕ / 点背景 / Esc 关闭。
+- T-108 端到端：点表格标量格 → 切回 Pretty、对应树节点 jk-hit 高亮。jumpTo 本体是 feature 1 T-003b 的，这里只接线。

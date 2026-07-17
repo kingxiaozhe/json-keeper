@@ -36,7 +36,7 @@
     return cols;
   }
 
-  function cellHTML(row, col, apath) {
+  function cellHTML(row, col, apath, nested) {
     if (!has(row, col)) {
       // MISSING — the moat point. Faint em dash + a tooltip that says the field isn't there,
       // deliberately unlike the null cell below.
@@ -44,17 +44,21 @@
     }
     const v = row[col];
     if (isContainer(v)) {
-      // Nested value: a chip, not a flattened column (F-107). T-106 makes it open a subtree.
+      // Nested value: a chip that opens a subtree, NOT a flattened column (F-107) and NOT a jump
+      // like a scalar cell. The value is stashed by index (data-nested) so the click can hand the
+      // actual object to the panel — building it from the apath would re-walk the whole doc.
       const label = Array.isArray(v) ? "[" + v.length + "]" : "{…}";
-      return '<td class="jk-td"><button class="jk-cell-nested" data-apath="' + escAttr(apath) + '">' + esc(label) + "</button></td>";
+      const idx = nested.push({ value: v, apath }) - 1;
+      return '<td class="jk-td"><button class="jk-cell-nested" data-nested="' + idx + '">' + esc(label) + "</button></td>";
     }
     // Scalars (incl. null and bigint) reuse the tree's valueHTML so colour + precision match.
+    // data-apath (not data-nested) → a click jumps to this node in the tree (F-105).
     return '<td class="jk-td" data-apath="' + escAttr(apath) + '">' + valueHTML(v) + "</td>";
   }
 
   // base is the accessor path of the array itself ("" when the whole doc is the array). Cell apath
   // = base[i].col, identical to what the tree would give the same node — so jumpTo lands right.
-  function tableHTML(arr, base) {
+  function tableHTML(arr, base, nested) {
     const cols = columns(arr);
     const shown = Math.min(arr.length, MAX_ROWS);
     let h = '<table class="jk-table"><thead><tr><th class="jk-th jk-th-idx">#</th>';
@@ -64,7 +68,7 @@
       const row = arr[i];
       const rowBase = childAccessor(base, i, true);
       h += '<tr><td class="jk-td jk-td-idx">' + i + "</td>";
-      for (const c of cols) h += cellHTML(row, c, childAccessor(rowBase, c, false));
+      for (const c of cols) h += cellHTML(row, c, childAccessor(rowBase, c, false), nested);
       h += "</tr>";
     }
     h += "</tbody></table>";
@@ -79,8 +83,11 @@
 
   function mount(el, arr, ctx) {
     const base = (ctx && ctx.base) || "";
-    el.innerHTML = tableHTML(arr, base);
+    const nested = [];
+    el.innerHTML = tableHTML(arr, base, nested);
     const onCell = (e) => {
+      const sub = e.target.closest("[data-nested]");
+      if (sub) { const n = nested[+sub.dataset.nested]; if (ctx && ctx.onSubtree) ctx.onSubtree(n.value, n.apath); return; }
       const cell = e.target.closest("[data-apath]");
       if (cell && ctx && ctx.onJump) ctx.onJump(cell.dataset.apath);
     };

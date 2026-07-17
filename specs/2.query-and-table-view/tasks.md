@@ -49,7 +49,7 @@
   - **F-104 是本 feature 的核心正确性点**：缺失字段渲染弱色 `—` + tooltip，真 `null` 渲染 `--jk-null` 色，两者视觉可区分。
   - 列头来自用户 JSON 的 key，**是不可信数据**，必须 `esc()`/`escAttr()`。
   - > 1000 行 → 只渲染前 1000 + `还有 N 条` 提示（不做分页，见 design.md 技术决策）。
-- [ ] T-106: 表格嵌套单元格 `{…}` / `[N]` + 点开子树面板 ~30min
+- [x] T-106: 表格嵌套单元格 `{…}` / `[N]` + 点开子树面板 ~30min
   - 涉及模块: `table.js`、`tree.js`、`viewer.css`
   - 不拍平成列（AC-107：列头不得出现 `user.city`）。
 - [x] T-107: `Table` 接入视图分段器 + 不可用态置灰与原因说明 ~30min
@@ -59,7 +59,7 @@
 
 ### 功能 4: 表格 ↔ 树互跳（F-105）
 
-- [ ] T-108: 接入表格单元格点击 → `tree.jumpTo(apath)` ~30min
+- [x] T-108: 接入表格单元格点击 → `tree.jumpTo(apath)` ~30min
   - 涉及模块: `table.js`
   - **`jumpTo` 本身已移到 feature 1 的 T-003b 实现** —— 对抗审查指出它需要"renderTree → setView → 展开祖先链 → 滚动 → 高亮"五步，且要补根行 apath、rows 提到模块态、Sort 重建失效，远非 30min 的活，且 feature 3 的 AC-207 也依赖它。本任务只剩接线。
   - **不要抄 `rail.js` 的 `offsetTop` 定位** —— 那只对永不隐藏的顶层节点成立。

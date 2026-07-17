@@ -102,3 +102,26 @@ test("点单元格触发 onJump(apath)（T-108 的接线，此处先锁）", () 
   (el._ls.click || []).forEach((f) => f({ target: cell }));
   assert.equal(jumped, "[0].email");
 });
+
+test("嵌套单元格点击走 onSubtree(值, apath) —— 不是 onJump（F-107）", () => {
+  let sub = null, jumped = null;
+  const arr = [{ user: { city: "SH" } }];
+  const el = makeMount();
+  T.mount(el, arr, { onSubtree: (v, p) => (sub = { v, p }), onJump: (p) => (jumped = p) });
+  // 找那个 data-nested 的按钮，模拟点它
+  const btn = { dataset: { nested: "0" }, closest(sel) { return sel === "[data-nested]" ? btn : null; } };
+  (el._ls.click || []).forEach((f) => f({ target: btn }));
+  assert.equal(jumped, null, "嵌套不该触发跳转");
+  assert.deepEqual(sub.v, { city: "SH" }, "onSubtree 收到的是嵌套的真实值（对象本身）");
+  assert.equal(sub.p, "[0].user", "并带上 apath 供面板做 basePath");
+});
+
+test("标量单元格仍走 onJump（不误入 onSubtree）", () => {
+  let sub = null, jumped = null;
+  const el = makeMount();
+  T.mount(el, [{ email: "a@b.c" }], { onSubtree: (v) => (sub = v), onJump: (p) => (jumped = p) });
+  const cell = { dataset: { apath: "[0].email" }, closest(sel) { return sel === "[data-apath]" ? cell : null; } };
+  (el._ls.click || []).forEach((f) => f({ target: cell }));
+  assert.equal(sub, null, "标量不该开子树面板");
+  assert.equal(jumped, "[0].email");
+});
