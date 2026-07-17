@@ -159,7 +159,9 @@
         caret._depth = depth;
         carets.push(caret);
         caret.addEventListener("click", (e) => { e.stopPropagation(); caret._collapse(!caret.classList.contains("jk-collapsed")); });
-        if (depth === 1) topLevel.push({ key: arr ? "[" + key + "]" : key, head, n: entries.length, apath });
+        // key is null for elements of a top-level array; the rail must not label them "null".
+        // apath at depth 1 is exactly "[i]" for those, which is the label we want.
+        if (depth === 1) topLevel.push({ key: key === null ? apath : (arr ? "[" + key + "]" : key), head, n: entries.length, apath });
       } else {
         const r = row(depth, '<span class="jk-caret jk-leaf">▾</span>' + keyHTML + valueHTML(val) + comma + dupTag(apath), trail, apath, val, true);
         if (depth === 1) topLevel.push({ key: key === null ? "·" : key, head: r, leaf: true, apath });

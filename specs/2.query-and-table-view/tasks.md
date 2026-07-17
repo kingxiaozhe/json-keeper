@@ -66,10 +66,10 @@
 
 ### 集成与测试
 
-- [ ] T-109: 查询与表格的联调走查 + 元素清单核对 ~30min
+- [x] T-109: 查询与表格的联调走查 + 元素清单核对 ~30min
   - 对照 `design-baseline/s3-table-diff-dark.png` 做**结构基准**核对（列头、大整数高亮、分段器）。
   - 注意：稿件的 `Load More` 与斜体 `null` 渲染**不还原**，以 AC-104/AC-107 为准。
-- [ ] T-110: 复跑全部防护网基线 + 手动冒烟清单 + XSS 项 ~30min
+- [x] T-110: 复跑全部防护网基线 + 手动冒烟清单 + XSS 项 ~30min
   - `node --test tests/` 全绿（AC-110）。
   - XSS: 喂含 `<script>` 的字段值切表格，无弹窗（AC-109）。
   - `grep -nE "eval\(|new Function" jsonpath.js` 无命中（AC-108）。

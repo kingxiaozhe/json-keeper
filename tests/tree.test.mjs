@@ -424,3 +424,12 @@ test("byPath —— apath→row 反查（jumpTo / markInvalid 都靠它）", asy
     assert.equal(tr.byPath.get("xs[1]")._val, 20);
   });
 });
+
+test("顶层数组的对象元素：结构栏标签是 [0]/[1]，不是 null（T-109 真浏览器发现）", () => {
+  const tr = buildTree([{ id: 1 }, { id: 2 }], makeMount(), { scrollEl: { scrollTop: 0, clientHeight: 100, addEventListener() {} } });
+  const labels = tr.topLevel.map((t) => t.key);
+  assert.deepEqual(labels, ["[0]", "[1]"], "数组元素的结构栏标签是下标，不是 null");
+  // 对象键的既有行为不能碰坏：数组值键仍是 [key]，标量键仍是 key
+  const tr2 = buildTree({ tags: [1, 2], name: "x" }, makeMount(), { scrollEl: { scrollTop: 0, clientHeight: 100, addEventListener() {} } });
+  assert.deepEqual(tr2.topLevel.map((t) => t.key), ["[tags]", "name"], "数组值键 [tags]、标量键 name 不变");
+});

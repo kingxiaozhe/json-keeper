@@ -41,7 +41,15 @@
       "empties": { "obj": {}, "arr": [] },
       "<img src=x onerror=alert(1)>": "<script>alert(1)</scr` + `ipt>"
     }`;
-    window.JK.mountViewer(document.getElementById("root"), SAMPLE, { showErrors: true });
+    // ?table → an array of objects so the Table view + query bar are exercised: a missing field
+    // (row 3 has no email), a real null (row 2 email), a big int, a nested object, and XSS.
+    const TABLE = `[
+      { "id": 9007199254740993, "email": "ada@x.io", "role": { "name": "admin" } },
+      { "id": 2, "email": null, "role": { "name": "user" } },
+      { "id": 3, "role": { "name": "guest" }, "note": "<script>alert(1)</scr` + `ipt>" }
+    ]`;
+    const data = location.search.includes("table") ? TABLE : SAMPLE;
+    window.JK.mountViewer(document.getElementById("root"), data, { showErrors: true });
   </script>
 </body>
 </html>

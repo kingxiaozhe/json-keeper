@@ -89,7 +89,8 @@ node --test "tests/*.test.mjs"     # 引号必须有
 python3 -m http.server 8731    # 仓库根目录
 # 浏览器开 http://localhost:8731/smoke-harness.html
 ```
-它就是 T-012 抓到 ⋯ 菜单常开 bug 的地方 —— **真实 CSS 的层叠只有真浏览器能验**。
+它就是 T-012 抓到 ⋯ 菜单常开 bug 的地方 —— **真实 CSS 的层叠只有真浏览器能验**。`?table` 参数换成对象数组的样本，用来验表格视图 + 查询栏。
+**改了 JS/CSS 后必须硬刷新**（Cmd+Shift+R）：`<script src>` / `<link>` 无版本号，普通刷新会用缓存，让你以为改动没生效 —— T-109 就被缓存骗过一次（rail 的修复在 Node 里已过，浏览器却还显示旧的）。
 **局限**：它只覆盖 **viewer 渲染路径**。content script 接管（真实 JSON 网址）、popup 作为弹窗、打包产物 —— 仍需第 1/2/10/24/25 项按真实扩展跑。`pack.sh` 是白名单式，harness 不会进包。
 
 ## 正确性夹具

@@ -246,3 +246,11 @@
 - **嵌套 vs 标量单元格分流**：嵌套（对象/数组）显示 `{…}`/`[N]`，带 `data-nested`（存值索引）→ 点击 `onSubtree(值, apath)` 开子树面板（F-107，不拍平成列）；标量带 `data-apath` → 点击 `onJump(apath)` → jumpToPath 切 Pretty 并高亮（F-105）。变异"嵌套误走 onJump"红 2。
 - **子树面板**：SHELL 加 overlay（`[hidden]` 兜底守 L-021），复用 `tree.build(value, body, {basePath: apath})` —— basePath 让面板里的复制路径honest（变异不传 basePath 红 1）。✕ / 点背景 / Esc 关闭。
 - T-108 端到端：点表格标量格 → 切回 Pretty、对应树节点 jk-hit 高亮。jumpTo 本体是 feature 1 T-003b 的，这里只接线。
+| T-109 联调走查 + 元素核对 | ✅ 完成 | 真实 Chrome 走查 | **1 真 bug**（rail 数组标签） | 0 | 表格/查询/嵌套面板/大整数全实跑过 |
+| T-110 全量冒烟 + XSS + eval | ✅ 完成 | 自动 + 真浏览器 | — | 0 | 470 测试；AC-108/109/110 过 |
+
+### T-109 / T-110 详情
+- **真实 Chrome 走查（harness ?table 模式）实跑确认**：查询栏渲染（`$` + placeholder）；Table 段对对象数组可点、切过去表格渲染；**护城河 F-104 肉眼可分** —— 同一列 `null`（灰字）vs `—`（弱色横杠）；大整数在表格与查询结果里都保真+橙色高亮；嵌套 `{…}` 点开子树面板（标题显示 `[0].role` 路径、内容是子树、✕ 关闭）；查询 `$[*].id` → `3 matches` + 结果树用 JSONPath 当键、大整数保真；`<script>` 单元格值以纯文本显示、**无弹窗**（AC-109）。
+- **走查抓到 1 个真 bug（feature 1 遗留，feature 2 放大）**：顶层数组的对象元素，结构栏标签显示 `null null null` 而非 `[0][1][2]` —— `topLevel.push` 用的是数组元素的 null key。已修（key===null 时用 apath=`[i]`），+ 测试，变异红 1。表格的典型输入就是对象数组，所以这个 bug 在 feature 2 里很显眼。
+- **T-110 自动检查全过**：AC-108 jsonpath 无 eval/new Function（剥注释后 grep）；AC-110 全量 470 测试全绿；全项目安全 grep 无 fetch/eval/网络；无 console 泄漏；新模块 jsonpath/query/table 均 ≤400 行。
+- harness 补 `?table` 样本 + testing.md 注明"改 JS/CSS 后硬刷新"（本次被缓存骗过一次）。

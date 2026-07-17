@@ -82,3 +82,6 @@
 {"at":"2026-07-18T13:21:00","node":"N3","feature":"2.query-and-table-view","task":"T-106","event":"task_start","detail":"表格里的嵌套对象/数组显示成{…}/[N]，点开看子树"}
 {"at":"2026-07-18T14:00:00","node":"N5","feature":"2.query-and-table-view","task":"T-106","event":"task_done","detail":"表格里的嵌套对象点开有子树面板了；点普通格则跳到树里对应位置。469测试全过"}
 {"at":"2026-07-18T14:01:00","node":"N5","feature":"2.query-and-table-view","task":"T-108","event":"task_done","detail":"表格单元格点击跳转端到端打通：点一格切回树视图并高亮那个节点"}
+{"at":"2026-07-18T15:00:00","node":"N4","feature":"2.query-and-table-view","task":"T-109","event":"review","detail":"真Chrome走查：查询栏/表格/缺失vs-null肉眼可分/嵌套面板/大整数保真/XSS无弹窗 全部实跑通过；抓到结构栏把数组元素标成null的老bug，修了","轮次":1,"拦截数":1,"通道":"真浏览器"}
+{"at":"2026-07-18T15:05:00","node":"N5","feature":"2.query-and-table-view","task":"T-110","event":"task_done","detail":"feature 2 收尾：470测试全过、无eval无网络、XSS切表格无弹窗。查询+表格功能全部完成"}
+{"at":"2026-07-18T15:06:00","node":"N8","feature":"2.query-and-table-view","task":"-","event":"done","detail":"feature 2 全部10个任务完成"}
