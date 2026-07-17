@@ -63,6 +63,22 @@ html.jk-active .jk-root { height:100vh; }
 .jk-chip { font-size:10.5px; font-weight:600; color:var(--jk-good); border:1px solid color-mix(in srgb, var(--jk-good) 32%, transparent); border-radius:999px; padding:2px 8px; white-space:nowrap; }
 .jk-flash { font-size:12px; font-weight:600; color:var(--jk-accent); white-space:nowrap; }
 
+/* query bar — its own row under the toolbar (see core.js QUERY for why it's not in the toolbar) */
+.jk-query { flex:0 0 auto; background:var(--jk-bar); border-bottom:1px solid var(--jk-border); padding:6px 12px; }
+.jk-query-row { display:flex; align-items:center; gap:8px; }
+.jk-query-sig { color:var(--jk-accent); font-weight:700; font-size:13px; flex:0 0 auto; }
+.jk-query-in { flex:1; min-width:0; border:1px solid var(--jk-border2); border-radius:7px; background:var(--jk-panel);
+  color:var(--jk-fg); font-size:12.5px; padding:5px 10px; outline:0; }
+.jk-query-in:focus { border-color:var(--jk-accent); }
+.jk-query-in.bad { border-color:var(--jk-bad); }
+.jk-query-n { flex:0 0 auto; font-size:11.5px; color:var(--jk-dim); white-space:nowrap; font-variant-numeric:tabular-nums; }
+.jk-query-clear { flex:0 0 auto; font:inherit; font-size:13px; line-height:1; padding:3px 8px; cursor:pointer;
+  border:1px solid var(--jk-border2); border-radius:7px; background:var(--jk-panel); color:var(--jk-dim); }
+.jk-query-clear:hover { border-color:var(--jk-accent); color:var(--jk-accent); }
+/* Error text uses the same tokened warn color as the rest — it's a message, not a moat signal. */
+.jk-query-err { margin-top:6px; font-size:11.5px; color:var(--jk-bad); white-space:pre-wrap; word-break:break-word; }
+.jk-query-err[hidden], .jk-query-n[hidden], .jk-query-clear[hidden] { display:none; }
+
 /* breadcrumb */
 .jk-crumb { flex:0 0 auto; padding:5px 14px; font-size:11.5px; color:var(--jk-dim); background:var(--jk-panel); border-bottom:1px solid var(--jk-border); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* Ancestor segments jump; the current node doesn't (it's where you already are). */
@@ -90,6 +106,20 @@ html.jk-active .jk-root { height:100vh; }
 .jk-nohits { position:sticky; top:0; z-index:2; padding:7px 14px; font-size:12px;
   color:var(--jk-dim); background:var(--jk-panel2); border-bottom:1px solid var(--jk-border); }
 .jk-nohits[hidden] { display:none; }
+
+/* table view (feature 2) */
+.jk-table { border-collapse:collapse; font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12.5px; width:max-content; min-width:100%; }
+.jk-th { position:sticky; top:0; z-index:1; text-align:left; font-weight:600; color:var(--jk-dim); background:var(--jk-bar);
+  border-bottom:1px solid var(--jk-border2); padding:7px 12px; white-space:nowrap; }
+.jk-th-idx, .jk-td-idx { color:var(--jk-faint); text-align:right; font-variant-numeric:tabular-nums; }
+.jk-td { border-bottom:1px solid var(--jk-guide); padding:5px 12px; white-space:nowrap; vertical-align:top; }
+.jk-td-idx { user-select:none; }
+/* Missing field: faint, non-selectable em dash — deliberately NOT the same as a null value, which
+   renders through valueHTML in the --jk-null colour. That contrast is the whole point (F-104). */
+.jk-missing { color:var(--jk-faint); opacity:.6; user-select:none; }
+.jk-cell-nested { font:inherit; color:var(--jk-accent); background:transparent; border:0; padding:0; cursor:pointer; border-radius:3px; }
+.jk-cell-nested:hover { text-decoration:underline; }
+.jk-table-more { padding:8px 12px; font-size:11.5px; color:var(--jk-dim); background:var(--jk-panel2); border-top:1px solid var(--jk-border); }
 
 /* tree */
 .jk-tree { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace; font-size:13px; line-height:1.65; padding:8px 0; }

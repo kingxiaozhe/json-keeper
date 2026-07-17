@@ -16,9 +16,25 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  // Query bar is its own row, not merged into the toolbar search box: the two are different
+  // acts (search = full-text highlight, query = structural filter), and the toolbar is a nowrap
+  // flex row that already truncates under pressure (see the status-bar fix). A separate row keeps
+  // /-to-focus-search intact and gives the error line somewhere to live.
+  const QUERY =
+    '<div class="jk-query" data-query>' +
+      '<div class="jk-query-row">' +
+        '<span class="jk-query-sig jk-mono">$</span>' +
+        '<input class="jk-query-in jk-mono" placeholder="JSONPath filter — e.g. $.users[*].email" spellcheck="false" autocapitalize="off" autocomplete="off">' +
+        '<span class="jk-query-n" data-query-n hidden></span>' +
+        '<button class="jk-query-clear" data-query-clear hidden title="Clear filter (Esc)">✕</button>' +
+      "</div>" +
+      '<div class="jk-query-err jk-mono" data-query-err hidden></div>' +
+    "</div>";
+
   const SHELL =
     '<div class="jk-wrap jk-scope">' +
       "{BAR}" +
+      QUERY +
       '<div class="jk-crumb jk-mono" data-crumb>root</div>' +
       '<div class="jk-main">' +
         '<aside class="jk-rail" data-rail hidden></aside>' +
@@ -88,7 +104,7 @@
     const prettyEl = $("[data-pretty]"), rawEl = $("[data-raw]"), scrollEl = $(".jk-scroll");
     const railEl = $("[data-rail]"), crumbEl = $("[data-crumb]");
 
-    let treeBuilt = false, tree = null, search = null, pendingBuild = false;
+    let treeBuilt = false, tree = null, search = null, query = null, pendingBuild = false;
     const getTree = () => tree;
 
     // persist=false: "Build tree" is a remedy for this document, not a statement about every
@@ -100,13 +116,36 @@
       heavy, size: humanSize(rawText.length), treeBuilt,
     });
 
+    // When a query is active, the Pretty pane shows the matched subset instead of the whole doc.
+    // queryValue is a synthetic object keyed by each match's JSONPath ($.users[0].email) with the
+    // matched value — one render path, one flag. Building the matches as N top-level entries of a
+    // plain array would give them apaths of [0]/[1] (design's basePath trap); keying by path keeps
+    // each result labelled by where it actually came from, and needs no dupPaths (keys are unique).
+    let queryValue = null; // non-null ⇒ query mode
     function renderTree() {
       if (treeBuilt) return;
       treeBuilt = true;
-      tree = JK.tree.build(displayValue, prettyEl, { scrollEl, dupPaths });
+      const value = queryValue == null ? displayValue : queryValue;
+      tree = JK.tree.build(value, prettyEl, queryValue == null ? { scrollEl, dupPaths } : { scrollEl });
       rail.render(tree.topLevel);
       renderStatus();
       bar.setFoldable(tree.hasContainers);
+    }
+
+    function showQuery(matches) {
+      const obj = {};
+      matches.forEach((m) => { obj[m.path] = m.value; });
+      queryValue = obj;
+      treeBuilt = false; tree = null;
+      if (search) search.reset();
+      if (bar.currentView() !== "pretty") setView("pretty", false);
+      else renderTree();
+    }
+    function clearQuery() {
+      queryValue = null;
+      treeBuilt = false; tree = null;
+      if (search) search.reset();
+      renderTree();
     }
 
     // Building a 20MB tree blocks the thread for seconds. Showing a skeleton first is the whole
@@ -170,6 +209,9 @@
       treeBuilt = false; tree = null; prettyEl.innerHTML = "";
       bar.resetFold();
       if (search) search.reset();
+      // Sort re-sorts the whole document; a filtered result left on screen would name paths into
+      // a tree that no longer matches. clear() resets the query bar UI and drops query mode.
+      if (query) query.clear();
       // persist=false: re-showing the view the user is already looking at says nothing new about
       // their preference. It matters because jk:sort arrives from an async callback, i.e. *after*
       // the heavy branch has deliberately not persisted "raw" — so persisting here would write
@@ -206,6 +248,12 @@
       // last row you clicked, not the match you're looking at. search bypasses jumpToPath (it does
       // its own scroll + jk-current), so it reveals the crumb itself.
       revealCrumb: (row) => { if (row && row._trail) showCrumb(row._trail); },
+    });
+
+    query = JK.query.mount(rootEl, {
+      getValue: () => displayValue,
+      onResult: showQuery,
+      onClear: clearQuery,
     });
 
     // ---- per-node copy (value / path / subtree) + breadcrumb (delegated) ----
