@@ -92,6 +92,19 @@ html.jk-active .jk-root { height:100vh; }
 .jk-count { color:var(--jk-faint); font-size:11.5px; margin-left:6px; }
 .jk-prev { color:var(--jk-faint); font-style:italic; }
 .jk-precise { text-decoration: underline dotted color-mix(in srgb, var(--jk-num) 55%, transparent); text-underline-offset:3px; cursor:help; }
+/* The status bar can only count duplicates; this says which row.
+   Out of the text flow, like .jk-acts. Anything inline fails here: the row is white-space:pre,
+   so a long value keeps pushing the marker rightwards while .jk-acts stays pinned to the right
+   edge — measured, an 80-char value put the warning under the copy buttons and a 120-char one
+   pushed it off-screen entirely. Margin can't fix that; it only moves where it breaks. Long
+   values are the common case in real JSON, so the marker anchors to the row instead.
+   Resolves against .jk-row (position:relative). On hover it steps aside for .jk-acts. */
+.jk-dup { position:absolute; right:10px; top:0; z-index:1; font-size:10.5px; font-weight:600;
+  color:var(--jk-num); background:var(--jk-panel);
+  border:1px solid color-mix(in srgb, var(--jk-num) 34%, transparent);
+  border-radius:999px; padding:0 7px; cursor:help; user-select:none;
+  transition:right .12s; }
+.jk-row:hover .jk-dup { right:118px; }
 
 /* per-node hover actions */
 .jk-acts { position:absolute; right:0; top:0; height:100%; display:none; align-items:center; gap:4px;

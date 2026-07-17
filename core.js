@@ -39,7 +39,7 @@
     }
 
     let value;
-    const diag = { dupKeys: [], bigInts: 0, lossy: [] };
+    const diag = { dupKeys: [], bigInts: 0, lossy: [], dupPaths: [] };
     try { value = JSONBig.parse(normalize(rawText), diag); }
     catch (e) {
       if (!opts.showErrors) return false;
@@ -68,6 +68,7 @@
     const topInfo = isContainer(value) ? (Array.isArray(value) ? value.length + " items" : Object.keys(value).length + " keys") : "value";
     const heavy = rawText.length > LARGE;
     const dupes = [...new Set(diag.dupKeys)];
+    const dupPaths = diag.dupPaths.map(JK.tree.trailToPath);
 
     // Function form, not the string: in a replacement string `$&`, `$'` and `` $` `` are
     // substitution patterns, so a toolbar label containing one would silently eat part of the
@@ -91,7 +92,7 @@
     function renderTree() {
       if (treeBuilt) return;
       treeBuilt = true;
-      tree = JK.tree.build(displayValue, prettyEl, { scrollEl });
+      tree = JK.tree.build(displayValue, prettyEl, { scrollEl, dupPaths });
       rail.render(tree.topLevel);
       renderStatus();
       bar.setFoldable(tree.hasContainers);

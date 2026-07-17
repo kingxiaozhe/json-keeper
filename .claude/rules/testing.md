@@ -58,6 +58,10 @@ node --test "tests/*.test.mjs"     # 引号必须有
 20. **在 ⋯ 菜单里能换肤**：开 `⋯` → 点 `Colors` 下拉 → **菜单不能当场关掉** → 选 Monokai → 立刻变色。（弹窗内的 `stopPropagation` 是承重的：没有它，点下拉框会冒泡到 document 把菜单关掉、根本换不了肤。桩不冒泡，这条自动化测不到。）
 21. **Raw 视图下 ⋯ 里没有 Collapse all**：切到 Raw → 开 `⋯` → **不该有** `Collapse all`（Raw 不建树，它点了没用还会把标签翻反）。切回 Pretty → 它出现。
 22. **排序状态一眼可见**：点 `⇅ Sort keys A→Z` → **关掉菜单** → 工具栏右侧常驻区应出现 `⇅ A→Z` 徽章。这条是护城河：排序会跨会话记忆，而 `Copy JSON` 复制的是重排后的内容 —— 用户必须在菜单关着时也知道。
+23. **重复 key 的行内标记看得见、且不被挡**：喂 `{"profile":{"reputation":450,"reputation":452}}` → `reputation` 那一行右侧出现 `⚠ duplicate key` → **鼠标悬停到该行** → 浮出的 `⧉`/`path` 按钮**不该盖住它**（`.jk-acts` 是 `position:absolute; right:0`，两者抢同一块地）。
+    **长值必须一起验**：喂一个 value 有 200 字符的重复 key 行 → 标记**仍在视口右侧可见**，不该被推出屏幕（行是 `white-space:pre`，inline 的标记会被长值一路推走 —— 实测 80 字符就被盖住、120 字符滚出屏幕，所以它是 `position:absolute`）。
+    **样式存在性**：标记必须是带边框的圆角徽章。删掉 `.jk-dup` 整条 CSS 规则，自动化测试**照样全绿**（Node 里判断不了 CSS 是否生效）—— 这条只有人眼能验。
+    **core 的接线**：`core.js` 不给树传 `dupPaths` 时功能彻底失效，而 248 条测试全绿（桩的 `querySelector` 返回幻影元素，树到不了 `collectHTML`，L-010 的结构性墙）。**所以这一整条只能靠人跑。**
 
 ## 正确性夹具
 

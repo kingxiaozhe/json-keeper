@@ -9,7 +9,7 @@ import { installDOM, makeMount } from "./_dom.mjs";
 import { loadJK } from "./_load.mjs";
 
 installDOM(); // tree.js 顶层不碰 DOM，但 build() 要 —— 先装桩再加载，顺序无所谓，保险起见如此
-const { build: buildTree, valueHTML, childAccessor } = loadJK().tree;
+const { build: buildTree, valueHTML, childAccessor, trailToPath } = loadJK().tree;
 
 const html = (value) => {
   const mount = makeMount();
@@ -315,6 +315,92 @@ test("jumpTo —— feature 2 的表格互跳与 feature 3 的校验定位都建
   await t.test("topLevel 带 apath —— rail 靠它跳转", () => {
     const tr = buildTree({ a: { x: 1 }, b: { y: 2 }, c: 3 }, makeMount(), { scrollEl: mkScroll() });
     assert.deepEqual(tr.topLevel.map((t) => t.apath), ["a", "b", "c"]);
+  });
+});
+
+// T-006。状态栏只能说"有 2 个重复 key，叫 a 和 b" —— 一千行的 JSON 里那不可行动。
+// 设计稿把警告钉在出事的那一行上，这才是"把别家静默做错的事说出来"的完整形态。
+// 靶（动手前列的）：① 标记钉错行 ② 同名 key 在别处被误标 ③ 排序后标记失效 ④ 标记没转义
+test("重复 key 的行内标记 —— 说全，不只说一半", async (t) => {
+  const dupPathsOf = (src) => {
+    const diag = { dupKeys: [], bigInts: 0, lossy: [], dupPaths: [] };
+    JSONBig.parse(src, diag);
+    // 用出厂的 trailToPath，不再在测试里重算一遍 —— 原来这行是 core.js 的逐字孪生，
+    // 于是验的是副本：core 那边怎么错都测不出来（实测 core 不传 dupPaths，245 条全绿）。
+    return diag.dupPaths.map(trailToPath);
+  };
+
+  await t.test("解析器给出重复 key 的路径，不只是名字", () => {
+    assert.deepEqual(dupPathsOf('{"profile":{"reputation":1,"reputation":2}}'), ["profile.reputation"]);
+  });
+
+  await t.test("数组里的重复 key 也定位得到", () => {
+    assert.deepEqual(dupPathsOf('{"users":[{"id":1,"id":2}]}'), ["users[0].id"]);
+  });
+
+  await t.test("标记钉在正确的行上", () => {
+    const src = '{"a":{"x":1,"x":2},"b":{"y":9}}';
+    const mount = makeMount();
+    const tr = buildTree(JSONBig.parse(src), mount, { dupPaths: dupPathsOf(src) });
+    assert.match(tr.byPath.get("a.x").collectHTML(), /duplicate key/, "出事的行必须有标记");
+    assert.ok(!/duplicate key/.test(tr.byPath.get("b.y").collectHTML()), "没事的行不该有");
+  });
+
+  await t.test("同名 key 在别的对象里不会被误标 —— 按路径不按名字", () => {
+    // 名字匹配的话，b.id 会被 a 的 id 重复所连累
+    const src = '{"a":{"id":1,"id":2},"b":{"id":9}}';
+    const mount = makeMount();
+    const tr = buildTree(JSONBig.parse(src), mount, { dupPaths: dupPathsOf(src) });
+    assert.match(tr.byPath.get("a.id").collectHTML(), /duplicate key/);
+    assert.ok(!/duplicate key/.test(tr.byPath.get("b.id").collectHTML()),
+      "b.id 只出现过一次，不该被同名的 a.id 连累");
+  });
+
+  await t.test("排序后标记仍在正确的行上 —— 路径经得住重排，对象身份不行", () => {
+    const src = '{"z":{"x":1,"x":2},"a":{"y":9}}';
+    const paths = dupPathsOf(src);
+    const parsed = JSONBig.parse(src);
+    // 模拟 core 的 sortValue：深拷贝 + 重排 key
+    const sortValue = (v) => Array.isArray(v) ? v.map(sortValue)
+      : (v && typeof v === "object" && typeof v !== "bigint")
+        ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortValue(v[k])])) : v;
+    const tr = buildTree(sortValue(parsed), makeMount(), { dupPaths: paths });
+    assert.match(tr.byPath.get("z.x").collectHTML(), /duplicate key/, "排序后标记不该丢");
+  });
+
+  await t.test("不传 dupPaths 时一个标记都没有（干净 JSON 不该有噪音）", () => {
+    const tr = buildTree({ a: 1 }, makeMount());
+    assert.ok(!/duplicate key/.test(tr.mount.collectHTML()));
+  });
+
+  await t.test("容器行的重复 key 也标得到（重复的是对象本身）", () => {
+    const src = '{"cfg":{"a":1},"cfg":{"b":2}}';
+    const tr = buildTree(JSONBig.parse(src), makeMount(), { dupPaths: dupPathsOf(src) });
+    assert.match(tr.byPath.get("cfg").collectHTML(), /duplicate key/);
+  });
+
+  // 假阳性：重复 key 的值本身是容器时，**被丢弃**那份子树里记的路径会指向存活那份的行。
+  // {"a":{"x":1,"x":2},"a":{"x":9}} → 存活的是 {x:9}，x 在里面只出现一次，
+  // 却被钉上警告、tooltip 还说"this is the one that survived" —— 对它是纯假话。
+  await t.test("被丢弃子树里的重复不冤枉存活的行", () => {
+    const src = '{"a":{"x":1,"x":2},"a":{"x":9}}';
+    const tr = buildTree(JSONBig.parse(src), makeMount(), { dupPaths: dupPathsOf(src) });
+    assert.match(tr.byPath.get("a").collectHTML(), /duplicate key/, "a 确实重复了，该标");
+    assert.ok(!/duplicate key/.test(tr.byPath.get("a.x").collectHTML()),
+      "存活的 a.x 只出现过一次 —— 它没被丢掉任何东西，不该被钉警告");
+  });
+
+  await t.test("但 dupKeys 仍如实计数 —— 文档确实含那个重复，只是它的行不存在", () => {
+    const diag = { dupKeys: [], bigInts: 0, lossy: [], dupPaths: [] };
+    JSONBig.parse('{"a":{"x":1,"x":2},"a":{"x":9}}', diag);
+    assert.deepEqual(diag.dupKeys.sort(), ["a", "x"], "计数说的是文档，不是渲染出来的树");
+    assert.deepEqual(diag.dupPaths.map(trailToPath), ["a"], "路径说的是树上真实存在的行");
+  });
+
+  await t.test("多层丢弃：只有最外层那个重复留下", () => {
+    const src = '{"o":{"p":{"q":1,"q":2}},"o":{"p":{"q":9}}}';
+    const paths = dupPathsOf(src);
+    assert.deepEqual(paths, ["o"], `实得: ${JSON.stringify(paths)}`);
   });
 });
 

@@ -26,6 +26,13 @@
     return parent + "[" + JSON.stringify(key) + "]";
   }
 
+  // jsonbig reports duplicate positions as neutral key trails (["users",0,"id"]); accessor
+  // strings are this module's format, so the conversion belongs here rather than at the call
+  // site. Numbers only ever come from array indices — object keys arrive from the parser's
+  // string(), so {"0":1} trails as the string "0" and renders as ["0"], not [0].
+  const trailToPath = (trail) =>
+    trail.reduce((acc, k) => childAccessor(acc, k, typeof k === "number"), "");
+
   // build(value, mount, { basePath, onCrumb }) -> instance handle
   //
   // basePath prefixes every accessor path. Query results are a synthetic array whose members
@@ -37,6 +44,11 @@
     const basePath = opts.basePath || "";
     const onCrumb = opts.onCrumb;
     const scrollEl = opts.scrollEl;
+    // Accessor paths whose row had a duplicated key. The status bar can only say how many and
+    // what they were called; in a thousand-line document that isn't something you can act on.
+    // Survives ⇅ Sort because it keys on path, not on object identity — sorting rebuilds the
+    // values but a key's path is the same either way.
+    const dupSet = opts.dupPaths ? new Set(opts.dupPaths) : null;
 
     mount.innerHTML = "";
     const tree = document.createElement("div");
@@ -90,6 +102,13 @@
       return r;
     }
 
+    // The spec says a repeated key keeps the last value and drops the rest, silently. Every
+    // other viewer lets that happen quietly; saying so on the row itself is the point.
+    const dupTag = (apath) =>
+      dupSet && dupSet.has(apath)
+        ? '<span class="jk-dup" title="This key appeared more than once in the same object. JSON keeps the last value and drops the rest — this is the one that survived.">⚠ duplicate key</span>'
+        : "";
+
     function walk(key, val, depth, isLast, crumb, apath) {
       tally(val);
       const comma = isLast ? "" : '<span class="jk-pun">,</span>';
@@ -101,7 +120,7 @@
         const head = row(depth,
           '<span class="jk-caret">▾</span>' + keyHTML + '<span class="jk-pun">' + open + "</span>" +
           '<span class="jk-count">' + entries.length + (arr ? " items" : " keys") + "</span>" +
-          '<span class="jk-prev" hidden> … ' + close + comma + "</span>", crumb, apath, val, true);
+          '<span class="jk-prev" hidden> … ' + close + comma + "</span>" + dupTag(apath), crumb, apath, val, true);
         const startIdx = rows.length;
         entries.forEach(([k, v], i) => walk(arr ? null : k, v, depth + 1, i === entries.length - 1,
           crumb + (arr ? "[" + k + "]" : " › " + k), childAccessor(apath, k, arr)));
@@ -123,7 +142,7 @@
         caret.addEventListener("click", (e) => { e.stopPropagation(); caret._collapse(!caret.classList.contains("jk-collapsed")); });
         if (depth === 1) topLevel.push({ key: arr ? "[" + key + "]" : key, head, n: entries.length, apath });
       } else {
-        const r = row(depth, '<span class="jk-caret jk-leaf">▾</span>' + keyHTML + valueHTML(val) + comma, crumb, apath, val, true);
+        const r = row(depth, '<span class="jk-caret jk-leaf">▾</span>' + keyHTML + valueHTML(val) + comma + dupTag(apath), crumb, apath, val, true);
         if (depth === 1) topLevel.push({ key: key === null ? "·" : key, head: r, leaf: true, apath });
       }
     }
@@ -203,5 +222,5 @@
     };
   }
 
-  JK.tree = { build, valueHTML, childAccessor };
+  JK.tree = { build, valueHTML, childAccessor, trailToPath };
 })(typeof window !== "undefined" ? window : globalThis);
