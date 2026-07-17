@@ -1,1 +1,1 @@
-{"node":"N8","feature":"1.ui-shell-redesign","task":"T-012","detail":"feature 1 全部 13 个任务完成，最后一步真浏览器冒烟通过","state":"running","at":"17:00:00"}
+{"node":"N8","feature":"1.ui-shell-redesign","task":"-","detail":"feature 1 全部完成，已推送 origin/main；剩接管/popup/打包三项人工冒烟待发版前跑","state":"done","at":"09:05:00"}

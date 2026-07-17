@@ -67,3 +67,4 @@
 {"at":"2026-07-17T16:30:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-012","event":"task_start","detail":"最后一步：把整套东西第一次放进真的 Chrome 里跑一遍，逐项对照冒烟清单"}
 {"at":"2026-07-17T16:45:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-012","event":"error","detail":"真浏览器第一屏就抓到一个老bug：右上角那个···菜单从头到尾开着盖在内容上（自动化测试看不见，因为桩没有CSS）。修了"}
 {"at":"2026-07-17T17:00:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-012","event":"task_done","detail":"通过：大整数/重复key/XSS/空态/深浅主题/面包屑点击/搜索 全部在真Chrome里实跑确认；405条自动化测试全过"}
+{"at":"2026-07-18T09:05:00","node":"N8","feature":"1.ui-shell-redesign","task":"-","event":"done","detail":"feature 1 全部13任务完成并推送到 origin/main（17个提交）。剩余人工冒烟项：接管真实JSON网址、popup弹窗、打包解压——发版前人跑"}
