@@ -7,8 +7,7 @@
   "use strict";
   const JK = (global.JK = global.JK || {});
   const JSONBig = global.JSONBig;
-  const { esc, isContainer, humanSize, store, normalize } = JK.util;
-  const LARGE = 1_000_000; // chars; above this, build the tree on demand to avoid freezing the tab
+  const { esc, isContainer, humanSize, store, normalize, LARGE } = JK.util;
 
   function download(name, text) {
     const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));

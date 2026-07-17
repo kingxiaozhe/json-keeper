@@ -62,8 +62,13 @@ class El {
   // 记住监听器并提供 _click —— 空的 addEventListener 会把回调全丢掉，
   // 于是「点了会怎样」这类断言永远测不到（L-007：桩留不住的状态 = 测不到的行为）。
   _on(type, fn) { (this._ls[type] || (this._ls[type] = [])).push(fn); }
-  _click() { const e = { target: this, stopPropagation() {}, preventDefault() {} };
-    (this._ls.click || []).forEach((f) => f(e)); }
+  // 真浏览器对 disabled 元素**根本不派发 click**。桩无条件派发的话，"按钮在不该禁用的时候
+  // 禁用了"这类 bug 结构上就抓不到 —— T-008 的防抖回归正好落在这个盲区里（L-007）。
+  _click() {
+    if (this.disabled) return;
+    const e = { target: this, stopPropagation() {}, preventDefault() {} };
+    (this._ls.click || []).forEach((f) => f(e));
+  }
   // 把整棵桩树的 innerHTML 拼起来 —— 断言就对着这串文本做。
   collectHTML() {
     return this._html + this.children.map((c) => (c.collectHTML ? c.collectHTML() : "")).join("");
@@ -73,7 +78,13 @@ class El {
 export function installDOM() {
   // document 不是 El，得有自己的监听器表 —— 溢出菜单靠 document 上的 click 来关闭。
   const docLs = {};
+  // popup.js 靠 getElementById 取元素，而那些元素来自 popup.html（桩不解析 HTML）。
+  // 测试自己建元素、注册进来 —— 验的仍是 popup.js 的真实逻辑，只是把 DOM 递给它。
+  const byId = new Map();
   globalThis.document = {
+    getElementById: (id) => byId.get(id) || null,
+    _register(id, el) { byId.set(id, el); return el; },
+    _clearIds() { byId.clear(); },
     createElement: (t) => new El(t),
     addEventListener(type, fn) { (docLs[type] || (docLs[type] = [])).push(fn); },
     removeEventListener(type, fn) {

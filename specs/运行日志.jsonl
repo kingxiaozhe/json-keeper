@@ -36,3 +36,9 @@
 {"at":"2026-07-17T05:26:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-007","event":"decision","detail":"主题同步抽成共享文件而不是两边各写：各写一份正是popup和查看器当初配色漂移的成因"}
 {"at":"2026-07-17T05:27:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-007","event":"decision","detail":"打包改白名单式：排除式命令每加一个新目录就破防一次，而且破了没人立刻知道，直到内部资料已经发出去"}
 {"at":"2026-07-17T05:30:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-007","event":"task_done","detail":"通过：282条测试全过；发布包从74个文件304K瘦到21个文件60K"}
+{"at": "2026-07-17T11:43:53+08:00", "node": "-", "feature": "1.ui-shell-redesign", "task": "-", "event": "error", "detail": "审计补记:03:45 T-005 done后运行中断无收尾事件;另发现 08:10-08:18 有会话在日志外修改过 LESSONS/status"}
+{"at": "2026-07-17T11:43:53+08:00", "node": "-", "feature": "1.ui-shell-redesign", "task": "-", "event": "pause", "detail": "审计发现:T-001~T-005(含b)全部无 .reviews/ 凭证——审查确有发生(METRICS/日志有拦截明细)但原始输出未落盘,不可追认;恢复运行时起严格执行凭证制,存量缺失如实留档"}
+{"at":"2026-07-17T06:35:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-008","event":"review","detail":"第1轮审查：13个靶9抓4存活；抓到我造的回归——粘贴后300毫秒内按钮是禁用的，正好复活了要消灭的那条差评","rounds":1,"blocked":4,"channel":"子agent(降级)"}
+{"at":"2026-07-17T06:36:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-008","event":"error","detail":"审查员误跑git checkout清掉了我未提交的改动，它从备份还原了；我逐项核实文件完好"}
+{"at":"2026-07-17T06:37:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-008","event":"decision","detail":"报错文案改用纯文本渲染而不是留转义函数：没有解释HTML的地方就没有注入面，防御要靠人记住，消除不用"}
+{"at":"2026-07-17T06:40:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-008","event":"task_done","detail":"通过：318条测试全过；粘完立刻点就能用了"}

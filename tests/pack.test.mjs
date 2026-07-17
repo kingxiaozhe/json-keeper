@@ -52,6 +52,23 @@ test("manifest 声明的每个文件都真实存在 —— 打包脚本据此推
   }
 });
 
+// popup.js 顶层就解构 window.JK.util —— 漏加载 util.js 时它会在第一行抛 TypeError，
+// popup 整个白屏。而 tests/popup.test.mjs 是自己 loadJK 的，测不到这条装载线。
+test("popup 页装齐了它依赖的模块", async (t) => {
+  const html = read("popup.html");
+  for (const need of ["jsonbig.js", "util.js", "popup.js", "theme-boot.js", "tokens.css"]) {
+    await t.test(need, () => {
+      assert.ok(html.includes(need), `popup.html 漏了 ${need} —— popup.js 顶层解构 window.JK.util，缺它直接白屏`);
+    });
+  }
+
+  await t.test("util.js 排在 popup.js 之前（JS 的加载顺序真的要紧，不像 CSS）", () => {
+    const order = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]);
+    assert.ok(order.indexOf("util.js") < order.indexOf("popup.js"), `顺序错: ${order}`);
+    assert.ok(order.indexOf("jsonbig.js") < order.indexOf("util.js"), `jsonbig 要先于 util: ${order}`);
+  });
+});
+
 test("扩展页面引用的资源都存在 —— 否则装上去才发现白屏", async (t) => {
   for (const page of ["popup.html", "viewer.html"]) {
     await t.test(page, () => {

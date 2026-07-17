@@ -28,6 +28,11 @@
   // them down the float path and loses the precision we went to such lengths to keep.
   const isIntegerLike = (v) => typeof v === "bigint" || Number.isInteger(v);
 
+  // Above this the viewer opens in Raw and builds the tree only when asked. Shared because it's
+  // a promise across modules, not a local tuning knob: popup tells you "this opens in raw mode",
+  // core decides whether it actually does. Two copies drifting apart means the popup lies.
+  const LARGE = 1_000_000; // chars (UTF-16 code units, same unit humanSize reports)
+
   const store = {
     get(k, cb) { try { chrome.storage.local.get(k, (r) => cb(r && r[k])); } catch { cb(undefined); } },
     set(k, v) { try { chrome.storage.local.set({ [k]: v }); } catch {} },
@@ -45,6 +50,6 @@
     return t;
   }
 
-  JK.util = { esc, escAttr, isContainer, humanSize, idKey, isIntegerLike, store, normalize };
+  JK.util = { esc, escAttr, isContainer, humanSize, idKey, isIntegerLike, store, normalize, LARGE };
   JK.normalize = normalize; // content.js and the viewer page reach for it at the top level
 })(typeof window !== "undefined" ? window : globalThis);

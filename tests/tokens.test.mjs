@@ -258,6 +258,23 @@ test("popup 的 328px 硬约束", async (t) => {
   });
 });
 
+// LARGE 是**跨模块承诺**，不是本地调参：popup 说"这份会以 raw 模式打开"，core 决定它是否真的
+// 以 raw 打开。两边各存一份就会漂，一漂 popup 就在对用户撒谎。
+// 与 jk:theme 的键名、storage area 是同一类契约 —— 那两个都因为没设防被抓过。
+test("LARGE 阈值只有一份", async (t) => {
+  await t.test("定义在 util.js 里", () => {
+    assert.match(read("util.js"), /const LARGE = 1_000_000/);
+  });
+
+  await t.test("core 与 popup 都从 util 取，不自己定义", () => {
+    for (const f of ["core.js", "popup.js"]) {
+      const src = read(f);
+      assert.ok(!/const LARGE\s*=/.test(src), `${f} 又自己定义了一份 LARGE —— 必然与 util 漂移`);
+      assert.match(src, /LARGE/, `${f} 应当在用 LARGE`);
+    }
+  });
+});
+
 test("零网络红线 —— 样式里不许有远程资源", async (t) => {
   for (const [name, css] of [["tokens.css", tokens], ["viewer.css", viewer]]) {
     await t.test(`${name} 无 @import / 远程 url() / CDN 字体`, () => {

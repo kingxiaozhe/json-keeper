@@ -19,8 +19,17 @@
       font-family: ui-monospace, Menlo, monospace; font-size: 12px; line-height: 1.5;
       border: 1px solid var(--jk-border2); border-radius: 9px; padding: 10px; background: var(--jk-panel2); color: var(--jk-fg); }
     textarea::placeholder { color: var(--jk-faint); }
+    /* Fed something unparseable, the box says so where you typed it. */
+    textarea.bad { border-color: var(--jk-num); }
     .go { width: 100%; margin-top: 10px; padding: 9px 0; font: inherit; font-size: 13px; font-weight: 600;
       border: none; border-radius: 8px; background: var(--jk-accent); color: #fff; cursor: pointer; }
+    /* An empty box with a live button that does nothing is the top complaint about the tool this
+       one replaces. Disabled and visibly so. */
+    .go:disabled { background: var(--jk-panel2); color: var(--jk-faint); cursor: default; }
+    /* One line under the box: the parse error, or the heads-up that this opens in large-file
+       mode. Reserved height so the button doesn't jump as you type. */
+    .say { min-height: 15px; margin-top: 7px; font-size: 11px; line-height: 1.35; color: var(--jk-faint); }
+    .say.bad { color: var(--jk-num); }
     .hint { font-size: 10.5px; color: var(--jk-faint); line-height: 1.45; margin-top: 9px; }
     .hint code { color: var(--jk-dim); background: var(--jk-panel2); padding: 1px 4px; border-radius: 4px; }
     .foot { display: flex; justify-content: space-between; padding: 10px 16px; border-top: 1px solid var(--jk-border2);
@@ -35,10 +44,13 @@
   </div>
   <div class="b">
     <textarea id="in" placeholder='{"id": 136986234663732436, "ok": true}' autofocus></textarea>
-    <button class="go" id="go">Format JSON →</button>
+    <div class="say" id="say" role="status" aria-live="polite"></div>
+    <button class="go" id="go" disabled>Format JSON →</button>
     <div class="hint">To view local files, enable <code>Allow access to file URLs</code> for this extension in chrome://extensions.</div>
   </div>
   <div class="foot"><span>no ads · open source</span><span class="mono">local-only</span></div>
+  <script src="jsonbig.js"></script>
+  <script src="util.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
