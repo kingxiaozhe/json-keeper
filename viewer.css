@@ -33,6 +33,11 @@ html.jk-active .jk-root { height:100vh; }
 .jk-menu-pop { position:absolute; top:calc(100% + 6px); right:0; z-index:20; min-width:200px;
   padding:5px; background:var(--jk-panel); border:1px solid var(--jk-border2); border-radius:9px;
   box-shadow:var(--jk-shadow); display:flex; flex-direction:column; gap:2px; }
+/* display:flex above beats the UA [hidden]{display:none} (same specificity, author sheet wins),
+   so the menu ignored its hidden attribute and stood permanently open over the tree. The toggle
+   sets pop.hidden; this is what makes that mean anything. Node's stub has no CSS, so 400 tests
+   stayed green while the shipped menu never closed — the first real-browser run caught it. */
+.jk-menu-pop[hidden] { display:none; }
 .jk-menu-g { display:flex; flex-direction:column; gap:2px; }
 .jk-menu-g + .jk-menu-g { margin-top:5px; padding-top:5px; border-top:1px solid var(--jk-border); }
 .jk-menu-i { font:inherit; font-size:12.5px; text-align:left; white-space:nowrap; padding:6px 9px;

@@ -64,3 +64,6 @@
 {"at":"2026-07-17T15:40:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-006","event":"review","detail":"审查说代码没有正确性缺陷（这次的测试是真的点了按钮）；揪出一条残留：从搜索框跳过去时面包屑没跟着更新。修了","轮次":1,"拦截数":1,"通道":"子agent(降级)"}
 {"at":"2026-07-17T15:55:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-006","event":"task_done","detail":"通过：400条测试全过；顶部路径条现在点哪跳哪，且不管从哪跳过去它都会跟着走"}
 {"at":"2026-07-17T15:56:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-011","event":"task_done","detail":"前置补齐后重核通过：三个界面该有的元素都在，缺的都有名有姓的理由"}
+{"at":"2026-07-17T16:30:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-012","event":"task_start","detail":"最后一步：把整套东西第一次放进真的 Chrome 里跑一遍，逐项对照冒烟清单"}
+{"at":"2026-07-17T16:45:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-012","event":"error","detail":"真浏览器第一屏就抓到一个老bug：右上角那个···菜单从头到尾开着盖在内容上（自动化测试看不见，因为桩没有CSS）。修了"}
+{"at":"2026-07-17T17:00:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-012","event":"task_done","detail":"通过：大整数/重复key/XSS/空态/深浅主题/面包屑点击/搜索 全部在真Chrome里实跑确认；405条自动化测试全过"}

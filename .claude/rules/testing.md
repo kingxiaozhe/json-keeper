@@ -79,6 +79,18 @@ node --test "tests/*.test.mjs"     # 引号必须有
 29. **状态栏在窄窗口下不吃掉 Build tree 与 trust 行**：造一份 **> 1MB 且带 4 个重复 key** 的 JSON（护城河的旗舰场景：大文件 + 重复 key）→ 在 **1280px 或更窄**的窗口打开（或开着 devtools）→ 状态栏从左到右应当**全部可见**：`● valid JSON`、`⚠ 4 duplicate keys…`（**可以省略号截断**）、`— large file…`、**`Build tree` 按钮**、`big integers kept exact · no ads · no telemetry`。
     > 实测（对抗审查在真浏览器里量的）：`.jk-status` 是 `nowrap` + `overflow:hidden` 的 flex，**nowrap 文本项的 `min-width:auto` = min-content，谁都不收缩**，于是整块从右边裁掉 —— 1 个重复 key 在 < 840px、2 个在 < 950px、4 个在 < 1210px 就开始裁。1080px + 4 个重复 key 时按钮和 trust 行**完全不可见**，AC-007 与 AC-008 双双不过。修法是让 `.jk-warn` 去截断（`min-width:0` + ellipsis），它是这行里唯一"丢了尾巴还能干活"的东西。
     > 和第 23 条同形：**两个东西抢同一块地，而 Node 里量不出宽度**。
+30. **⋯ 溢出菜单默认是关的、点一下才开**：打开任意 JSON → 树上方**不该**浮着 `Collapse all / Sort / Download / Theme / Colors` 那张菜单 → 点 `⋯` → 菜单出现 → 再点 `⋯` 或点菜单外 → 关掉。
+    > **T-012 首次真实 Chrome 运行抓到的真 bug**：`.jk-menu-pop` 有 `display:flex` 却少了 `[hidden]{display:none}` 兜底规则。`[hidden]` 靠 UA 的 `[hidden]{display:none}`，特异性与 `.jk-menu-pop` 同为 (0,1,0)，源序在后的作者样式胜出 → **hidden 属性形同虚设，菜单从 T-004 起一直开着盖在树上**，而 400 条自动化全绿（桩没有 CSS）。已补 `.jk-menu-pop[hidden]{display:none}`，并加 `tests/css-hidden.test.mjs` 锁住"有覆盖性 display 的收起浮层必须有 [hidden] 兜底"（源码级，防回归）。
+
+## 渲染冒烟工具（`smoke-harness.html`）
+
+第 3/5/6/9/11–14/20/23/26 这些**关于渲染**的项，不必每次都手动加载解压扩展 —— `smoke-harness.html` 桩掉 `chrome.storage`、加载真实源码 + 真实 CSS，挂一份同时触发大整数/重复 key/嵌套/空态/XSS 的 JSON。跑法：
+```bash
+python3 -m http.server 8731    # 仓库根目录
+# 浏览器开 http://localhost:8731/smoke-harness.html
+```
+它就是 T-012 抓到 ⋯ 菜单常开 bug 的地方 —— **真实 CSS 的层叠只有真浏览器能验**。
+**局限**：它只覆盖 **viewer 渲染路径**。content script 接管（真实 JSON 网址）、popup 作为弹窗、打包产物 —— 仍需第 1/2/10/24/25 项按真实扩展跑。`pack.sh` 是白名单式，harness 不会进包。
 
 ## 正确性夹具
 
