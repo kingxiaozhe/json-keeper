@@ -16,19 +16,19 @@
 
 ### 防护网基线（B3）
 
-- [ ] T-101: 复跑并扩充防护网基线，锁住将被触碰的存量行为 ~30min
+- [x] T-101: 复跑并扩充防护网基线，锁住将被触碰的存量行为 ~30min
   - `1.ui-shell-redesign` 的 T-001 已建 `node --test tests/` 骨架，**复用，不重造**。
   - 本 feature 触碰视图切换与搜索 → 补锁：`jk:view` 读到未知值时回落 `pretty`；`search` 的命中计数与跳转行为。
   - 涉及模块: `tests/`
 
 ### 功能 1: JSONPath 求值器（F-101 基础）
 
-- [ ] T-102: 实现 `jsonpath.js` 词法与 AST 解析 ~1h
+- [x] T-102: 实现 `jsonpath.js` 词法与 AST 解析 ~1h
   - 涉及模块: `jsonpath.js`(新)、`manifest.json`、`viewer.html`（加载顺序）
   - 支持: `$`、`.key`、`['key']`、`..key`、`[*]`、`[n]`、`[-n]`、`[a:b]`、`[a,b]`
   - 遇 `?(` → 返回明确的"暂不支持 filter 表达式"错误，而非语法错。
   - **禁 `eval`/`new Function`**（AC-108 用 grep 验证）。
-- [ ] T-103: 实现 `evalPath` 求值 + 单元测试 ~1h
+- [x] T-103: 实现 `evalPath` 求值 + 单元测试 ~1h
   - 涉及模块: `jsonpath.js`、`tests/`
   - 返回 `{path, apath, value}`，`apath` 复用 `tree.js` 的 `childAccessor` 格式。
   - **大整数原样穿过**，不得触碰 `Number()`/`parseInt`。
@@ -36,7 +36,7 @@
 
 ### 功能 2: 查询栏（F-101/F-102/F-103）
 
-- [ ] T-104: 查询栏 UI + 结果视图 + 计数 + 清除出口 + 语法错误态 ~1h
+- [x] T-104: 查询栏 UI + 结果视图 + 计数 + 清除出口 + 语法错误态 ~1h
   - 涉及模块: `query.js`(新)、`toolbar.js`、`core.js`、`viewer.css`
   - Enter 触发求值；与搜索框并列，不替换（`/` 聚焦搜索的老行为不得失效）。
   - 错误态**保留上一次成功结果**（AC-103）。
@@ -44,7 +44,7 @@
 
 ### 功能 3: 表格视图（F-104~F-107）
 
-- [ ] T-105: 实现 `table.js` — 可用性判定 + 列并集 + 缺失/null 区分 + 大整数高亮 ~1h
+- [x] T-105: 实现 `table.js` — 可用性判定 + 列并集 + 缺失/null 区分 + 大整数高亮 ~1h
   - 涉及模块: `table.js`(新)、`viewer.css`、`manifest.json`、`viewer.html`
   - **F-104 是本 feature 的核心正确性点**：缺失字段渲染弱色 `—` + tooltip，真 `null` 渲染 `--jk-null` 色，两者视觉可区分。
   - 列头来自用户 JSON 的 key，**是不可信数据**，必须 `esc()`/`escAttr()`。

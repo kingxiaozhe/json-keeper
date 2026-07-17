@@ -68,3 +68,13 @@
 {"at":"2026-07-17T16:45:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-012","event":"error","detail":"真浏览器第一屏就抓到一个老bug：右上角那个···菜单从头到尾开着盖在内容上（自动化测试看不见，因为桩没有CSS）。修了"}
 {"at":"2026-07-17T17:00:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-012","event":"task_done","detail":"通过：大整数/重复key/XSS/空态/深浅主题/面包屑点击/搜索 全部在真Chrome里实跑确认；405条自动化测试全过"}
 {"at":"2026-07-18T09:05:00","node":"N8","feature":"1.ui-shell-redesign","task":"-","event":"done","detail":"feature 1 全部13任务完成并推送到 origin/main（17个提交）。剩余人工冒烟项：接管真实JSON网址、popup弹窗、打包解压——发版前人跑"}
+{"at":"2026-07-18T09:20:00","node":"N2","feature":"2.query-and-table-view","task":"-","event":"node_enter","detail":"开始 feature 2：给查看器加 JSONPath 查询和表格视图；10个任务，串行做（都要动同几个共享文件）"}
+{"at":"2026-07-18T09:21:00","node":"N3","feature":"2.query-and-table-view","task":"T-101","event":"task_start","detail":"先复跑并补齐防护网，锁住这次会碰到的视图切换和搜索行为"}
+{"at":"2026-07-18T09:35:00","node":"N5","feature":"2.query-and-table-view","task":"T-101","event":"task_done","detail":"通过：锁住了'老用户存的视图偏好读到怪值要回落Pretty'这条兼容闸门，414条测试全过"}
+{"at":"2026-07-18T09:36:00","node":"N3","feature":"2.query-and-table-view","task":"T-102","event":"task_start","detail":"手写 JSONPath 解析器——这是新的正确性核心，跟大整数解析器同等重要，绝不用eval"}
+{"at":"2026-07-18T10:15:00","node":"N5","feature":"2.query-and-table-view","task":"T-102","event":"task_done","detail":"JSONPath 解析器写完：支持 $ .key ..递归 [*] 负索引 切片 多选；遇到不支持的filter给明确提示"}
+{"at":"2026-07-18T10:16:00","node":"N5","feature":"2.query-and-table-view","task":"T-103","event":"task_done","detail":"求值+19条单测：切片/负索引/递归下降边界全覆盖，大整数原样穿过，路径格式与树一致；7/7变异全抓"}
+{"at":"2026-07-18T11:30:00","node":"N4","feature":"2.query-and-table-view","task":"T-103","event":"review","detail":"JSONPath审查回来：两条护城河（路径一致、大整数保真）和禁eval都核实过关；揪出递归下降漏根节点1个真bug+2个测试盲区，都修了","轮次":1,"拦截数":3,"通道":"子agent(降级)"}
+{"at":"2026-07-18T11:35:00","node":"N5","feature":"2.query-and-table-view","task":"T-104","event":"task_done","detail":"查询栏做完：输入JSONPath回车筛出子集，计数/清除/语法错误保留上次结果都通了，446测试全过"}
+{"at":"2026-07-18T11:36:00","node":"N3","feature":"2.query-and-table-view","task":"T-105","event":"task_start","detail":"表格视图核心：把'字段缺失'和'值就是null'画得能区分开——这是本功能的护城河点"}
+{"at":"2026-07-18T12:10:00","node":"N5","feature":"2.query-and-table-view","task":"T-105","event":"task_done","detail":"表格核心做完：字段缺失画成弱色横杠、值为null画成null色，一眼能分——这是本功能卖点。457测试全过"}
