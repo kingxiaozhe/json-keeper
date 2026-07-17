@@ -125,6 +125,9 @@ export function installDOM() {
     _register(id, el) { byId.set(id, el); return el; },
     _clearIds() { byId.clear(); },
     createElement: (t) => new El(t),
+    // 文本节点：贡献 textContent、不贡献 innerHTML（真实 DOM 里文本节点没有标记）。
+    // 面包屑用它做段间分隔符 —— 分隔符不该是可点的按钮，纯文本最忠实。
+    createTextNode: (v) => ({ textContent: String(v) }),
     addEventListener(type, fn) { (docLs[type] || (docLs[type] = [])).push(fn); },
     removeEventListener(type, fn) {
       const a = docLs[type]; if (!a) return;

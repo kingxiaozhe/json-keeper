@@ -60,6 +60,11 @@ html.jk-active .jk-root { height:100vh; }
 
 /* breadcrumb */
 .jk-crumb { flex:0 0 auto; padding:5px 14px; font-size:11.5px; color:var(--jk-dim); background:var(--jk-panel); border-bottom:1px solid var(--jk-border); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Ancestor segments jump; the current node doesn't (it's where you already are). */
+.jk-crumb-i { font:inherit; font-size:11.5px; color:var(--jk-dim); background:transparent; border:0; padding:0; cursor:pointer; border-radius:3px; }
+.jk-crumb-i:hover { color:var(--jk-accent); text-decoration:underline; }
+.jk-crumb-i:focus-visible { outline:2px solid var(--jk-accent); outline-offset:1px; }
+.jk-crumb-cur { color:var(--jk-fg); font-weight:600; }
 
 /* main = rail + scroll */
 .jk-main { flex:1 1 auto; display:flex; min-height:0; }

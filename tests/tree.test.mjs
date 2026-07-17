@@ -280,7 +280,9 @@ test("jumpTo —— feature 2 的表格互跳与 feature 3 的校验定位都建
     tr.collapseAll();
     const target = tr.byPath.get("app.db.conn.host");
     assert.equal(target.style.display, "none", "前提：折叠后目标是隐藏的");
-    assert.equal(tr.jumpTo("app.db.conn.host"), true);
+    // 契约变更（T-006）：jumpTo 成功时从返回 `true` 改为返回**目标行**——core 要读 row._trail
+    // 把面包屑带到跳转目标。仍是 truthy，失败仍返回 false（下一条锁着）。显式改这行 = 让契约变更被看见。
+    assert.equal(tr.jumpTo("app.db.conn.host"), target, "成功时返回目标行本身（不再是裸 true）");
     assert.notEqual(target.style.display, "none", "jumpTo 必须展开祖先链");
     assert.ok(target.classList.contains("jk-hit"), "必须高亮目标");
   });

@@ -136,7 +136,13 @@
     function jumpToPath(apath, o) {
       renderTree();
       if (bar.currentView() !== "pretty") setView("pretty", false);
-      return tree ? tree.jumpTo(apath, o) : false;
+      const row = tree ? tree.jumpTo(apath, o) : false;
+      // The breadcrumb is where you are, so a jump (rail, search, a crumb ancestor, feature 2's
+      // cell clicks) has to move it too. Without this it kept naming the last row you *clicked*,
+      // which — now that its segments are clickable — pointed you somewhere unrelated to the
+      // highlighted row.
+      if (row && row._trail) showCrumb(row._trail);
+      return row;
     }
 
     // persist=false for view changes the user didn't ask for. Jumping to a node has to show the
@@ -196,6 +202,10 @@
       // the view tabs (and nothing else) get to state a preference.
       ensurePretty: () => { if (bar.currentView() !== "pretty") setView("pretty", false); },
       onExpandAll: () => bar.resetFold(),
+      // A search hit is a jump too: without this the (now clickable) breadcrumb keeps naming the
+      // last row you clicked, not the match you're looking at. search bypasses jumpToPath (it does
+      // its own scroll + jk-current), so it reveals the crumb itself.
+      revealCrumb: (row) => { if (row && row._trail) showCrumb(row._trail); },
     });
 
     // ---- per-node copy (value / path / subtree) + breadcrumb (delegated) ----
@@ -216,11 +226,40 @@
         }
         try { await navigator.clipboard.writeText(text); bar.setFlash("Copied " + label + " ✓"); }
         catch { bar.setFlash("Copy blocked"); }
-        if (act.dataset.t === "path" && r.dataset.path) crumbEl.textContent = r.dataset.path;
+        if (act.dataset.t === "path" && r._trail) showCrumb(r._trail);
         return;
       }
       const r = e.target.closest(".jk-row");
-      if (r && r.dataset.path) crumbEl.textContent = r.dataset.path;
+      if (r && r._trail) showCrumb(r._trail);
+    });
+
+    // The breadcrumb is where you are; its ancestors are how you get back up. It used to be inert
+    // text — a path that names nodes you can't act on, the same dead affordance this project keeps
+    // finding (the viewer's Format button, the rail while in Raw). Every segment but the last is a
+    // button that jumps to that ancestor; the last is the current node, so it's plain text.
+    let crumbTrail = [];
+    function showCrumb(trail) {
+      crumbTrail = trail;
+      crumbEl.textContent = "";
+      trail.forEach((t, i) => {
+        if (t.sep) crumbEl.appendChild(document.createTextNode(t.sep));
+        if (i === trail.length - 1) {
+          const span = document.createElement("span");
+          span.className = "jk-crumb-cur";
+          span.textContent = t.label;
+          crumbEl.appendChild(span);
+        } else {
+          const b = document.createElement("button");
+          b.className = "jk-crumb-i";
+          b.dataset.i = i;
+          b.textContent = t.label;
+          crumbEl.appendChild(b);
+        }
+      });
+    }
+    crumbEl.addEventListener("click", (e) => {
+      const b = e.target.closest(".jk-crumb-i");
+      if (b) jumpToPath(crumbTrail[+b.dataset.i].apath);
     });
 
     store.get("jk:sort", (v) => { if (v) { sorted = true; applySort(); } });

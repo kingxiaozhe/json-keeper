@@ -59,3 +59,8 @@
 {"at":"2026-07-17T13:20:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-011","event":"review","detail":"审查把我打穿了：我那8条测试从没点过按钮，它换个角度打6发全中；还查出底部状态条在'看原文'模式下整条消失（老版本就有）；最要命的是前置任务T-006压根没做，我却签了验收","轮次":1,"拦截数":5,"通道":"子agent(降级)"}
 {"at":"2026-07-17T13:40:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-011","event":"error","detail":"记账错误：我的内部清单把T-006标成完成，而所有正式记录都说没做——就是它让这次验收在前置没做的情况下开跑"}
 {"at":"2026-07-17T14:00:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-011","event":"decision","detail":"T-011 不签，退回等 T-006 做完再重核；这次挖出的独立缺陷就地修掉并入网"}
+{"at":"2026-07-17T15:00:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-006","event":"task_start","detail":"补做被漏掉的 T-006：把顶部那行路径（面包屑）从只能看，做成点一下就能跳回上层"}
+{"at":"2026-07-17T15:10:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-006","event":"decision","detail":"面包屑做成可点而不是保留静态：一条点不动的路径条正是本项目反复在消灭的死按钮，且跳转管线本就齐全，几乎零成本"}
+{"at":"2026-07-17T15:40:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-006","event":"review","detail":"审查说代码没有正确性缺陷（这次的测试是真的点了按钮）；揪出一条残留：从搜索框跳过去时面包屑没跟着更新。修了","轮次":1,"拦截数":1,"通道":"子agent(降级)"}
+{"at":"2026-07-17T15:55:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-006","event":"task_done","detail":"通过：400条测试全过；顶部路径条现在点哪跳哪，且不管从哪跳过去它都会跟着走"}
+{"at":"2026-07-17T15:56:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-011","event":"task_done","detail":"前置补齐后重核通过：三个界面该有的元素都在，缺的都有名有姓的理由"}

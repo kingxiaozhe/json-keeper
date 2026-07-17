@@ -45,6 +45,9 @@
       r.classList.add("jk-current");
       scrollEl.scrollTop = r.offsetTop - scrollEl.clientHeight / 2;
       findN.textContent = cur + 1 + "/" + matches.length;
+      // The breadcrumb should name the match you're on, not the last row you clicked — otherwise
+      // its (clickable) segments jump into an unrelated subtree.
+      if (ctx.revealCrumb) ctx.revealCrumb(r);
     }
 
     function reset() {

@@ -72,11 +72,16 @@
       else counts[typeof v]++;
     };
 
-    function row(depth, inner, crumb, apath, val, actionable) {
+    // `trail` is the breadcrumb as data, not a pre-joined string: one entry per ancestor plus
+    // self, each carrying its own apath so core can make the segments clickable (jump to any
+    // ancestor). The display string is derived from it, so "copy path" and the Raw-view crumb
+    // read exactly as before. Closing rows pass no trail.
+    const crumbOf = (trail) => trail.map((t) => t.sep + t.label).join("");
+    function row(depth, inner, trail, apath, val, actionable) {
       const r = document.createElement("div");
       r.className = "jk-row";
       r._depth = depth;
-      if (crumb) r.dataset.path = crumb;
+      if (trail) { r._trail = trail; r.dataset.path = crumbOf(trail); }
       if (apath !== undefined) {
         r._apath = apath;
         r._val = val;
@@ -118,7 +123,12 @@
         ? '<span class="jk-dup" title="This key appeared more than once in the same object. JSON keeps the last value and drops the rest — this is the one that survived.">⚠ duplicate key</span>'
         : "";
 
-    function walk(key, val, depth, isLast, crumb, apath) {
+    // one trail entry per child; sep is what sits before the label in the joined string
+    // (" › " for object keys, "" for array indices — those read as "parent[3]").
+    const step = (trail, k, apath, arr) =>
+      trail.concat({ label: arr ? "[" + k + "]" : String(k), apath, sep: arr ? "" : " › " });
+
+    function walk(key, val, depth, isLast, trail, apath) {
       tally(val);
       const comma = isLast ? "" : '<span class="jk-pun">,</span>';
       const keyHTML = key !== null ? '<span class="jk-key">"' + esc(key) + '"</span><span class="jk-pun">: </span>' : "";
@@ -129,10 +139,10 @@
         const head = row(depth,
           '<span class="jk-caret">▾</span>' + keyHTML + '<span class="jk-pun">' + open + "</span>" +
           countHTML(entries.length, arr) +
-          '<span class="jk-prev" hidden> … ' + close + comma + "</span>" + dupTag(apath), crumb, apath, val, true);
+          '<span class="jk-prev" hidden> … ' + close + comma + "</span>" + dupTag(apath), trail, apath, val, true);
         const startIdx = rows.length;
         entries.forEach(([k, v], i) => walk(arr ? null : k, v, depth + 1, i === entries.length - 1,
-          crumb + (arr ? "[" + k + "]" : " › " + k), childAccessor(apath, k, arr)));
+          step(trail, k, childAccessor(apath, k, arr), arr), childAccessor(apath, k, arr)));
         row(depth, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + close + "</span>" + comma);
         const blockRows = rows.slice(startIdx);
         const caret = head.querySelector(".jk-caret"), prev = head.querySelector(".jk-prev"), count = head.querySelector(".jk-count");
@@ -151,7 +161,7 @@
         caret.addEventListener("click", (e) => { e.stopPropagation(); caret._collapse(!caret.classList.contains("jk-collapsed")); });
         if (depth === 1) topLevel.push({ key: arr ? "[" + key + "]" : key, head, n: entries.length, apath });
       } else {
-        const r = row(depth, '<span class="jk-caret jk-leaf">▾</span>' + keyHTML + valueHTML(val) + comma + dupTag(apath), crumb, apath, val, true);
+        const r = row(depth, '<span class="jk-caret jk-leaf">▾</span>' + keyHTML + valueHTML(val) + comma + dupTag(apath), trail, apath, val, true);
         if (depth === 1) topLevel.push({ key: key === null ? "·" : key, head: r, leaf: true, apath });
       }
     }
@@ -163,14 +173,15 @@
       // The container root carries basePath as its own accessor. It used to pass no apath at
       // all, so the root row had none while a scalar root did — and a validator reporting a
       // missing top-level key had no row to point at.
+      const rootTrail = [{ label: "root", apath: basePath, sep: "" }];
       row(0, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + (arr ? "[" : "{") + "</span>" +
-        countHTML(entries.length, arr), "root", basePath, value, false);
+        countHTML(entries.length, arr), rootTrail, basePath, value, false);
       entries.forEach(([k, v], i) => walk(arr ? null : k, v, 1, i === entries.length - 1,
-        arr ? "root[" + k + "]" : "root › " + k, childAccessor(basePath, k, arr)));
+        step(rootTrail, k, childAccessor(basePath, k, arr), arr), childAccessor(basePath, k, arr)));
       row(0, '<span class="jk-caret jk-leaf">▾</span><span class="jk-pun">' + (arr ? "]" : "}") + "</span>");
     } else {
       tally(value);
-      row(0, '<span class="jk-caret jk-leaf">▾</span>' + valueHTML(value), "root", basePath, value, true);
+      row(0, '<span class="jk-caret jk-leaf">▾</span>' + valueHTML(value), [{ label: "root", apath: basePath, sep: "" }], basePath, value, true);
     }
     mount.appendChild(tree);
 
@@ -217,7 +228,7 @@
       }
       row.classList.add("jk-hit");
       setTimeout(() => row.classList.remove("jk-hit"), 900);
-      return true;
+      return row; // truthy like before, but lets the caller read row._trail for the breadcrumb
     }
 
     return {

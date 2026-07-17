@@ -61,9 +61,13 @@
   - 基准: `specs/docs/design-baseline/`（**结构基准** — 元素与层级对齐，视觉可再设计）。
   - **必须剔除设计稿的 Tailwind CDN 与 Google Fonts 依赖**，翻译为原生 CSS + 系统字体栈。
   - 新增类一律 `jk-` 前缀。
-- [ ] T-006: 重做接管页/viewer 页的树、结构栏、面包屑、状态栏视觉 ~1h
-  - 涉及模块: `tree.js`、`rail.js`、`status.js`、`viewer.css`
+- [x] T-006: 重做接管页/viewer 页的树、结构栏、面包屑、状态栏视觉 ~1h
+  - 涉及模块: `tree.js`、`rail.js`、`status.js`、`viewer.css`、**`core.js`**、**`search.js`**（面包屑接线溢出）
   - 结构栏自动隐藏条件不变（无嵌套 或 顶层项 < 3）。
+  - 实质改动：**面包屑从死文本做成可点导航**（了结待裁决 #5）—— 每行带结构化 `_trail`，祖先段 → `jumpToPath`，当前节点纯文本；显示串逐字如旧（审查 40 行 9 形核对 0 差异）。
+  - 一致性：rail / 搜索 / crumb 祖先 / feature 2 单元格 **任何跳转都把面包屑带到落点**（`jumpTo` 改返回目标行，`search.goto` 走 `revealCrumb`）。
+  - 结构栏副标题 `Top-level keys` **有意不补**（窄栏、下面就是 key 列表，自解释）。
+  - 大部分树/结构栏/状态栏视觉在 T-002/T-005/T-009 已增量落地；视觉呈现 → T-012 冒烟。
 - [x] T-007: 重做 popup（328px）+ viewer 页粘贴区 ~30min
   - 涉及模块: `popup.html`、`popup.js`、`viewer.html`、`viewer.js`、`viewer.css`
   - popup 宽度严格 328px；viewer 页保留 `⌘/Ctrl+Enter` 渲染。
@@ -87,7 +91,8 @@
 
 ### 集成与测试
 
-- [ ] T-011: 三界面 × 深浅两版逐页元素清单核对（结构基准验收）~30min
+- [x] T-011: 三界面 × 深浅两版逐页元素清单核对（结构基准验收）~30min
+  - 首轮**退回**（前置 T-006 未做）；T-006 完成后重核 → 详见 `元素核对.md`。挖出并修掉：viewer 页 Format 哑巴、AC-008 状态栏在 Raw/Min 整条消失、两处颜色无深色版/不达 AA。待裁决 #4（大整数指示器）已落 METRICS。
   - 对照 `design-baseline/` 与 requirements.md 的 AC-001，逐元素核对。
 - [ ] T-012: 全量手动冒烟清单 + 复跑 T-001 防护网基线 ~30min
   - `.claude/rules/testing.md` 10 条全跑，含 XSS 项（AC-011）与不误伤普通页（AC-012）。
