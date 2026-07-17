@@ -56,7 +56,7 @@
 
 ### 功能 3: 三界面视觉重做（F-001/F-002/F-012）
 
-- [ ] T-005: 重构 `viewer.css` token 与组件样式（浅/深双主题 + 四套语法配色机制保持不变）~1h
+- [x] T-005: 重构 `viewer.css` token 与组件样式（浅/深双主题 + 四套语法配色机制保持不变）~1h
   - 涉及模块: `viewer.css`
   - 基准: `specs/docs/design-baseline/`（**结构基准** — 元素与层级对齐，视觉可再设计）。
   - **必须剔除设计稿的 Tailwind CDN 与 Google Fonts 依赖**，翻译为原生 CSS + 系统字体栈。

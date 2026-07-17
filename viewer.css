@@ -1,37 +1,6 @@
-/* JSON Keeper — calm base + editor-style rail/status + per-node actions.
-   Shared by the content-script takeover (html.jk-active) and the viewer page
-   (.jk-page). jk-prefixed classes; specific selectors vs host CSS.
-   Theme: light by default, dark via system OR a manual data-jk-theme override. */
-
-:root, .jk-scope {
-  --jk-canvas:#eef0f3; --jk-panel:#ffffff; --jk-panel2:#f7f8fa; --jk-bar:#fbfcfd; --jk-rail:#f6f7f9;
-  --jk-fg:#1c2024; --jk-dim:#6b7280; --jk-faint:#9aa1ac; --jk-border:#e7e9ed; --jk-border2:#dde0e5;
-  --jk-accent:#2563eb; --jk-accent-soft:#eaf1ff; --jk-good:#1a7f4b; --jk-guide:#eaecf0; --jk-cur:#fff3cf; --jk-cur-bd:#e9c45e;
-  --jk-key:#1f6feb; --jk-str:#1a7f4b; --jk-num:#b1530f; --jk-bool:#8a3fd1; --jk-null:#7a828c; --jk-pun:#aab1bb;
-  --jk-shadow:0 10px 40px rgba(20,30,50,.10);
-}
-/* dark vars (re-used by system-dark and forced-dark) */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-jk-theme]), .jk-scope:not([data-jk-theme]) {
-    --jk-canvas:#0c0d0f; --jk-panel:#141619; --jk-panel2:#1a1d22; --jk-bar:#161a1e; --jk-rail:#121417;
-    --jk-fg:#e6e8eb; --jk-dim:#9aa1ac; --jk-faint:#6b7280; --jk-border:#242830; --jk-border2:#2f343c;
-    --jk-accent:#5b9bff; --jk-accent-soft:#16243f; --jk-good:#5fd49a; --jk-guide:#20242a; --jk-cur:#3a3115; --jk-cur-bd:#6b5a1f;
-    --jk-key:#6cb6ff; --jk-str:#7ee0a0; --jk-num:#f0a868; --jk-bool:#d2a8ff; --jk-null:#8b949e; --jk-pun:#5c636d;
-    --jk-shadow:0 16px 50px rgba(0,0,0,.5);
-  }
-}
-:root[data-jk-theme="dark"], .jk-scope[data-jk-theme="dark"] {
-  --jk-canvas:#0c0d0f; --jk-panel:#141619; --jk-panel2:#1a1d22; --jk-bar:#161a1e; --jk-rail:#121417;
-  --jk-fg:#e6e8eb; --jk-dim:#9aa1ac; --jk-faint:#6b7280; --jk-border:#242830; --jk-border2:#2f343c;
-  --jk-accent:#5b9bff; --jk-accent-soft:#16243f; --jk-good:#5fd49a; --jk-guide:#20242a; --jk-cur:#3a3115; --jk-cur-bd:#6b5a1f;
-  --jk-key:#6cb6ff; --jk-str:#7ee0a0; --jk-num:#f0a868; --jk-bool:#d2a8ff; --jk-null:#8b949e; --jk-pun:#5c636d;
-  --jk-shadow:0 16px 50px rgba(0,0,0,.5);
-}
-
-/* color skins — retint syntax colors over whatever light/dark base is active */
-:root[data-jk-skin="solarized"], .jk-scope[data-jk-skin="solarized"] { --jk-key:#268bd2; --jk-str:#2aa198; --jk-num:#d33682; --jk-bool:#859900; --jk-null:#93a1a1; --jk-pun:#93a1a1; }
-:root[data-jk-skin="monokai"],  .jk-scope[data-jk-skin="monokai"]  { --jk-key:#66d9ef; --jk-str:#a6e22e; --jk-num:#ae81ff; --jk-bool:#fd971f; --jk-null:#75715e; --jk-pun:#90908a; }
-:root[data-jk-skin="github"],   .jk-scope[data-jk-skin="github"]   { --jk-key:#953800; --jk-str:#0a3069; --jk-num:#0550ae; --jk-bool:#cf222e; --jk-null:#6e7781; --jk-pun:#6e7781; }
+/* viewer.css — components for the takeover page (html.jk-active) and the viewer page (.jk-page).
+   Tokens live in tokens.css and must load first. jk-prefixed classes throughout: this stylesheet
+   is injected into arbitrary pages, and the prefix is the only thing keeping it out of theirs. */
 
 html.jk-active, html.jk-active body { margin:0; height:100%; background:var(--jk-canvas); }
 html.jk-active .jk-root { height:100vh; }

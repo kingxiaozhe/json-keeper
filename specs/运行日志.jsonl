@@ -29,3 +29,6 @@
 {"at":"2026-07-17T02:52:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-004","event":"decision","detail":"排序状态提到常驻区加徽章：保留功能与记忆，但不能让用户不知情地复制走重排过的JSON；放弃了取消持久化（那是砍功能）"}
 {"at":"2026-07-17T02:53:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-004","event":"decision","detail":"摘掉ARIA的role=menu而不是去实现它：低频菜单不值得做完整键盘控件，且select当menu子节点是结构违规；Tab和Esc本来就能用"}
 {"at":"2026-07-17T02:55:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-004","event":"task_done","detail":"通过：195条测试全过；换肤从零覆盖变成4个变异全抓"}
+{"at":"2026-07-17T03:40:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-005","event":"review","detail":"第1轮审查：13个靶5个存活；最狠的是我写的注释把自己的检查骗过去了，整块删掉核心代码也不报错","rounds":1,"blocked":4,"channel":"子agent(降级)"}
+{"at":"2026-07-17T03:42:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-005","event":"decision","detail":"popup主题闪一下的问题不修只如实标注：修法是先藏起来再显示，但storage一出问题就变成空白popup，而空白popup正是这产品要解决的头号差评"}
+{"at":"2026-07-17T03:45:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-005","event":"task_done","detail":"通过：225条测试全过；popup和查看器终于用同一套配色，也会跟随手动主题了"}
