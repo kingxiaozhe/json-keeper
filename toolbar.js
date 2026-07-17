@@ -158,8 +158,13 @@
       themeItem.setLabel(GLYPH[theme] + " Theme: " + theme);
       applyTheme(rootEl, theme);
     };
-    store.get("jk:theme", (t) => { if (t) { theme = t; renderTheme(); } });
-    renderTheme();
+    // Only from the callback. Rendering synchronously first meant applying "auto", and applying
+    // "auto" means removeAttribute("data-jk-theme") on document.documentElement — the very
+    // attribute theme-boot.js had just put there for the popup and the viewer page. The result
+    // was dark → (press Format) → white → dark, a flash added for exactly the people the
+    // remembered theme is for. The label lagging one tick costs nothing: it lives inside a
+    // closed menu, and addMenuItem already created it reading "◐ Theme: auto".
+    store.get("jk:theme", (t) => { theme = t || "auto"; renderTheme(); });
 
     // Skin stays a <select>: four mutually exclusive values, and a native select is both the
     // smallest thing that works and the one that behaves for keyboard users.

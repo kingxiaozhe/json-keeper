@@ -32,3 +32,7 @@
 {"at":"2026-07-17T03:40:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-005","event":"review","detail":"第1轮审查：13个靶5个存活；最狠的是我写的注释把自己的检查骗过去了，整块删掉核心代码也不报错","rounds":1,"blocked":4,"channel":"子agent(降级)"}
 {"at":"2026-07-17T03:42:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-005","event":"decision","detail":"popup主题闪一下的问题不修只如实标注：修法是先藏起来再显示，但storage一出问题就变成空白popup，而空白popup正是这产品要解决的头号差评"}
 {"at":"2026-07-17T03:45:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-005","event":"task_done","detail":"通过：225条测试全过；popup和查看器终于用同一套配色，也会跟随手动主题了"}
+{"at":"2026-07-17T05:25:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-007","event":"review","detail":"第1轮审查：3条全中，含我亲手造的白闪回归（点Format会把刚设好的深色抹掉）","rounds":1,"blocked":3,"channel":"子agent(降级)"}
+{"at":"2026-07-17T05:26:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-007","event":"decision","detail":"主题同步抽成共享文件而不是两边各写：各写一份正是popup和查看器当初配色漂移的成因"}
+{"at":"2026-07-17T05:27:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-007","event":"decision","detail":"打包改白名单式：排除式命令每加一个新目录就破防一次，而且破了没人立刻知道，直到内部资料已经发出去"}
+{"at":"2026-07-17T05:30:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-007","event":"task_done","detail":"通过：282条测试全过；发布包从74个文件304K瘦到21个文件60K"}

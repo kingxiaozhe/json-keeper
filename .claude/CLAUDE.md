@@ -15,7 +15,8 @@ Chrome MV3 扩展：可信赖的 JSON 查看/格式化器。差异化护城河 =
 
 - 安装依赖: 无（零依赖）
 - 开发运行: `chrome://extensions` → 开发者模式 → 「加载已解压的扩展程序」→ 选仓库根目录；改完代码点该卡片的 ⟳ 重新加载，content script 改动需刷新目标页
-- 构建: `zip -r json-keeper.zip . -x '.git/*' '.claude/*' 'store-assets/*' '*.pem' '.DS_Store'`（打包上传 Web Store；`*.pem` 签名私钥绝不入包）
+- 构建: `./pack.sh`（打包上传 Web Store）。**白名单式**：只打 manifest 声明要的文件。
+  原来是排除式（`zip -r . -x '.git/*' …`），加一个新目录就破防一次 —— `tests/` 与 `specs/` 进仓库后，包里就多了 PRD、设计稿 PNG、LESSONS、METRICS 和全部测试代码（74 文件 / 304K），而扩展包人人可解压。`*.pem` 签名私钥同理，白名单下不可能混入。
 - 测试: 无自动化测试框架。README 提到的 `src/json-keeper-smoke.mjs` **实际不存在**，见 @rules/testing.md 的手动冒烟清单
 - Lint: 无（无 eslint/prettier 配置；风格靠 @rules/coding-style.md 人工保持）
 

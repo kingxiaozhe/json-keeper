@@ -63,6 +63,10 @@ node --test "tests/*.test.mjs"     # 引号必须有
     **样式存在性**：标记必须是带边框的圆角徽章。删掉 `.jk-dup` 整条 CSS 规则，自动化测试**照样全绿**（Node 里判断不了 CSS 是否生效）—— 这条只有人眼能验。
     **core 的接线**：`core.js` 不给树传 `dupPaths` 时功能彻底失效，而 248 条测试全绿（桩的 `querySelector` 返回幻影元素，树到不了 `collectHTML`，L-010 的结构性墙）。**所以这一整条只能靠人跑。**
 
+24. **发布前必跑打包**：`./pack.sh` → 应输出 **21 个文件 / 约 60K** → `unzip -l json-keeper.zip` 亲眼过一遍。**包里不该有** `specs/`、`tests/`、`.claude/`、`*.pem`、README、STORE_LISTING。
+    背景：旧的排除式命令（`zip -r . -x …`）打的是"没被明确排除的一切" —— `tests/` 与 `specs/` 一进仓库，包里就多了 PRD、设计稿、LESSONS、METRICS 和运行日志（74 文件 / 304K），而**扩展包人人可解压**。pack.sh 改成白名单并自带禁入校验，但真实产物仍值得人眼过一次。
+25. **两个扩展页面在强制主题下不发白**：viewer 里按 ☾ → 关掉标签页 → 重开 popup 与 viewer 页 → **粘贴框与页面底色应是深色**（会闪一帧浅色再翻黑，这是 `chrome.storage` 无同步读的必然，不是 bug）。此前 viewer 页要点了 Format 才翻黑。
+
 ## 正确性夹具
 
 新发现的解析边界（诡异 JSON）必须**留样**：追加到清单第 7 项的用例串，或存进 `tests/fixtures/`。本产品卖的是正确性，回归一次就伤根基。

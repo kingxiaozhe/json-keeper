@@ -304,4 +304,39 @@ test("主题 —— 循环与记忆", async (t) => {
       assert.equal(byId("theme").textContent, "☾ Theme: dark");
     } finally { c.uninstall(); }
   });
+
+  // mount 不许抹掉 theme-boot 已经设好的属性。原来 mount 里有一句同步 renderTheme()，
+  // 那时 theme 还是 "auto"，而 applyTheme(_, "auto") 就是 removeAttribute("data-jk-theme")
+  // ——打在 documentElement 上，正是 theme-boot 刚写的那个节点。
+  // 后果：深 →（点 Format）→ 白 → 深，给"记住深色"的用户平添一次白闪。
+  // 279 条测试当时一条都没碰过 documentElement。
+  await t.test("mount 不抹掉 theme-boot 设好的属性（异步 storage = 真实 Chrome）", async () => {
+    const c = installChrome({ "jk:theme": "dark" }, { async: true });
+    try {
+      document.documentElement.setAttribute("data-jk-theme", "dark"); // theme-boot 已落地
+      mountBar();
+      assert.equal(document.documentElement.getAttribute("data-jk-theme"), "dark",
+        "mount 返回瞬间属性必须还在 —— 抹掉就是一次全页白闪");
+      await new Promise((r) => setTimeout(r, 5));
+      assert.equal(document.documentElement.getAttribute("data-jk-theme"), "dark", "回调后仍是 dark");
+    } finally { c.uninstall(); document.documentElement.removeAttribute("data-jk-theme"); }
+  });
+
+  await t.test("存的是 auto 时不留属性 —— 否则 tokens.css 跟随系统那层失效", async () => {
+    const c = installChrome({ "jk:theme": "auto" }, { async: true });
+    try {
+      mountBar();
+      await new Promise((r) => setTimeout(r, 5));
+      assert.equal(document.documentElement.getAttribute("data-jk-theme"), null);
+    } finally { c.uninstall(); }
+  });
+
+  await t.test("没存过主题时也不留属性（新用户）", async () => {
+    const c = installChrome({}, { async: true });
+    try {
+      mountBar();
+      await new Promise((r) => setTimeout(r, 5));
+      assert.equal(document.documentElement.getAttribute("data-jk-theme"), null);
+    } finally { c.uninstall(); }
+  });
 });

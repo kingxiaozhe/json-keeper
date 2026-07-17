@@ -64,7 +64,7 @@
 - [ ] T-006: 重做接管页/viewer 页的树、结构栏、面包屑、状态栏视觉 ~1h
   - 涉及模块: `tree.js`、`rail.js`、`status.js`、`viewer.css`
   - 结构栏自动隐藏条件不变（无嵌套 或 顶层项 < 3）。
-- [ ] T-007: 重做 popup（328px）+ viewer 页粘贴区 ~30min
+- [x] T-007: 重做 popup（328px）+ viewer 页粘贴区 ~30min
   - 涉及模块: `popup.html`、`popup.js`、`viewer.html`、`viewer.js`、`viewer.css`
   - popup 宽度严格 328px；viewer 页保留 `⌘/Ctrl+Enter` 渲染。
 
