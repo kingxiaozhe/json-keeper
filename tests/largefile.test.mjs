@@ -271,3 +271,54 @@ test("异步 storage 下，偏好照样不许被系统的决定覆盖", async (t
     } finally { c.uninstall(); }
   });
 });
+
+// ——— AC-008：三个信任信号「在所有状态下常驻」———
+// 此前 status.js 的 !treeBuilt 分支对非大文件返回 `""`。而 Raw/Min **从不建树** ——
+// 于是任何点过一次 Raw 的人（jk:view 跨会话记忆），此后每个 JSON 的状态栏都是**空的**：
+// 没有 ● valid JSON、**没有重复 key 警告（护城河本身）**、没有 no ads · no telemetry
+// （写进商店页的承诺）。v0.8.0 起就这样，而 T-011 的逐元素核对本该抓住它 —— 我却盖了通过章。
+//
+// 这条不是"Node 测不了渲染"（L-017 管的是"谁被挤出屏幕"）——
+// **元素在不在 DOM 里，Node 完全测得出来**。把一条真教训用成免检牌，AC-008 就是从那道缝漏的。
+test("状态栏的三个信任信号，每个视图下都在", async (t) => {
+  const VIEWS = ["pretty", "raw", "min"];
+  const statusHTML = (view, json) => {
+    const c = installChrome({ "jk:view": view });
+    try {
+      const root = makeMount();
+      JK.mountViewer(root, json, { showErrors: false });
+      return root.querySelector("[data-status]").innerHTML;
+    } finally { c.uninstall(); }
+  };
+
+  for (const v of VIEWS) {
+    await t.test(`${v}：● valid JSON 在`, () => {
+      assert.match(statusHTML(v, '{"a":1}'), /valid JSON/);
+    });
+    await t.test(`${v}：信任行在（AC-008 的原话是"所有状态下"）`, () => {
+      assert.match(statusHTML(v, '{"a":1}'), /no ads · no telemetry/);
+    });
+    await t.test(`${v}：重复 key 警告在 —— 这是产品的立身之本`, () => {
+      assert.match(statusHTML(v, '{"a":1,"a":2}'), /duplicate key/);
+    });
+  }
+
+  await t.test("大文件在 Raw 下也全都在", () => {
+    const html = statusHTML("raw", JSON.stringify({ big: "x".repeat(1_100_000), a: 1 }));
+    assert.match(html, /valid JSON/);
+    assert.match(html, /no ads · no telemetry/);
+    assert.match(html, /large file/);
+  });
+
+  await t.test("建树后换成统计，但信任行不许走", () => {
+    const c = installChrome({ "jk:view": "pretty" });
+    try {
+      const root = makeMount();
+      JK.mountViewer(root, '{"a":1,"a":2}', { showErrors: false });
+      const html = root.querySelector("[data-status]").innerHTML;
+      assert.match(html, /nodes/, "建了树就该报统计");
+      assert.match(html, /no ads · no telemetry/);
+      assert.match(html, /duplicate key/);
+    } finally { c.uninstall(); }
+  });
+});

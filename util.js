@@ -50,6 +50,19 @@
     return t;
   }
 
-  JK.util = { esc, escAttr, isContainer, humanSize, idKey, isIntegerLike, store, normalize, LARGE };
+  // Both paste surfaces (popup and the viewer page) own a box and a button that does nothing
+  // useful with an empty box. A live button that silently ignores you IS the complaint this
+  // product is built against, so neither surface may ship one — and the two must say the same
+  // thing when they refuse, which is why the wording lives here rather than in each of them.
+  // (popup and viewer each grew their own theme code once; the tokens drifted within a version.)
+  const EMPTY_HINT = "Paste some JSON first";
+  function guardEmpty(input, btn) {
+    const empty = !input.value.trim();
+    btn.disabled = empty;
+    btn.title = empty ? EMPTY_HINT : "";
+    return !empty;
+  }
+
+  JK.util = { esc, escAttr, isContainer, humanSize, idKey, isIntegerLike, store, normalize, LARGE, guardEmpty, EMPTY_HINT };
   JK.normalize = normalize; // content.js and the viewer page reach for it at the top level
 })(typeof window !== "undefined" ? window : globalThis);

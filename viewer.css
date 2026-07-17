@@ -124,7 +124,10 @@ html.jk-active .jk-root { height:100vh; }
 .jk-act:hover { border-color:var(--jk-accent); color:var(--jk-accent); }
 
 .jk-raw { margin:0; padding:12px 14px 12px 56px; font-size:12.5px; line-height:1.6; color:var(--jk-fg); white-space:pre; }
-.jk-error { padding:14px 16px; color:#d6453c; font-family:ui-monospace,monospace; font-size:13px; }
+/* #d6453c was 4.40:1 on white / 4.12:1 on the dark canvas — under AA on both, and with no
+   dark variant at all: the same red on every background. It's the parse error, the one string
+   you most need to read. */
+.jk-error { padding:14px 16px; color:var(--jk-bad); font-family:ui-monospace,monospace; font-size:13px; }
 
 /* status bar */
 .jk-status { flex:0 0 auto; display:flex; align-items:center; gap:14px; padding:5px 14px; font-size:11px;
@@ -135,12 +138,13 @@ html.jk-active .jk-root { height:100vh; }
    shrinks and the row is simply cut off from the right. With 4 duplicate keys at 1080px that
    amputated everything downstream: the size note, the Build tree button, and the trust line.
    The warning is the one item here that can lose its tail and still do its job. */
-.jk-warn { color:#b8860b; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+/* Was a hard-coded #b8860b: 3.25:1 on white — below AA — for the duplicate-key warning, i.e.
+   the one line this product exists to show. Now a token, so both themes are picked on purpose
+   and the two manual dark overrides that used to sit below are gone with it. */
+.jk-warn { color:var(--jk-warn); font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; }
 /* Nothing downstream of the warning may be shrunk away — .jk-build is the only control in this
    bar, and the trust line is a product promise. */
 .jk-build, .jk-trust, .jk-status .jk-st { flex:0 0 auto; }
-@media (prefers-color-scheme: dark){ :root:not([data-jk-theme]) .jk-warn, .jk-scope:not([data-jk-theme]) .jk-warn { color:#e3b341; } }
-:root[data-jk-theme="dark"] .jk-warn, .jk-scope[data-jk-theme="dark"] .jk-warn { color:#e3b341; }
 .jk-st b { color:var(--jk-fg); font-weight:600; }
 .jk-spacer { flex:1; }
 .jk-trust { color:var(--jk-faint); }

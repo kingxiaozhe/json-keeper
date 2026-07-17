@@ -15,7 +15,7 @@
 :root, .jk-scope {
   --jk-canvas:#eef0f3; --jk-panel:#ffffff; --jk-panel2:#f7f8fa; --jk-bar:#fbfcfd; --jk-rail:#f6f7f9;
   --jk-fg:#1c2024; --jk-dim:#6b7280; --jk-faint:#9aa1ac; --jk-border:#e7e9ed; --jk-border2:#dde0e5;
-  --jk-accent:#2563eb; --jk-accent-soft:#eaf1ff; --jk-good:#1a7f4b; --jk-guide:#eaecf0; --jk-cur:#fff3cf; --jk-cur-bd:#e9c45e;
+  --jk-accent:#2563eb; --jk-accent-soft:#eaf1ff; --jk-good:#1a7f4b; --jk-bad:#c62828; --jk-warn:#8a6100; --jk-guide:#eaecf0; --jk-cur:#fff3cf; --jk-cur-bd:#e9c45e;
   --jk-key:#1f6feb; --jk-str:#1a7f4b; --jk-num:#b1530f; --jk-bool:#8a3fd1; --jk-null:#7a828c; --jk-pun:#aab1bb;
   --jk-shadow:0 10px 40px rgba(20,30,50,.10);
 }
@@ -24,7 +24,7 @@
   :root:not([data-jk-theme]), .jk-scope:not([data-jk-theme]) {
     --jk-canvas:#0c0d0f; --jk-panel:#141619; --jk-panel2:#1a1d22; --jk-bar:#161a1e; --jk-rail:#121417;
     --jk-fg:#e6e8eb; --jk-dim:#9aa1ac; --jk-faint:#6b7280; --jk-border:#242830; --jk-border2:#2f343c;
-    --jk-accent:#5b9bff; --jk-accent-soft:#16243f; --jk-good:#5fd49a; --jk-guide:#20242a; --jk-cur:#3a3115; --jk-cur-bd:#6b5a1f;
+    --jk-accent:#5b9bff; --jk-accent-soft:#16243f; --jk-good:#5fd49a; --jk-bad:#ff7b72; --jk-warn:#e3b341; --jk-guide:#20242a; --jk-cur:#3a3115; --jk-cur-bd:#6b5a1f;
     --jk-key:#6cb6ff; --jk-str:#7ee0a0; --jk-num:#f0a868; --jk-bool:#d2a8ff; --jk-null:#8b949e; --jk-pun:#5c636d;
     --jk-shadow:0 16px 50px rgba(0,0,0,.5);
   }
@@ -32,7 +32,7 @@
 :root[data-jk-theme="dark"], .jk-scope[data-jk-theme="dark"] {
   --jk-canvas:#0c0d0f; --jk-panel:#141619; --jk-panel2:#1a1d22; --jk-bar:#161a1e; --jk-rail:#121417;
   --jk-fg:#e6e8eb; --jk-dim:#9aa1ac; --jk-faint:#6b7280; --jk-border:#242830; --jk-border2:#2f343c;
-  --jk-accent:#5b9bff; --jk-accent-soft:#16243f; --jk-good:#5fd49a; --jk-guide:#20242a; --jk-cur:#3a3115; --jk-cur-bd:#6b5a1f;
+  --jk-accent:#5b9bff; --jk-accent-soft:#16243f; --jk-good:#5fd49a; --jk-bad:#ff7b72; --jk-warn:#e3b341; --jk-guide:#20242a; --jk-cur:#3a3115; --jk-cur-bd:#6b5a1f;
   --jk-key:#6cb6ff; --jk-str:#7ee0a0; --jk-num:#f0a868; --jk-bool:#d2a8ff; --jk-null:#8b949e; --jk-pun:#5c636d;
   --jk-shadow:0 16px 50px rgba(0,0,0,.5);
 }

@@ -28,7 +28,7 @@
   // Parse into a detached container first; bail untouched if it isn't valid JSON.
   const root = document.createElement("div");
   root.className = "jk-root";
-  const ok = window.JK.mountViewer(root, rawText, { showErrors: false, originalText: rawText });
+  const ok = window.JK.mountViewer(root, rawText, { showErrors: false });
   if (!ok) return;
 
   window.__jkActivated = true;

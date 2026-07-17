@@ -53,3 +53,9 @@
 {"at":"2026-07-17T10:20:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-010","event":"decision","detail":"发现一个老版本就有的毛病：打开一个大文件会把'看原文'变成以后所有文件的默认，顺手修掉"}
 {"at":"2026-07-17T10:50:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-010","event":"review","detail":"审查揪出3个问题：我修的那个毛病对'用过排序'的人还在；窄窗口下按钮会被挤没；搜索也在偷改偏好","轮次":1,"拦截数":3,"通道":"子agent(降级)"}
 {"at":"2026-07-17T11:05:00","node":"N5","feature":"1.ui-shell-redesign","task":"T-010","event":"task_done","detail":"通过：362条测试全过；大文件现在点一下就能建树，还先给你看个占位"}
+{"at":"2026-07-17T12:00:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-011","event":"task_start","detail":"对着设计稿逐个核对：三个界面上该有的东西，是不是都在"}
+{"at":"2026-07-17T12:30:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-011","event":"decision","detail":"核出一个洞：viewer 页那个'格式化'按钮，空着点它什么都不发生——popup 上早就修过的毛病，这边原样带着。修了"}
+{"at":"2026-07-17T12:50:00","node":"N3","feature":"1.ui-shell-redesign","task":"T-011","event":"decision","detail":"又核出两处颜色问题：错误红字在深色下没人管过，重复key警告在浅色下看不清——两个都是最该看清的字。改用统一色板"}
+{"at":"2026-07-17T13:20:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-011","event":"review","detail":"审查把我打穿了：我那8条测试从没点过按钮，它换个角度打6发全中；还查出底部状态条在'看原文'模式下整条消失（老版本就有）；最要命的是前置任务T-006压根没做，我却签了验收","轮次":1,"拦截数":5,"通道":"子agent(降级)"}
+{"at":"2026-07-17T13:40:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-011","event":"error","detail":"记账错误：我的内部清单把T-006标成完成，而所有正式记录都说没做——就是它让这次验收在前置没做的情况下开跑"}
+{"at":"2026-07-17T14:00:00","node":"N4","feature":"1.ui-shell-redesign","task":"T-011","event":"decision","detail":"T-011 不签，退回等 T-006 做完再重核；这次挖出的独立缺陷就地修掉并入网"}

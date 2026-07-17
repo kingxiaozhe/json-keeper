@@ -33,19 +33,25 @@
     function render(state) {
       const s = state || {};
       const head = '<span class="jk-ok">● valid JSON</span>' + warnHTML(s.dupes);
+      const tail = '<span class="jk-spacer"></span>' + TRUST;
+
+      // No tree yet: Raw and Min never build one, and large files open without it. The node
+      // counts are the *only* thing that needs a tree — "valid JSON", the duplicate-key warning
+      // and the promises are true either way, and AC-008 says they are on screen in every state.
+      // This branch used to render "" for anything that wasn't a large file, so anyone who had
+      // clicked Raw once (jk:view persists across sessions) got an empty bar for every JSON
+      // afterwards: no validity, no duplicate-key warning — the one thing this product is for —
+      // and none of the promises the store listing makes. Shipped that way since v0.8.0.
       if (!s.treeBuilt) {
-        statusEl.innerHTML = s.heavy
-          ? head + '<span class="jk-st">' + s.size + " — large file, tree built on demand</span>" +
-            '<button class="jk-build" data-build>Build tree</button>' +
-            '<span class="jk-spacer"></span>' + TRUST
-          : "";
+        statusEl.innerHTML = head + '<span class="jk-st">' + s.size +
+          (s.heavy ? " — large file, tree built on demand</span>" +
+            '<button class="jk-build" data-build>Build tree</button>' : "</span>") + tail;
         return;
       }
       const c = s.counts || {};
       statusEl.innerHTML = head + '<span class="jk-st">' + s.nodes + " nodes</span>" +
         seg(c.object, "obj") + seg(c.array, "arr") + seg(c.string, "str") +
-        seg(c.number, "num") + seg(c.boolean, "bool") + seg(c.null, "null") +
-        '<span class="jk-spacer"></span>' + TRUST;
+        seg(c.number, "num") + seg(c.boolean, "bool") + seg(c.null, "null") + tail;
     }
 
     return { render };

@@ -72,7 +72,8 @@
     };
     recompute();
 
-    const original = (opts.originalText != null ? opts.originalText : rawText).trim();
+    // Raw shows the source as it arrived (XSSI prefix and all); parsing works off normalize().
+    const original = rawText.trim();
     const topInfo = isContainer(value) ? (Array.isArray(value) ? value.length + " items" : Object.keys(value).length + " keys") : "value";
     const heavy = rawText.length > LARGE;
     const dupes = [...new Set(diag.dupKeys)];

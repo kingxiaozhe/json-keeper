@@ -11,7 +11,7 @@
 // repair path, not a dead end, and blocking it would only mean deciding for you.
 (function () {
   "use strict";
-  const { normalize, humanSize, LARGE } = window.JK.util;
+  const { normalize, humanSize, LARGE, guardEmpty } = window.JK.util;
   const input = document.getElementById("in");
   const go = document.getElementById("go");
   const say = document.getElementById("say");
@@ -42,11 +42,9 @@
   // nothing happened" complaint this whole state exists to kill, reintroduced inside a window
   // the old code didn't even have.
   function setEnabled() {
-    const empty = !input.value.trim();
-    go.disabled = empty;
-    go.title = empty ? "Paste some JSON first" : "";
-    if (empty) { input.classList.remove("bad"); setState("", ""); }
-    return !empty;
+    const ok = guardEmpty(input, go);   // shared with the viewer page: same refusal, same words
+    if (!ok) { input.classList.remove("bad"); setState("", ""); }
+    return ok;
   }
 
   function check() {
