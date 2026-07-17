@@ -72,6 +72,9 @@ class El {
   }
   querySelectorAll() { return []; }
   addEventListener(t, fn) { this._on(t, fn); }
+  // table.js's destroy() removes its click listener; real DOM has this, the stub needs it too
+  // or Sort (which destroys the cached table handle) throws instead of rebuilding.
+  removeEventListener(t, fn) { const a = this._ls[t]; if (a) { const i = a.indexOf(fn); if (i >= 0) a.splice(i, 1); } }
   setAttribute(k, v) { this._attrs[k] = String(v); }
   removeAttribute(k) { delete this._attrs[k]; }
   getAttribute(k) { return this._attrs[k] ?? null; }

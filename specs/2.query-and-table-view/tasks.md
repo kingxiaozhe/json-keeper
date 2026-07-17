@@ -52,7 +52,7 @@
 - [ ] T-106: 表格嵌套单元格 `{…}` / `[N]` + 点开子树面板 ~30min
   - 涉及模块: `table.js`、`tree.js`、`viewer.css`
   - 不拍平成列（AC-107：列头不得出现 `user.city`）。
-- [ ] T-107: `Table` 接入视图分段器 + 不可用态置灰与原因说明 ~30min
+- [x] T-107: `Table` 接入视图分段器 + 不可用态置灰与原因说明 ~30min
   - 涉及模块: `toolbar.js`、`table.js`、`core.js`
   - 非数组/空数组/元素非对象 → 分段 `disabled` + tooltip 具体原因（AC-106）。
   - `jk:view` 新增 `table` 值，读到未知值回落 `pretty`（向后兼容老用户 storage）。

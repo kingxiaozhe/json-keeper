@@ -30,7 +30,10 @@
   const BAR_HTML =
     '<div class="jk-bar">' +
       '<button class="jk-btn" data-act="copy">' + ICON_COPY + "Copy JSON</button>" +
-      '<div class="jk-seg"><button class="on" data-act="pretty">Pretty</button><button data-act="raw">Raw</button><button data-act="min">Min</button></div>' +
+      // Table sits next to Pretty (both are rendered views) rather than in baseline order — the
+      // Pretty-first order is kept from v0.8.0 so muscle memory survives. Table disables itself
+      // when the data isn't an array of objects (F-106); the reason rides in its title.
+      '<div class="jk-seg"><button class="on" data-act="pretty">Pretty</button><button data-act="table">Table</button><button data-act="raw">Raw</button><button data-act="min">Min</button></div>' +
       '<div class="jk-search">' + ICON_FIND +
         '<input placeholder="Search keys &amp; values"><span class="jk-find-n" data-find hidden></span>' +
         '<button class="jk-find-b" data-find-prev title="Previous (Shift+Enter)" hidden>↑</button><button class="jk-find-b" data-find-next title="Next (Enter)" hidden>↓</button><kbd>/</kbd></div>' +
@@ -64,7 +67,7 @@
   function mount(rootEl, ctx) {
     const { store } = JK.util;
     const $ = (s) => rootEl.querySelector(s);
-    const segBtns = { pretty: $('[data-act="pretty"]'), raw: $('[data-act="raw"]'), min: $('[data-act="min"]') };
+    const segBtns = { pretty: $('[data-act="pretty"]'), table: $('[data-act="table"]'), raw: $('[data-act="raw"]'), min: $('[data-act="min"]') };
     const flash = $("[data-flash]");
     const menuBtn = $("[data-menu-btn]"), pop = $("[data-menu-pop]");
 
@@ -179,6 +182,14 @@
     return {
       setView(v) { Object.entries(segBtns).forEach(([k, b]) => b.classList.toggle("on", k === v)); },
       currentView() { return Object.keys(segBtns).find((k) => segBtns[k].classList.contains("on")) || "pretty"; },
+      // Table disables itself when the data can't be a table; the reason rides in the tooltip so
+      // the segment doesn't look broken (F-106). A real <button disabled> gets no click event, so
+      // core doesn't also need to guard the onView call.
+      setTableAvailable(ok, reason) {
+        segBtns.table.disabled = !ok;
+        segBtns.table.title = ok ? "" : reason;
+        segBtns.table.classList.toggle("jk-seg-off", !ok);
+      },
       setFlash(t) { flash.textContent = t; setTimeout(() => (flash.textContent = ""), 1500); },
       setMeta(text) { $("[data-meta]").textContent = text; },
       setChip(text) { $("[data-chip]").textContent = text; },

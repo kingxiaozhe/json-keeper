@@ -38,7 +38,7 @@
       '<div class="jk-crumb jk-mono" data-crumb>root</div>' +
       '<div class="jk-main">' +
         '<aside class="jk-rail" data-rail hidden></aside>' +
-        '<div class="jk-scroll"><div data-pretty></div><pre class="jk-raw jk-mono" data-raw hidden></pre></div>' +
+        '<div class="jk-scroll"><div data-pretty></div><div class="jk-table-wrap" data-table hidden></div><pre class="jk-raw jk-mono" data-raw hidden></pre></div>' +
       "</div>" +
       '<div class="jk-status jk-mono" data-status></div>' +
     "</div>";
@@ -102,9 +102,10 @@
 
     const $ = (s) => rootEl.querySelector(s);
     const prettyEl = $("[data-pretty]"), rawEl = $("[data-raw]"), scrollEl = $(".jk-scroll");
-    const railEl = $("[data-rail]"), crumbEl = $("[data-crumb]");
+    const tableEl = $("[data-table]"), railEl = $("[data-rail]"), crumbEl = $("[data-crumb]");
 
     let treeBuilt = false, tree = null, search = null, query = null, pendingBuild = false;
+    let tableHandle = null;
     const getTree = () => tree;
 
     // persist=false: "Build tree" is a remedy for this document, not a statement about every
@@ -187,17 +188,39 @@
     // persist=false for view changes the user didn't ask for. Jumping to a node has to show the
     // tree, but it's navigation — it shouldn't quietly rewrite which view every future JSON
     // opens in. (The search box has persisted since before the split; left alone here.)
+    // The table shows the whole array (a tree-level query filters the Pretty tree, not this). Built
+    // lazily and cached; recompute()/Sort invalidate it by nulling tableHandle.
+    function renderTable() {
+      if (tableHandle) return;
+      tableHandle = JK.table.mount(tableEl, displayValue, { onJump: jumpToPath });
+    }
+
     function setView(v, persist) {
       // Only the large-file path is worth a skeleton — a small tree builds within the frame, and
       // deferring it would just add a flash of skeleton to something that was already instant.
       if (v === "pretty") { if (heavy) buildDeferred(); else renderTree(); }
+      else if (v === "table") renderTable();
       bar.setView(v);
-      if (v === "pretty") { prettyEl.hidden = false; rawEl.hidden = true; }
-      else { prettyEl.hidden = true; rawEl.hidden = false; rawEl.textContent = v === "min" ? minified : original; }
+      prettyEl.hidden = v !== "pretty";
+      tableEl.hidden = v !== "table";
+      rawEl.hidden = v === "pretty" || v === "table";
+      if (v === "raw" || v === "min") rawEl.textContent = v === "min" ? minified : original;
       // search's "no match" bar lives in the scroll container alongside the Raw pane, so it has
       // to know when the tree it describes stops being what's on screen.
       if (search) search.onViewChange(v);
       if (persist !== false) store.set("jk:view", v);
+    }
+
+    // The reason strings a disabled Table segment shows (F-106) — specific, not a generic "n/a".
+    const TABLE_REASON = {
+      "not an array": "Table view is for JSON arrays",
+      "empty array": "Empty array — nothing to tabulate",
+      "some elements aren't objects": "Table view needs an array of objects",
+    };
+    let tableOk = { ok: false };
+    function updateTableAvail() {
+      tableOk = JK.table.canRender(displayValue);
+      if (bar) bar.setTableAvailable(tableOk.ok, tableOk.ok ? "" : (TABLE_REASON[tableOk.reason] || "Table view unavailable"));
     }
 
     // Rebuilding the tree strands everything that holds rows from the old one. resetFold and
@@ -207,6 +230,9 @@
       bar.setSorted(sorted);
       recompute();
       treeBuilt = false; tree = null; prettyEl.innerHTML = "";
+      // Sort changes displayValue, so the cached table is now built from the wrong array — drop
+      // it so the next Table view rebuilds. (Availability can't change: sorting keeps the shape.)
+      if (tableHandle) { tableHandle.destroy(); tableHandle = null; }
       bar.resetFold();
       if (search) search.reset();
       // Sort re-sorts the whole document; a filtered result left on screen would name paths into
@@ -235,6 +261,7 @@
 
     bar.setMeta(humanSize(rawText.length) + " · " + topInfo);
     bar.setChip(diag.bigInts ? "✓ " + diag.bigInts + " big-ints exact" : "✓ big-ints precise");
+    updateTableAvail();
     renderStatus();
 
     search = JK.search.mount(rootEl, {
@@ -317,7 +344,10 @@
     // since v0.8.0) means opening one big file silently makes Raw the default for every JSON
     // afterwards — a preference the user never expressed.
     if (heavy) setView("raw", false);
-    else store.get("jk:view", (v) => setView(v === "raw" || v === "min" ? v : "pretty"));
+    // "table" is honoured only when this document can actually be a table — an old preference of
+    // "table" opening on a non-array doc must fall back to pretty, not show an empty/broken pane.
+    else store.get("jk:view", (v) =>
+      setView(v === "raw" || v === "min" || (v === "table" && tableOk.ok) ? v : "pretty"));
 
     return true;
   }

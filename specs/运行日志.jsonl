@@ -78,3 +78,5 @@
 {"at":"2026-07-18T11:35:00","node":"N5","feature":"2.query-and-table-view","task":"T-104","event":"task_done","detail":"查询栏做完：输入JSONPath回车筛出子集，计数/清除/语法错误保留上次结果都通了，446测试全过"}
 {"at":"2026-07-18T11:36:00","node":"N3","feature":"2.query-and-table-view","task":"T-105","event":"task_start","detail":"表格视图核心：把'字段缺失'和'值就是null'画得能区分开——这是本功能的护城河点"}
 {"at":"2026-07-18T12:10:00","node":"N5","feature":"2.query-and-table-view","task":"T-105","event":"task_done","detail":"表格核心做完：字段缺失画成弱色横杠、值为null画成null色，一眼能分——这是本功能卖点。457测试全过"}
+{"at":"2026-07-18T13:20:00","node":"N5","feature":"2.query-and-table-view","task":"T-107","event":"task_done","detail":"表格接进视图切换：对象数组能点Table切过去，其它情况置灰并说明为什么。表格现在真能用了。465测试全过"}
+{"at":"2026-07-18T13:21:00","node":"N3","feature":"2.query-and-table-view","task":"T-106","event":"task_start","detail":"表格里的嵌套对象/数组显示成{…}/[N]，点开看子树"}

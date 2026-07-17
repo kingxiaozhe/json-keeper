@@ -230,3 +230,12 @@
 - **列头是不可信数据**：列头来自用户 JSON 的 key，最像"我们自己的 UI 文案" → 最容易漏 esc。喂 `<img onerror>` 列头验证被转义。
 - 列 = 各行 key 并集、首次出现顺序（不排序，与 ⇅ Sort 解耦）；大整数复用 valueHTML 的 jk-precise；> 1000 行诚实截断（不分页，feature 5 才有虚拟滚动）。
 - 单元格带 `data-apath`（格式与 childAccessor 一致），点击 → onJump（T-108 的接线自然并入）。
+| T-107 Table 接入分段器 | ✅ 完成 | 变异自检 | — | 0 | 13 测试；5 靶（1 masked / 1 补网）；stub 补 removeEventListener |
+
+### T-107 详情
+- Table 段排在 Pretty 旁（两者都是"渲染视图"，与 Raw/Min 源视图分组）；Pretty-first 顺序保留自 v0.8.0（肌肉记忆）。
+- F-106 不可用态：非数组 / 空数组 / 元素非对象 → 段 `disabled` + tooltip 具体原因（三条各自的文案）。
+- `jk:view` 兼容闸门（T-101 锁的）显式更新：`table` 从"未知值"变成"有条件已知值"——仅当 canRender 才接受，存 table 开在对象文档上仍回落 pretty。
+- Sort 改 displayValue → 销毁缓存的 tableHandle 让下次重建（自检存活 → 补网，红 1）。
+- 一处 masked 变异（去掉回落的 canRender 检查）：非数组上 setView("table") 会抛，但被 store.get 的 try/catch 吞掉→回落 pretty，**防御分层互相遮盖**，按 L-008 不强补测试。
+- **stub 补 `removeEventListener`**：table 的 destroy() 要用它，缺了会让任何"销毁表格"路径抛错（Sort 就是）——真浏览器有，桩之前没有。
