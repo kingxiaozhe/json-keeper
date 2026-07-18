@@ -126,6 +126,39 @@ html.jk-active .jk-root { height:100vh; }
 .jk-cell-nested:hover { text-decoration:underline; }
 .jk-table-more { padding:8px 12px; font-size:11.5px; color:var(--jk-dim); background:var(--jk-panel2); border-top:1px solid var(--jk-border); }
 
+/* side panel (feature 3 export/validate; feature 4 reuses) */
+.jk-panel { position:absolute; inset:0; z-index:30; display:flex; justify-content:flex-end;
+  background:color-mix(in srgb, var(--jk-fg) 22%, transparent); }
+.jk-panel-card { display:flex; flex-direction:column; width:min(560px, 92%); height:100%;
+  background:var(--jk-panel); border-left:1px solid var(--jk-border2); box-shadow:var(--jk-shadow); }
+.jk-panel-head { display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--jk-border); background:var(--jk-bar); }
+.jk-panel-title { flex:1; font-weight:600; font-size:13px; color:var(--jk-fg); }
+.jk-panel-close { flex:0 0 auto; font:inherit; font-size:14px; line-height:1; padding:3px 8px; cursor:pointer;
+  border:1px solid var(--jk-border2); border-radius:7px; background:var(--jk-panel); color:var(--jk-dim); }
+.jk-panel-close:hover { border-color:var(--jk-accent); color:var(--jk-accent); }
+.jk-panel-body { flex:1 1 auto; overflow:auto; padding:14px; display:flex; flex-direction:column; gap:10px; }
+.jk-panel-foot { flex:0 0 auto; display:flex; gap:8px; justify-content:flex-end; padding:10px 14px; border-top:1px solid var(--jk-border); }
+.jk-panel-btn { font:inherit; font-size:12.5px; font-weight:540; padding:6px 14px; cursor:pointer;
+  border:1px solid var(--jk-border2); border-radius:7px; background:var(--jk-panel); color:var(--jk-fg); }
+.jk-panel-btn:hover { border-color:var(--jk-accent); color:var(--jk-accent); }
+.jk-panel-btn.jk-primary { background:var(--jk-accent); border-color:var(--jk-accent); color:#fff; }
+.jk-panel-code { margin:0; font-size:12.5px; line-height:1.6; white-space:pre; overflow:auto; color:var(--jk-fg);
+  background:var(--jk-panel2); border:1px solid var(--jk-border); border-radius:8px; padding:12px; }
+.jk-panel-badge { align-self:flex-start; font-size:11px; font-weight:600; color:var(--jk-num);
+  border:1px solid color-mix(in srgb, var(--jk-num) 35%, transparent); border-radius:999px; padding:2px 10px; }
+.jk-panel-input { width:100%; min-height:140px; resize:vertical; font-size:12.5px; padding:10px;
+  border:1px solid var(--jk-border2); border-radius:8px; background:var(--jk-panel2); color:var(--jk-fg); outline:0; box-sizing:border-box; }
+.jk-panel-input:focus { border-color:var(--jk-accent); }
+.jk-panel-result { display:flex; flex-direction:column; gap:6px; }
+.jk-panel-ok { color:var(--jk-good); font-weight:600; font-size:13px; }
+.jk-panel-err { color:var(--jk-bad); font-size:12.5px; white-space:pre-wrap; word-break:break-word; }
+.jk-panel-count { font-size:12px; color:var(--jk-dim); font-weight:600; }
+.jk-panel-issue { text-align:left; font:inherit; font-size:12px; line-height:1.5; padding:7px 10px; cursor:pointer;
+  border:1px solid var(--jk-border2); border-radius:7px; background:var(--jk-panel); color:var(--jk-fg); }
+.jk-panel-issue:hover { border-color:var(--jk-bad); }
+.jk-panel-kw { font-weight:600; color:var(--jk-bad); }
+.jk-panel-at { color:var(--jk-dim); }
+
 /* subtree panel — a table's nested cell opens its value here, over the table (F-107) */
 .jk-subtree { position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
   background:color-mix(in srgb, var(--jk-fg) 22%, transparent); padding:32px; }

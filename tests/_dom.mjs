@@ -55,9 +55,13 @@ class El {
     return (this._text || stripTags(this._html)) +
       this.children.map((c) => (c.textContent === undefined ? "" : c.textContent)).join("");
   }
-  append(...kids) { this.children.push(...kids); }
-  appendChild(k) { this.children.push(k); return k; }
+  append(...kids) { kids.forEach((k) => { if (k) k._parent = this; }); this.children.push(...kids); }
+  appendChild(k) { if (k) k._parent = this; this.children.push(k); return k; }
+  // panel.js close() calls el.remove(); real DOM has it, the stub needs it or closing throws
+  // (so onClose — which clears the tree's validation marks — never runs).
+  remove() { const p = this._parent; if (p) { const i = p.children.indexOf(this); if (i >= 0) p.children.splice(i, 1); } this._parent = null; }
   insertBefore(k, ref) {
+    if (k) k._parent = this;
     const i = ref ? this.children.indexOf(ref) : -1;
     if (i < 0) this.children.push(k); else this.children.splice(i, 0, k);
     return k;

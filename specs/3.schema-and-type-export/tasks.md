@@ -61,12 +61,12 @@
 
 ### 功能 4: 导出 UI
 
-- [ ] T-207: 侧滑面板 `JK.panel` + 三个菜单入口 + 输出/复制/下载 + 不确定计数徽章 ~1h
+- [x] T-207: 侧滑面板 `JK.panel` + 三个菜单入口 + 输出/复制/下载 + 不确定计数徽章 ~1h
   - 涉及模块: `panel.js`(新)、`toolbar.js`、`viewer.css`
   - 入口走 feature 1 的 `⋯` 菜单 `export` 组（低频，不申请一级位置）。
   - `panel.js` 设计为通用件 —— feature 4 的历史/Diff 面板复用它，**勿各造一套**。
   - 输出含用户 key 名 → 进 `innerHTML` 前必须 `esc()`。
-- [ ] T-208: Schema 输入区 + 校验结果列表 + 非法 Schema 就地报错 ~30min
+- [x] T-208: Schema 输入区 + 校验结果列表 + 非法 Schema 就地报错 ~30min
   - 涉及模块: `panel.js`、`schema-validate.js`、`viewer.css`
   - 非法 Schema **不清空当前文档视图**（AC-208）。
   - 结果列表每条可点击 → 树上定位标红。

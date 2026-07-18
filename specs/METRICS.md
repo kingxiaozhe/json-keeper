@@ -286,3 +286,13 @@
   1. **黑名单不全**：`prefixItems`/`minProperties`/`maxProperties`/`min-maxContains` 是 2020-12 断言型关键字却不在黑名单 → 走默认忽略 → 静默通过。**根因是 L-009**：我删了 SUPPORTED/ANNOTATION 集合，也删掉了"拿完整词表对照"的交叉验证；而我的测试只测黑名单里的关键字会报，抓不到"没人列过"的断言。补：加齐关键字 + **一条 cross-check 测试**（手抄完整 2020-12 断言词表逐个核对），这才是 L-009 的正解。
   2. **$ref 同级关键字被丢**：我 `return` 后不查同级；且注释"2020-12 忽略同级"**是错的**（那是 Draft-07，2020-12 里 $ref 是普通适用型、同级 AND 生效）。改：不 return，落到同级检查。
 - 其余全部 clean（BigInt 类型、min/max 混比无 RangeError、deepEqual、additionalProperties 三形态、type 错不连带噪音、JSON Pointer、远程 $ref 拒绝、无 eval）。
+| T-207 导出面板 + 菜单入口 | ✅ 完成 | 变异自检 | — | 0 | panel.js 通用件（feature 4 复用）；导出/复制/下载/不确定徽章 |
+| T-208 Schema 校验 UI | ✅ 完成 | 变异自检 | — | 0 | 10 测试；结果条可点跳树、标红、非法就地报错不清视图 |
+
+### T-207/208 详情
+- **panel.js 是通用侧滑面板**（feature 4 的历史/Diff 复用，不各造一套）：`open(host,{title,actions,onClose})→{body,close}`，body 由调用方填。
+- 三个 ⋯ 菜单 export 组入口：导出 JSON Schema / 导出 TypeScript / 用 Schema 校验。
+- 导出物含用户 key → 进 innerHTML 前 esc（变异红 1）；不确定计数徽章。
+- 校验：JSONBig.parse（保 Schema 大整数边界）+ normalize（容错）；结果条**用 createElement 建**（可点、可测，不是 innerHTML+querySelectorAll 的 L-010 死角）→ 点击 jumpToPath 定位 + markInvalid 标红；关面板 clearInvalid。
+- **AC-208 非法 Schema 就地报错**（createElement+textContent，无注入面）**不清空文档视图**（变异红 20）。
+- **stub 补 `remove()` + `_parent` 追踪**：panel 的 close() 要 el.remove()，缺了关闭就抛、onClose 不跑。
