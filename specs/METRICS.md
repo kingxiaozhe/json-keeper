@@ -274,3 +274,8 @@
 - 支持 type/properties/required/additionalProperties/items/enum/const/min-max/minLength-maxLength/同文档 $ref。
 - **三处设计期审查纠正落地**：① 关键字三分（支持内联处理 / 注解+未知默认忽略 / 已知断言型明确提示）—— 实现发现"注解白名单"其实多余（默认就忽略），删掉 SUPPORTED/ANNOTATION 两个死集合（L-008）；② BigInt 同时满足 integer 与 number（isIntegerLike，变异红 2）；③ $ref 深度上限 64 防循环（`{"$ref":"#"}` 报错不卡死，递归 Schema 有限数据正常出结果）。
 - JSON Pointer `~1→/`；远程 $ref 明确拒绝（零网络红线）；min/max 大整数用 BigInt 比不丢精度；AC-211 自产自校验零警告。
+| T-206 树节点标红 markInvalid | ✅ 完成 | 变异自检 | — | 0 | jk-invalid 与搜索 jk-current/jk-dim 正交，可并存 |
+
+### T-205 深度修复 + T-206 详情
+- **T-205 自查抓到并修一个真 bug**（我在审查提示里就点名怀疑的第 1 项）：深度计数把"数据深"和"schema 循环"混为一谈 —— 70 层深的合法嵌套、100 节点链表都被误报成循环 $ref。改为**按 (schema,value) 对的重访检测**真循环，结构下降不计数（数据有限不可能循环），深度上限降格为纯栈保护（5000）。`{"$ref":"#"}` 仍即时抓、深数据放行。
+- **T-206**：`tree.markInvalid(apath[])` / `clearInvalid()`，`jk-invalid` 用**右侧 inset 边框 + 淡红底**，与搜索的 `jk-current`（左 inset + 黄底）/`jk-dim`（降透明）走不同通道 —— 同一行既是搜索命中又校验失败时两者都读得出。clearInvalid 只清自己，不碰搜索类（变异红 1）。

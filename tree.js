@@ -233,6 +233,23 @@
       return row; // truthy like before, but lets the caller read row._trail for the breadcrumb
     }
 
+    // Schema-validation errors (feature 3) mark their rows red. jk-invalid is a separate class
+    // from search's jk-current/jk-dim so the two can land on the same row without fighting — a
+    // matched-and-invalid row shows both. markInvalid is additive; clearInvalid wipes only its own
+    // class, leaving any search highlight alone.
+    let invalidRows = [];
+    function markInvalid(apaths) {
+      clearInvalid();
+      for (const ap of apaths) {
+        const r = byPath.get(ap);
+        if (r) { r.classList.add("jk-invalid"); invalidRows.push(r); }
+      }
+    }
+    function clearInvalid() {
+      invalidRows.forEach((r) => r.classList.remove("jk-invalid"));
+      invalidRows = [];
+    }
+
     return {
       mount, rows, topLevel, counts, nodes, byPath,
       hasContainers: carets.length > 0,
@@ -240,6 +257,8 @@
       collapseAll: () => setAll(true),
       expandTo,
       jumpTo,
+      markInvalid,
+      clearInvalid,
       destroy() { mount.innerHTML = ""; },
     };
   }

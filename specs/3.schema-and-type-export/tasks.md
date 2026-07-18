@@ -55,7 +55,7 @@
   - **远程 `$ref` 必须拒绝**并说明是零网络红线，不是能力缺失。
   - **不得用原生 `JSON.parse` 重解析 Schema**（会毁掉 Schema 里的大整数边界值）。
   - > 工时由 1h 上调至 2h：对抗审查判定原估时把三分政策、循环检测、Pointer 转义、BigInt 比较全塞进 1h 不现实。
-- [ ] T-206: 树节点标红 `JK.tree.markInvalid(apath[])` + 与搜索高亮正交 ~30min
+- [x] T-206: 树节点标红 `JK.tree.markInvalid(apath[])` + 与搜索高亮正交 ~30min
   - 涉及模块: `tree.js`、`viewer.css`
   - `jk-invalid` 与 `jk-current`/`jk-dim` 可能同时命中一行，CSS 需正交不打架。
 
