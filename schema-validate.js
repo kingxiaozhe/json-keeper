@@ -14,9 +14,10 @@
 //  2. A BigInt must satisfy BOTH "integer" and "number". The obvious `typeof v === "number" &&
 //     Number.isInteger(v)` is false for a bigint, which would flag 136986234663732436n — the very
 //     value this product exists for — as "not an integer". isIntegerLike handles it.
-//  3. $ref needs cycle detection. {"$ref":"#"} and ordinary recursive schemas (linked lists,
-//     trees) are valid input that JSONBig.parse accepts, then hangs on. A depth cap catches an
-//     unbounded self-reference while letting a recursive schema over finite data finish.
+//  3. $ref needs cycle detection — and a cycle is revisiting the same (schema, value) pair, not
+//     merely recursing deep. {"$ref":"#"} on a fixed value repeats the pair and is caught; a
+//     linked list or a 70-level object is finite and distinct at each step, so it must pass. A
+//     plain depth counter would wrongly flag the deep-but-finite case as circular.
 (function (global) {
   "use strict";
   const JK = (global.JK = global.JK || {});
@@ -24,7 +25,12 @@
   const childAccessor = JK.tree.childAccessor;
 
   const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
-  const MAX_DEPTH = 64;
+  // A cycle is revisiting the SAME (schema, value) pair through a $ref — that's going in circles
+  // without consuming data. Counting total recursion instead would flag a merely-deep-but-finite
+  // document (a 70-level object, a long linked list) as circular, which is wrong. So cycles are
+  // caught by the visited-pair set below; this cap is only a stack-overflow backstop for
+  // pathologically deep *data*, set far above any real schema.
+  const MAX_REFS = 5000;
 
   // The keyword policy is three-way, but only ONE list is needed to implement it:
   //  · supported keywords are handled inline in walk() (type, properties, required, items, …);
@@ -42,22 +48,26 @@
 
   function validate(schema, value) {
     const errors = [];
-    walk(schema, value, "", schema, 0, errors);
+    walk(schema, value, "", schema, [], errors);
     return { ok: errors.length === 0, errors };
   }
 
   function err(errors, apath, keyword, msg) { errors.push({ apath, keyword, msg }); }
 
-  function walk(schema, value, apath, root, depth, errors) {
-    if (depth > MAX_DEPTH) {
-      err(errors, apath, "$ref", "schema nesting exceeded " + MAX_DEPTH + " — a circular $ref?");
-      return;
-    }
+  // refPath = the (schema, value) pairs reached by following $refs on the way here. Structural
+  // descent (properties/items) passes it UNCHANGED — data is finite, it can't loop; only a $ref
+  // extends it. Revisiting a pair already on the path is a real cycle.
+  function walk(schema, value, apath, root, refPath, errors) {
+    if (refPath.length > MAX_REFS) { err(errors, apath, "$ref", "schema nesting exceeded " + MAX_REFS); return; }
     if (!isObj(schema)) return; // boolean schemas / non-objects: nothing to assert here
     if (schema.$ref !== undefined) {
       const r = resolveRef(schema.$ref, root);
       if (r.error) { err(errors, apath, "$ref", r.error); return; }
-      walk(r.schema, value, apath, root, depth + 1, errors);
+      if (refPath.some((p) => p.schema === r.schema && p.value === value)) {
+        err(errors, apath, "$ref", "circular $ref — this schema references itself without consuming input");
+        return;
+      }
+      walk(r.schema, value, apath, root, refPath.concat({ schema: r.schema, value }), errors);
       // $ref siblings are ignored in 2019-09+/2020-12 for the applicators we support; keep it simple.
       return;
     }
@@ -86,12 +96,12 @@
     if (Array.isArray(value)) {
       if (schema.minItems !== undefined && value.length < schema.minItems) err(errors, apath, "minItems", "fewer than minItems " + schema.minItems);
       if (schema.maxItems !== undefined && value.length > schema.maxItems) err(errors, apath, "maxItems", "more than maxItems " + schema.maxItems);
-      if (schema.items) value.forEach((el, i) => walk(schema.items, el, childAccessor(apath, i, true), root, depth + 1, errors));
+      if (schema.items) value.forEach((el, i) => walk(schema.items, el, childAccessor(apath, i, true), root, refPath, errors));
     }
-    if (isObj(value)) objectChecks(schema, value, apath, root, depth, errors);
+    if (isObj(value)) objectChecks(schema, value, apath, root, refPath, errors);
   }
 
-  function objectChecks(schema, value, apath, root, depth, errors) {
+  function objectChecks(schema, value, apath, root, refPath, errors) {
     if (Array.isArray(schema.required)) {
       for (const k of schema.required) {
         if (!Object.prototype.hasOwnProperty.call(value, k)) {
@@ -104,11 +114,11 @@
     const props = schema.properties || {};
     for (const k of Object.keys(value)) {
       if (Object.prototype.hasOwnProperty.call(props, k)) {
-        walk(props[k], value[k], childAccessor(apath, k, false), root, depth + 1, errors);
+        walk(props[k], value[k], childAccessor(apath, k, false), root, refPath, errors);
       } else if (schema.additionalProperties === false) {
         err(errors, childAccessor(apath, k, false), "additionalProperties", 'property "' + k + '" is not allowed');
       } else if (isObj(schema.additionalProperties)) {
-        walk(schema.additionalProperties, value[k], childAccessor(apath, k, false), root, depth + 1, errors);
+        walk(schema.additionalProperties, value[k], childAccessor(apath, k, false), root, refPath, errors);
       }
     }
   }

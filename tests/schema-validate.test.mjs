@@ -128,3 +128,23 @@ test("$ref 目标不存在 → 明确报错，不崩", () => {
   assert.ok(kw(r).includes("$ref"));
   assert.match(r.errors[0].msg, /not found/i);
 });
+
+test("深但不循环的合法嵌套不被误报为循环 $ref（审查 #1，真 bug 已修）", () => {
+  // 70 层深、无任何 $ref 的普通对象 + 对应 schema —— 数据深 ≠ schema 循环
+  let val = 1, sch = { type: "integer" };
+  for (let i = 0; i < 70; i++) { val = { next: val }; sch = { type: "object", properties: { next: sch } }; }
+  const r = V(sch, val);
+  assert.equal(r.ok, true, "70 层深的合法嵌套必须通过，不能误报循环");
+  assert.ok(!r.errors.some((e) => e.keyword === "$ref"), "不该有任何 $ref 错误");
+});
+
+test("长链表（递归 Schema + 深数据）不被误报循环，只有真自引用才报", () => {
+  const schema = JSONBig.parse('{"$defs":{"Node":{"type":"object","properties":{"next":{"$ref":"#/$defs/Node"}}}},"$ref":"#/$defs/Node"}');
+  // 100 层链表，尾是 {} —— 每层 value 不同，不是循环
+  let val = {};
+  for (let i = 0; i < 100; i++) val = { next: val };
+  assert.equal(V(schema, val).ok, true, "100 层链表是有限深数据，不是循环，应通过");
+  // 真自引用 {"$ref":"#"} 才报 circular
+  const cyc = V({ $ref: "#" }, { a: 1 });
+  assert.match(cyc.errors[0].msg, /circular/i);
+});
