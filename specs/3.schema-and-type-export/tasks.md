@@ -45,7 +45,7 @@
 
 ### 功能 3: Schema 校验（F-203）
 
-- [ ] T-205: 实现 `schema-validate.js` — 关键字三分政策 + BigInt 类型判定 + `$ref` 循环检测 + 错误定位 ~2h
+- [x] T-205: 实现 `schema-validate.js` — 关键字三分政策 + BigInt 类型判定 + `$ref` 循环检测 + 错误定位 ~2h
   - 涉及模块: `schema-validate.js`(新)、`manifest.json`、`viewer.html`
   - 支持: `type`/`properties`/`required`/`additionalProperties`/`items`/`enum`/`const`/`min*`/`max*`/同文档 `$ref`
   - **关键字三分**（见 design.md）：支持 / 注解型静默忽略（白名单含 `$schema` `description` `$defs` 与 `x-*`）/ 断言型明确提示。**二分政策会让产品自己导出的 Schema 在自己的校验器里满屏报警**。

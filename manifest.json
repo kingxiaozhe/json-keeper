@@ -30,6 +30,7 @@
         "query.js",
         "table.js",
         "schema-infer.js",
+        "schema-validate.js",
         "rail.js",
         "status.js",
         "core.js",

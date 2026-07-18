@@ -268,3 +268,9 @@
 - **护城河点**：大整数**绝不静默变 number**（AC-205，变异红 2）——TS 输出 bigint + 精度注释；空数组 TS **绝不 any[]/never[]**（AC-204）——unknown[] + ⚠ 注释。
 - **required = 所有元素都有的 key**（缺失 vs 存在，与表格 missing-vs-null 同一条正确性线）；可选键 TS 带 `?`。
 - **TS 标识符安全**：`a-b`/`1x`/空串 → 引号形式，不拼出语法错（AC-202）。
+| T-205 schema 校验器 | ✅ 完成 | 对抗子代理（进行中） | 待回 | 0 | 18 测试；三处审查纠正落地；6/7 靶 + 删死代码 |
+
+### T-205 详情
+- 支持 type/properties/required/additionalProperties/items/enum/const/min-max/minLength-maxLength/同文档 $ref。
+- **三处设计期审查纠正落地**：① 关键字三分（支持内联处理 / 注解+未知默认忽略 / 已知断言型明确提示）—— 实现发现"注解白名单"其实多余（默认就忽略），删掉 SUPPORTED/ANNOTATION 两个死集合（L-008）；② BigInt 同时满足 integer 与 number（isIntegerLike，变异红 2）；③ $ref 深度上限 64 防循环（`{"$ref":"#"}` 报错不卡死，递归 Schema 有限数据正常出结果）。
+- JSON Pointer `~1→/`；远程 $ref 明确拒绝（零网络红线）；min/max 大整数用 BigInt 比不丢精度；AC-211 自产自校验零警告。

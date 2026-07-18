@@ -89,3 +89,5 @@
 {"at":"2026-07-18T15:31:00","node":"N3","feature":"3.schema-and-type-export","task":"T-201","event":"task_start","detail":"复跑防护网，补锁搜索高亮行为（新增的校验标红要和它正交，不能打架）"}
 {"at":"2026-07-18T16:00:00","node":"N5","feature":"3.schema-and-type-export","task":"T-204","event":"task_done","detail":"Schema推断+TS导出做完：空数组/大整数/null/联合这些'猜的'地方都在产物里明确标出来，绝不假装确定。484测试全过"}
 {"at":"2026-07-18T16:01:00","node":"N3","feature":"3.schema-and-type-export","task":"T-205","event":"task_start","detail":"自研Schema校验器（最难的一块）：关键字三分政策、大整数当integer、$ref循环检测——审查已预先纠正过设计"}
+{"at":"2026-07-18T17:00:00","node":"N5","feature":"3.schema-and-type-export","task":"T-205","event":"task_done","detail":"Schema校验器做完：能校验、大整数不被误判违规、循环$ref不卡死、自己导出的Schema贴回校验零误报。501测试全过"}
+{"at":"2026-07-18T17:01:00","node":"N4","feature":"3.schema-and-type-export","task":"T-205","event":"review","detail":"校验器交对抗审查（新正确性资产，同jsonpath级别）","轮次":1,"通道":"子agent"}
