@@ -94,3 +94,5 @@
 {"at":"2026-07-18T18:00:00","node":"N4","feature":"3.schema-and-type-export","task":"T-205","event":"review","detail":"校验器审查回来：确认我自查修的深度bug对了，另揪出2个'静默放过=假通过'的真bug（黑名单不全、$ref同级被丢，注释还写错了2020-12语义），都修了+补交叉验证测试","轮次":1,"拦截数":2,"通道":"子agent"}
 {"at":"2026-07-18T19:00:00","node":"N5","feature":"3.schema-and-type-export","task":"T-208","event":"task_done","detail":"导出/校验面板做完：菜单点一下弹出侧板，能导出Schema/TS并复制下载、能贴Schema校验并在树上标红点了跳过去。520测试全过"}
 {"at":"2026-07-18T19:01:00","node":"N3","feature":"3.schema-and-type-export","task":"T-209","event":"task_start","detail":"联调走查 + 安全核验（eval/远程$ref/XSS）+ 真浏览器过一遍面板"}
+{"at":"2026-07-18T19:40:00","node":"N5","feature":"3.schema-and-type-export","task":"T-210","event":"task_done","detail":"feature 3收尾：真Chrome里导出Schema/TS带x-bigint标注、校验能标红能跳转，大整数判定正确。520测试全过、无eval无网络"}
+{"at":"2026-07-18T19:41:00","node":"N8","feature":"3.schema-and-type-export","task":"-","event":"done","detail":"feature 3 全部10个任务完成"}

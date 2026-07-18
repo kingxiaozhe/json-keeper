@@ -73,11 +73,11 @@
 
 ### 集成与测试
 
-- [ ] T-209: 联调走查 + 安全核验 ~30min
+- [x] T-209: 联调走查 + 安全核验 ~30min
   - `grep -nE "eval\(|new Function" schema-infer.js schema-validate.js` 无命中（AC-209）。
   - 远程 `$ref` 被拒绝且提示正确。
   - XSS: key 名含 `<script>` 时导出面板以纯文本显示。
-- [ ] T-210: 复跑全部防护网基线 + 手动冒烟清单 ~30min
+- [x] T-210: 复跑全部防护网基线 + 手动冒烟清单 ~30min
   - `node --test tests/` 全绿（AC-210）。
 
 ## 依赖关系

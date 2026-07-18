@@ -296,3 +296,10 @@
 - 校验：JSONBig.parse（保 Schema 大整数边界）+ normalize（容错）；结果条**用 createElement 建**（可点、可测，不是 innerHTML+querySelectorAll 的 L-010 死角）→ 点击 jumpToPath 定位 + markInvalid 标红；关面板 clearInvalid。
 - **AC-208 非法 Schema 就地报错**（createElement+textContent，无注入面）**不清空文档视图**（变异红 20）。
 - **stub 补 `remove()` + `_parent` 追踪**：panel 的 close() 要 el.remove()，缺了关闭就抛、onClose 不跑。
+| T-209 联调 + 安全核验 | ✅ 完成 | 真实 Chrome 走查 | — | 0 | 导出/校验面板真浏览器实跑；x-bigint 徽章、树标红均确认 |
+| T-210 全量基线 + 冒烟 | ✅ 完成 | 自动 + 真浏览器 | — | 0 | 520 测试；AC-209/210 过；无 eval/网络 |
+
+### T-209/T-210 详情
+- **真实 Chrome 走查确认**：⋯ 菜单 export 组三入口就位；导出 JSON Schema → 侧板显示 Schema，`id: {type:integer, "x-bigint":true}`（顶层 + 数组元素都标）、"2 inferred uncertainties" 徽章、Copy/Download；用 Schema 校验 → "2 problems" 列表（`required (root)` / `type id: expected string, got integer`——**大整数正确判为 integer 不是拒绝**），点问题条 → 跳到 id 行、**jk-invalid 红底右边框**（与搜索通道正交）。
+- **安全**：AC-209 jsonpath/schema 无 eval；全项目无 fetch/网络；远程 $ref 拒绝（Node 测过）；导出/校验含用户 key 全 esc/textContent。
+- 打包 27 文件/88K，无禁入项。
