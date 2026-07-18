@@ -42,9 +42,16 @@
   //    result and skipping them silently would let "it validated" be a lie.
   // (An earlier version carried explicit SUPPORTED/ANNOTATION sets too — both were dead, never
   // read, since the default path already ignores everything outside this one list.)
+  // The full Draft 2020-12 assertion/applicator vocabulary we do NOT implement. This must stay in
+  // step with what walk() actually checks — an assertion missing from BOTH is silently ignored,
+  // i.e. a false "valid". schema-validate.test.mjs cross-checks this set against a hand-listed
+  // vocabulary so a newly-remembered keyword can't quietly fall through (the review caught
+  // prefixItems / min-maxProperties / min-maxContains missing here).
   const ASSERTION_UNSUPPORTED = new Set(["allOf", "anyOf", "oneOf", "not", "if", "then", "else",
     "patternProperties", "pattern", "format", "uniqueItems", "multipleOf", "contains",
-    "propertyNames", "dependentSchemas", "dependentRequired", "unevaluatedProperties", "unevaluatedItems"]);
+    "minContains", "maxContains", "prefixItems", "minProperties", "maxProperties",
+    "propertyNames", "dependentSchemas", "dependentRequired", "dependencies",
+    "unevaluatedProperties", "unevaluatedItems"]);
 
   function validate(schema, value) {
     const errors = [];
@@ -62,14 +69,15 @@
     if (!isObj(schema)) return; // boolean schemas / non-objects: nothing to assert here
     if (schema.$ref !== undefined) {
       const r = resolveRef(schema.$ref, root);
-      if (r.error) { err(errors, apath, "$ref", r.error); return; }
-      if (refPath.some((p) => p.schema === r.schema && p.value === value)) {
+      if (r.error) { err(errors, apath, "$ref", r.error); }
+      else if (refPath.some((p) => p.schema === r.schema && p.value === value)) {
         err(errors, apath, "$ref", "circular $ref — this schema references itself without consuming input");
-        return;
+      } else {
+        walk(r.schema, value, apath, root, refPath.concat({ schema: r.schema, value }), errors);
       }
-      walk(r.schema, value, apath, root, refPath.concat({ schema: r.schema, value }), errors);
-      // $ref siblings are ignored in 2019-09+/2020-12 for the applicators we support; keep it simple.
-      return;
+      // NOT a return: in Draft 2019-09/2020-12 $ref is an ordinary applicator, so its siblings
+      // (type, required, maxLength, …) still apply and are AND-ed in. (Sibling suppression was a
+      // Draft-07 rule.) Fall through so the sibling keywords below are evaluated too.
     }
 
     // flag unsupported assertion keywords once, so "it validated" can't be a lie by omission

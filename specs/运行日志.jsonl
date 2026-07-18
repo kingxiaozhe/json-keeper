@@ -91,3 +91,4 @@
 {"at":"2026-07-18T16:01:00","node":"N3","feature":"3.schema-and-type-export","task":"T-205","event":"task_start","detail":"自研Schema校验器（最难的一块）：关键字三分政策、大整数当integer、$ref循环检测——审查已预先纠正过设计"}
 {"at":"2026-07-18T17:00:00","node":"N5","feature":"3.schema-and-type-export","task":"T-205","event":"task_done","detail":"Schema校验器做完：能校验、大整数不被误判违规、循环$ref不卡死、自己导出的Schema贴回校验零误报。501测试全过"}
 {"at":"2026-07-18T17:01:00","node":"N4","feature":"3.schema-and-type-export","task":"T-205","event":"review","detail":"校验器交对抗审查（新正确性资产，同jsonpath级别）","轮次":1,"通道":"子agent"}
+{"at":"2026-07-18T18:00:00","node":"N4","feature":"3.schema-and-type-export","task":"T-205","event":"review","detail":"校验器审查回来：确认我自查修的深度bug对了，另揪出2个'静默放过=假通过'的真bug（黑名单不全、$ref同级被丢，注释还写错了2020-12语义），都修了+补交叉验证测试","轮次":1,"拦截数":2,"通道":"子agent"}
