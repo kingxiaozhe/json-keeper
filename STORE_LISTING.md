@@ -19,9 +19,14 @@ WHY IT'S DIFFERENT
 FEATURES
 • Collapsible tree with line numbers, node counts, and a structure outline to jump around large documents
 • Fast search with match count, next/previous, and auto-expand of matches
+• JSONPath query bar — filter to just the fields you want (e.g. $.users[*].email), with a live match count
+• Table view for arrays of objects — and a missing field is drawn distinctly from a null value, so you don't misread the response
+• Export an inferred JSON Schema (Draft 2020-12) and TypeScript types — with every guessed type flagged honestly (empty arrays as unknown[], big integers as bigint), so you don't inherit a wrong assumption
+• Validate the document against a JSON Schema you paste, with each error pinpointed on the tree
+• Highlights duplicate keys (which the JSON spec silently drops) and counts exact big integers
 • Pretty / Raw (exact source) / Minified views; download as .json
 • Light / dark / auto theme, remembered
-• Handles real-world quirks: strips XSSI guard prefixes ()]}') and unwraps JSONP (callback({...}))
+• Handles real-world quirks: strips XSSI guard prefixes ()]}') and unwraps JSONP (callback({...})), and tolerates JSONC comments and trailing commas
 • Large files stay responsive (the tree is built on demand)
 
 PRIVACY
@@ -37,7 +42,7 @@ Developer Tools (or "Tools")
 
 ## Single purpose
 ```
-Format and display JSON documents: when you open or paste JSON, JSON Keeper renders it as a readable, collapsible, syntax-highlighted tree and lets you copy it back as valid JSON.
+Work with the JSON document you're viewing: when you open or paste JSON, JSON Keeper renders it as a readable, collapsible, syntax-highlighted tree and lets you copy it back as valid JSON, filter it, view arrays as a table, and derive or check its schema. Every feature operates on that one document — it does nothing else.
 ```
 
 ## Permission justifications

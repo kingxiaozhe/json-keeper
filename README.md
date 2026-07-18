@@ -1,4 +1,4 @@
-# JSON Keeper (v0.8.0)
+# JSON Keeper (v0.9.0)
 
 可信赖的 JSON 查看/格式化插件。重写自 JSONVue,差异化:**有明显粘贴入口 + 一键复制合法 JSON + 大整数永不失真 + 可折叠树/搜索**。设计语言 "Quiet Precision"(浅/深双主题)。
 
@@ -27,6 +27,10 @@
 - **容错解析**:自动剥离 XSSI 前缀(`)]}'`、`while(1);`)和 JSONP 包裹(`callback({...})`);v0.7 起兼容 **JSONC**(注释)和**尾逗号**。
 - **按 key 排序**(递归,A→Z,显示与复制一致)+ **多皮肤**(Default / Solarized / Monokai / GitHub)。[v0.7]
 - **正确性提示**[v0.8]:**重复 key 警告**(规范后者覆盖、其余被静默丢弃,我们标出来)+ **大整数计数徽章**("✓ N big-ints exact",在别处会被四舍五入)。这是别家没认真做的可信赖护城河。
+- **JSONPath 查询栏**[v0.9]:输入 `$.users[*].email` 筛出子集,`N matches` 计数 + 清除出口;语法错误就地提示、**保留上一次结果**;自研求值器,**禁 eval**,大整数原样穿过。
+- **表格视图**[v0.9]:数组型 JSON 用表格看,列 = 各元素 key 并集(首次出现顺序);**字段缺失渲染为弱色 `—`、值为 `null` 渲染为 `null`,视觉可区分**(别家都渲染成空白,让人误判接口行为);嵌套 `{…}`/`[N]` 点开子树面板;超 1000 行诚实截断提示。
+- **Schema / TypeScript 导出**[v0.9]:从当前 JSON 反推 **JSON Schema**(Draft 2020-12)与 **TypeScript 类型定义**,可复制/下载;**推断不确定处显式写进产物**——空数组 `unknown[]`(不是 `any[]`)、大整数 `bigint`(不是 `number`,不丢精度)、联合类型、只见过 null,都带 ⚠ 标注,不假装确定。
+- **Schema 校验**[v0.9]:贴入一份 JSON Schema 校验当前文档,错误**定位到具体节点并在树上标红**、点击跳转;大整数正确判为 `integer`/`number`(不误伤招牌数据);未支持的断言型关键字**明确提示**而非静默放过;循环 `$ref` 不卡死;远程 `$ref` 拒绝(零网络红线)。
 - **安全**:所有用户数据经 `esc`/`escAttr` 转义(含属性上下文),无注入面;零网络、零遥测、无远程代码。
 - UI 设计语言:B(Linear 冷静)底 + A(IDE 结构栏/状态栏)+ C(信任文案);浅/深双主题。
 
@@ -36,14 +40,18 @@
 - 仅 Chrome。
 
 ## 结构
-- `manifest.json` — MV3,content script(`jsonbig.js`+`core.js`+`content.js`)注入 http/https/file。`key` 钉死本地 ID。
-- `jsonbig.js` — 保真大整数的 JSON parse/stringify(核心正确性)。
-- `core.js` — 共享渲染:高亮树 + 工具栏(Copy 合法JSON / Raw 原始源)。
-- `content.js` — 检测 JSON 文档→**先解析成功再替换页面**(失败不动原页)。
+MV3,零依赖、零构建。content script 按 manifest 顺序注入 http/https/file;每个文件是一个 IIFE,挂 `window.JK` / `window.JSONBig`。`manifest.json` 的 `key` 钉死本地 ID。核心正确性资产(全部自研、禁 eval、零网络):
+- `jsonbig.js` — 保真大整数的 JSON parse/stringify + 诊断(重复 key / big-int 计数)。
+- `jsonpath.js` — JSONPath 查询求值器(query 用)。
+- `schema-infer.js` / `schema-validate.js` — Schema/TS 推断与 JSON Schema 校验。
+渲染与 UI 拆成:`util` · `tree` · `toolbar` · `search` · `rail`(结构栏)· `status` · `query` · `table` · `panel` · `core`(编排,挂 `mountViewer`)。
+- `content.js` — 检测 JSON 文档 → **先解析成功再替换页面**(失败不动原页)。
 - `popup.html/js` — 粘贴入口 → 存 storage、开 `viewer.html`。
 - `viewer.html/js` — 独立粘贴/格式化工作台。
-- `viewer.css` — 接管页 + viewer 页共用样式(含深色)。
+- `tokens.css` + `viewer.css` — 设计 token(四层主题机制)+ 组件样式(接管页与 viewer 页共用)。
 
 ## 测试
 
-暂无自动化测试(零依赖,未引入测试框架)。发版前跑手动冒烟清单:`.claude/rules/testing.md`——覆盖接管 / 不误伤普通页 / 大整数保真 / 复制结果合法 / Raw 切换 / 重复 key 警告 / 容错解析 / 大文件不卡 / XSS 转义。
+**自动化**(v0.8 起,零依赖):`node --test "tests/*.test.mjs"`(引号必须有)——Node 内置 `node:test`,不引 Vitest/Jest。覆盖 `jsonbig`(大整数保真/诊断)、`jsonpath`、`schema-infer`/`schema-validate`(三个自研正确性资产,单测是唯一防线)、转义防线,以及 DOM 层用手写桩验装配。
+
+**手动冒烟**(发版前必跑):`.claude/rules/testing.md`——DOM 桩测不到的渲染/交互层由它兜底。**尤其:content script 接管真实 JSON 网址、不误伤普通页、popup 作为弹窗、打包产物,是独立代码路径,必须在加载解压扩展后单独验**(自动化测试与 harness 都覆盖不到)。
