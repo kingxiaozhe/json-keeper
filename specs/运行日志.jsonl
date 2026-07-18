@@ -85,3 +85,7 @@
 {"at":"2026-07-18T15:00:00","node":"N4","feature":"2.query-and-table-view","task":"T-109","event":"review","detail":"真Chrome走查：查询栏/表格/缺失vs-null肉眼可分/嵌套面板/大整数保真/XSS无弹窗 全部实跑通过；抓到结构栏把数组元素标成null的老bug，修了","轮次":1,"拦截数":1,"通道":"真浏览器"}
 {"at":"2026-07-18T15:05:00","node":"N5","feature":"2.query-and-table-view","task":"T-110","event":"task_done","detail":"feature 2 收尾：470测试全过、无eval无网络、XSS切表格无弹窗。查询+表格功能全部完成"}
 {"at":"2026-07-18T15:06:00","node":"N8","feature":"2.query-and-table-view","task":"-","event":"done","detail":"feature 2 全部10个任务完成"}
+{"at":"2026-07-18T15:30:00","node":"N2","feature":"3.schema-and-type-export","task":"-","event":"node_enter","detail":"开始 feature 3：从JSON反推Schema、导出TS类型、用Schema校验——核心是诚实标注'猜的'地方。10个任务串行"}
+{"at":"2026-07-18T15:31:00","node":"N3","feature":"3.schema-and-type-export","task":"T-201","event":"task_start","detail":"复跑防护网，补锁搜索高亮行为（新增的校验标红要和它正交，不能打架）"}
+{"at":"2026-07-18T16:00:00","node":"N5","feature":"3.schema-and-type-export","task":"T-204","event":"task_done","detail":"Schema推断+TS导出做完：空数组/大整数/null/联合这些'猜的'地方都在产物里明确标出来，绝不假装确定。484测试全过"}
+{"at":"2026-07-18T16:01:00","node":"N3","feature":"3.schema-and-type-export","task":"T-205","event":"task_start","detail":"自研Schema校验器（最难的一块）：关键字三分政策、大整数当integer、$ref循环检测——审查已预先纠正过设计"}

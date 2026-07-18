@@ -254,3 +254,17 @@
 - **走查抓到 1 个真 bug（feature 1 遗留，feature 2 放大）**：顶层数组的对象元素，结构栏标签显示 `null null null` 而非 `[0][1][2]` —— `topLevel.push` 用的是数组元素的 null key。已修（key===null 时用 apath=`[i]`），+ 测试，变异红 1。表格的典型输入就是对象数组，所以这个 bug 在 feature 2 里很显眼。
 - **T-110 自动检查全过**：AC-108 jsonpath 无 eval/new Function（剥注释后 grep）；AC-110 全量 470 测试全绿；全项目安全 grep 无 fetch/eval/网络；无 console 泄漏；新模块 jsonpath/query/table 均 ≤400 行。
 - harness 补 `?table` 样本 + testing.md 注明"改 JS/CSS 后硬刷新"（本次被缓存骗过一次）。
+
+## 3.schema-and-type-export
+
+| 任务 | 状态 | 审查 | 审查拦截 | 人工介入 | 备注 |
+| ---- | ---- | ---- | ---- | ---- | ---- |
+| T-201 补锁搜索高亮 | ✅ 完成 | 变异自检 | — | 0 | 锁 jk-current/jk-dim 生命周期（T-206 正交锚） |
+| T-202/203 schema 推断 + 不确定标注 | ✅ 完成 | 变异自检 | — | 0 | 11 测试；五种不确定情形写进产物；7/7 靶 |
+| T-204 TS 导出 | ✅ 完成 | 变异自检 | — | 0 | 标识符安全、bigint、unknown[]、可选键 ? |
+
+### T-202/203/204 详情
+- **立场：推断即猜测，每处猜测写进产物**（不只 UI，因产物会被复制走）。五种情形各自标注：null→x-inferred-uncertain、空数组→无 items + 标注、空对象→标注、union→type 数组 + 标注、大整数→x-bigint（确定但需标注）。
+- **护城河点**：大整数**绝不静默变 number**（AC-205，变异红 2）——TS 输出 bigint + 精度注释；空数组 TS **绝不 any[]/never[]**（AC-204）——unknown[] + ⚠ 注释。
+- **required = 所有元素都有的 key**（缺失 vs 存在，与表格 missing-vs-null 同一条正确性线）；可选键 TS 带 `?`。
+- **TS 标识符安全**：`a-b`/`1x`/空串 → 引号形式，不拼出语法错（AC-202）。

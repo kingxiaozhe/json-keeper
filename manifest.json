@@ -29,6 +29,7 @@
         "search.js",
         "query.js",
         "table.js",
+        "schema-infer.js",
         "rail.js",
         "status.js",
         "core.js",

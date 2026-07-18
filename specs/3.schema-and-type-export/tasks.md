@@ -18,18 +18,18 @@
 
 ### 防护网基线（B3）
 
-- [ ] T-201: 复跑防护网基线，补锁树节点类与工具菜单契约 ~30min
+- [x] T-201: 复跑防护网基线，补锁树节点类与工具菜单契约 ~30min
   - 复用 `1.ui-shell-redesign` T-001 建立的 `node --test tests/` 骨架，**不重造**。
   - 补锁: `jk-current`/`jk-dim` 的搜索高亮行为（本 feature 新增 `jk-invalid` 需与其正交）。
   - 涉及模块: `tests/`
 
 ### 功能 1: Schema 推断（F-201/F-204）
 
-- [ ] T-202: 实现 `schema-infer.js` — 类型映射 + 数组元素并集 + required 判定 ~1h
+- [x] T-202: 实现 `schema-infer.js` — 类型映射 + 数组元素并集 + required 判定 ~1h
   - 涉及模块: `schema-infer.js`(新)、`manifest.json`、`viewer.html`
   - 只在**所有元素都有**的 key 才进 `required`，其余可选。
   - 大整数 → `{"type":"integer","x-bigint":true}`，**不得输出 `number`**。
-- [ ] T-203: 实现不确定标注（`uncertainties` 收集 + `x-inferred-uncertain` 写入产物）~30min
+- [x] T-203: 实现不确定标注（`uncertainties` 收集 + `x-inferred-uncertain` 写入产物）~30min
   - 涉及模块: `schema-infer.js`、`tests/`
   - 覆盖: 空数组、空对象、只见过 null、联合类型、大整数。
   - **标注必须写进产物**（不只 UI 显示）—— 产物会被复制走，UI 提示留不下（AC-203/204/205/206）。
@@ -37,7 +37,7 @@
 
 ### 功能 2: TypeScript 导出（F-202）
 
-- [ ] T-204: 实现 `toTypeScript` — interface 生成 + 标识符安全 + 不确定注释 ~1h
+- [x] T-204: 实现 `toTypeScript` — interface 生成 + 标识符安全 + 不确定注释 ~1h
   - 涉及模块: `schema-infer.js`、`tests/`
   - 非法 TS 标识符（`a-b`、`1x`、空串）→ 输出 `"a-b": string` 引号形式，不得拼出语法错代码。
   - 空数组 → `unknown[]` + 注释；大整数 → `bigint` + 注释（见 design.md 技术决策）。
