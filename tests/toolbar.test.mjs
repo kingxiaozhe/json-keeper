@@ -33,10 +33,15 @@ function mountBar(ctx) {
 }
 
 test("三段式 —— 常驻的必须常驻，偶发的必须收纳", async (t) => {
-  await t.test("Copy JSON / 分段器 / 搜索框 / 元信息 / 徽章 留在栏上", () => {
-    for (const needle of ['data-act="copy"', 'data-act="pretty"', 'data-act="raw"', 'data-act="min"',
+  await t.test("Copy JSON / 分段器 / 结构钮 / 搜索框 / 元信息 / 徽章 留在栏上", () => {
+    // v0.10：Raw/Min 退出分段器（源码常驻左侧编辑器，Raw 标签会去重复它）；新增 ☰ 结构按钮。
+    for (const needle of ['data-act="copy"', 'data-act="pretty"', 'data-act="table"', 'data-act="rail"',
                           'class="jk-search"', "data-meta", "data-chip"]) {
       assert.ok(JK.toolbar.BAR_HTML.includes(needle), `${needle} 必须在一级栏，不该被收纳`);
+    }
+    // Raw/Min 确实已从一级栏移除
+    for (const gone of ['data-act="raw"', 'data-act="min"']) {
+      assert.ok(!JK.toolbar.BAR_HTML.includes(gone), `${gone} 应已退役（源码进了左侧编辑器）`);
     }
   });
 

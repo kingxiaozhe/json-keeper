@@ -26,7 +26,7 @@ test("对象数组：Table 段可用，点击切到表格视图", () => {
     clickSeg(root, "table");
     assert.equal(root.querySelector("[data-table]").hidden, false, "table 面板显示");
     assert.equal(root.querySelector("[data-pretty]").hidden, true, "pretty 隐藏");
-    assert.equal(root.querySelector("[data-raw]").hidden, true, "raw 隐藏");
+    // v0.10：Raw 面板退役（源码进了左侧编辑器），不再断言 [data-raw]
     assert.match(root.querySelector("[data-table]").innerHTML, /jk-table/, "表格真的渲染进去了");
     assert.match(root.querySelector("[data-table]").innerHTML, /name/, "列头在");
   } finally { done(); }

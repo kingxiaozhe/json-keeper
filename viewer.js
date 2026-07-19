@@ -1,39 +1,15 @@
-// viewer.js — standalone paste-and-format page. Loads any pending JSON handed
-// over by the popup, and re-renders on demand.
+// viewer.js — the standalone paste-and-format page. It mounts the viewer full-height into the tab
+// and hands it whatever JSON the popup stashed. The viewer's own left pane is the editor now, so
+// there's no separate paste box to manage here — an empty handoff just opens an empty, typable box.
 (function () {
-  const { guardEmpty } = window.JK.util;
-  const input = document.getElementById("in");
-  const out = document.getElementById("out");
-  const go = document.getElementById("go");
+  "use strict";
+  const app = document.getElementById("app");
 
-  function render() {
-    const text = input.value;
-    if (!text.trim()) { out.innerHTML = ""; return; }
-    window.JK.mountViewer(out, text, { showErrors: true });
-  }
-
-  // Empty box + live Format button = click, nothing happens, no reason given. That is the
-  // complaint the popup spent a whole task killing, and this is the other paste box — the one
-  // popup.js sends you to. Bad JSON still goes through: the error lands under an editable copy
-  // of your text, which is the repair path, not a dead end.
-  const sync = () => guardEmpty(input, go);
-  input.addEventListener("input", sync);
-
-  go.addEventListener("click", render);
-  input.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") render();
-  });
-
-  // Pick up JSON the popup stashed, then clear it.
+  // showErrors:true — this is the repair surface. Bad JSON opens IN the editor with the error under
+  // it (mountViewer handles that), rather than the silent bail content.js uses on live pages.
   chrome.storage.local.get("jk:pending", (res) => {
-    const pending = res && res["jk:pending"];
-    if (pending) {
-      input.value = pending;
-      chrome.storage.local.remove("jk:pending");
-      render();
-    }
-    sync();   // the handoff fills the box without firing input; the button must not stay dead
+    const pending = (res && res["jk:pending"]) || "";
+    if (pending) chrome.storage.local.remove("jk:pending"); // used once; don't leave it lying around
+    window.JK.mountViewer(app, pending, { showErrors: true });
   });
-
-  sync();
 })();

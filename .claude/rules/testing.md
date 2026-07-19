@@ -37,10 +37,10 @@ node --test "tests/*.test.mjs"     # 引号必须有
 2. **不误伤**：访问任意普通 HTML 页（如 example.com）→ 页面**完全不变**。这是 content.js 的红线。
 3. **大整数保真**：喂 `{"id": 136986234663732436}` → 树里显示原值不是 ...430，`✓ N big-ints exact` 徽章出现，Copy 出来的文本粘回去仍是原值。
 4. **合法可复制**：Copy 的结果能被 `JSON.parse` 接受（BigInt 不带引号、不带 `n` 后缀）。
-5. **Raw / Pretty / Min 三态**：Raw 显示原始源（含 XSSI 前缀原样），切换不丢数据。
+5. **左右分屏 + 实时编辑**（v0.10 招牌）：左栏是**可编辑源码**（含 XSSI 前缀原样）、右栏是格式化树。**在左栏改一个值 → 右栏树/结构/状态实时跟随**（防抖 ~300ms）；**故意打坏 JSON**（删个括号）→ 左栏底部就地标红报错、左边缘红条、**右栏仍显示上一版好树不清空**；改回合法 → 恢复。视图切换只剩 **Pretty / Table**（无 Raw/Min）。拖分隔条能调左右宽度、双击复位、重开仍记住比例。
 6. **重复 key 警告**：喂 `{"a":1,"a":2}` → 出现 `⚠ 1 duplicate keys — last value shown`，显示值为 2。
 7. **容错解析**：`)]}'`前缀、`while(1);`、JSONP `cb({...})`、JSONC 注释、尾逗号——各一条，均能解析。
-8. **大文件不卡**：> 1MB JSON → 默认 Raw、标签页不冻结；切 Pretty 才建树。
+8. **大文件不卡**：> 1MB JSON → 左栏照显源码、右栏**不自动建树**而是给出 `Build tree` 入口，标签页不冻结；点了才建树。
 9. **XSS**：喂 `{"<img src=x onerror=alert(1)>": "<script>alert(1)</script>"}` → 页面**无弹窗**，恶意串以纯文本显示（含 hover title 属性内）。
 10. **popup → viewer**：粘贴框输入 → 打开 viewer 且内容已渲染；`jk:pending` 已被清除。
 
@@ -48,22 +48,22 @@ node --test "tests/*.test.mjs"     # 引号必须有
 
 11. **Collapse all 不是死键**：打开嵌套 JSON → 点 `⤢ Collapse all` → 树**真的折叠**、标签变 `⤡ Expand all` → 再点 → 真的展开。（变异「删掉 `ctx.onFold`」自动化测试抓不到。）
 12. **Collapse all 的显隐**：喂 `{"a":1,"b":2}`（纯标量顶层）→ 按钮**不出现**；喂嵌套 JSON → 出现。（变异「删掉 `setFoldable`」抓不到。）
-13. **结构栏渲染**：喂 3 个以上顶层 key 且有嵌套的 JSON → 左侧 `STRUCTURE` 栏出现、点击能跳、滚动时高亮跟随。（变异「删掉 `rail.render`」抓不到。）
-14. **Raw 下搜索能切回**：切到 Raw → 在搜索框输入 → **自动切回 Pretty 并高亮命中**。（变异「`ensurePretty` 空操作」抓不到。）
+13. **结构大纲抽屉渲染**：喂 3 个以上顶层 key 且有嵌套的 JSON → 工具栏出现 `☰` 按钮 → 点它 → `STRUCTURE` 抽屉浮出、点条目能跳、滚动时高亮跟随；纯标量顶层时 `☰` 按钮**不出现**。（变异「删掉 `rail.render`」/「删掉 `setRailAvailable`」抓不到。）
+14. **Table 下搜索能切回**：切到 Table（对象数组）→ 在搜索框输入 → **自动切回 Pretty 并高亮命中**。（变异「`ensurePretty` 空操作」抓不到。）
 15. **排序不留悬空状态**：搜一个词（计数显示 `1/N`）→ 点 `⇅ Sort` → **计数清空、搜索框清空**，不再报「1/N」也不再有高亮。折叠后点 Sort → 折叠按钮回到 `⤢ Collapse all`，**一次点击就能折叠**（不是两次）。
-16. **结构栏跳转本身能用**：点任一 `STRUCTURE` 条目 → 滚到对应区块、目标行短暂高亮。点**不同**条目要跳到**不同**位置（变异「rail 点击写死 `items[0]`」自动化测试抓不到）。
-17. **Raw 下点结构栏会切回 Pretty**：切到 Raw → 点结构栏条目 → **自动切回 Pretty 并定位**。（`setView("raw")` 不隐藏 `railEl`，所以结构栏在 Raw 下仍在屏幕上。变异「`jumpToPath` 删掉 `setView`」抓不到。）
-18. **点结构栏不改视图偏好**：在 Raw 下点结构栏（会切到 Pretty）→ **关掉标签页重开一个 JSON → 仍应是 Raw**。导航不该改写跨会话偏好。
+16. **结构抽屉跳转本身能用**：开 `☰` 抽屉 → 点任一条目 → 滚到对应区块、目标行短暂高亮、抽屉随即收起。点**不同**条目要跳到**不同**位置（变异「rail 点击写死 `items[0]`」自动化测试抓不到）。
+17. **Table 下点结构抽屉会切回 Pretty**：切到 Table（对象数组）→ 开 `☰` → 点条目 → **自动切回 Pretty 并定位**。（变异「`jumpToPath` 删掉 `setView`」抓不到。）
+18. **点结构抽屉不改视图偏好**：先把偏好设成 Table（对象数组下点 Table 标签），再切别的文档时用 `☰` 导航 → **关掉标签页重开一个对象数组 → 仍应是 Table**。导航（persist=false）不该改写跨会话偏好。
 19. **折叠块不漏内容**：`⤢ Collapse all` → 手动点开某一个块 → 它内部**仍折叠的子块**不该露出内容（caret 显示折叠、内容却可见 = bug）。
 20. **在 ⋯ 菜单里能换肤**：开 `⋯` → 点 `Colors` 下拉 → **菜单不能当场关掉** → 选 Monokai → 立刻变色。（弹窗内的 `stopPropagation` 是承重的：没有它，点下拉框会冒泡到 document 把菜单关掉、根本换不了肤。桩不冒泡，这条自动化测不到。）
-21. **Raw 视图下 ⋯ 里没有 Collapse all**：切到 Raw → 开 `⋯` → **不该有** `Collapse all`（Raw 不建树，它点了没用还会把标签翻反）。切回 Pretty → 它出现。
+21. **Table 视图下 ⋯ 里没有 Collapse all**：切到 Table（对象数组）→ 开 `⋯` → **不该有** `Collapse all`（Table 不建树，它点了没用还会把标签翻反）。切回 Pretty → 它出现。另：⋯ 里应有 **Copy minified**（Min 视图退役后压缩复制的新家），点它复制的串能被 `JSON.parse` 接受、无空格。
 22. **排序状态一眼可见**：点 `⇅ Sort keys A→Z` → **关掉菜单** → 工具栏右侧常驻区应出现 `⇅ A→Z` 徽章。这条是护城河：排序会跨会话记忆，而 `Copy JSON` 复制的是重排后的内容 —— 用户必须在菜单关着时也知道。
 23. **重复 key 的行内标记看得见、且不被挡**：喂 `{"profile":{"reputation":450,"reputation":452}}` → `reputation` 那一行右侧出现 `⚠ duplicate key` → **鼠标悬停到该行** → 浮出的 `⧉`/`path` 按钮**不该盖住它**（`.jk-acts` 是 `position:absolute; right:0`，两者抢同一块地）。
     **长值必须一起验**：喂一个 value 有 200 字符的重复 key 行 → 标记**仍在视口右侧可见**，不该被推出屏幕（行是 `white-space:pre`，inline 的标记会被长值一路推走 —— 实测 80 字符就被盖住、120 字符滚出屏幕，所以它是 `position:absolute`）。
     **样式存在性**：标记必须是带边框的圆角徽章。删掉 `.jk-dup` 整条 CSS 规则，自动化测试**照样全绿**（Node 里判断不了 CSS 是否生效）—— 这条只有人眼能验。
     **core 的接线**：`core.js` 不给树传 `dupPaths` 时功能彻底失效，而 248 条测试全绿（桩的 `querySelector` 返回幻影元素，树到不了 `collectHTML`，L-010 的结构性墙）。**所以这一整条只能靠人跑。**
 
-24. **发布前必跑打包**：`./pack.sh` → 应输出 **21 个文件 / 约 60K** → `unzip -l json-keeper.zip` 亲眼过一遍。**包里不该有** `specs/`、`tests/`、`.claude/`、`*.pem`、README、STORE_LISTING。
+24. **发布前必跑打包**：`./pack.sh` → 应输出 **29 个文件 / 约 92K**（v0.10 加了 `split.js`、`export-panel.js`）→ `unzip -l json-keeper.zip` 亲眼过一遍。**包里不该有** `specs/`、`tests/`、`.claude/`、`*.pem`、README、STORE_LISTING。
     背景：旧的排除式命令（`zip -r . -x …`）打的是"没被明确排除的一切" —— `tests/` 与 `specs/` 一进仓库，包里就多了 PRD、设计稿、LESSONS、METRICS 和运行日志（74 文件 / 304K），而**扩展包人人可解压**。pack.sh 改成白名单并自带禁入校验，但真实产物仍值得人眼过一次。
 25. **两个扩展页面在强制主题下不发白**：viewer 里按 ☾ → 关掉标签页 → 重开 popup 与 viewer 页 → **粘贴框与页面底色应是深色**（会闪一帧浅色再翻黑，这是 `chrome.storage` 无同步读的必然，不是 bug）。此前 viewer 页要点了 Format 才翻黑。
 
@@ -73,14 +73,20 @@ node --test "tests/*.test.mjs"     # 引号必须有
 27. **大文件的「Build tree」不是死键，且骨架真的被画出来**：造一份 > 5MB 的 JSON（越大越好，要让建树肉眼可见地卡）→ 打开 → 状态栏出现 `N MB — large file, tree built on demand` **和一个 Build tree 按钮** → 点它 → **先看到骨架条**（灰色占位条，会呼吸），**再**卡一下，然后出树。
     > **这条是 T-010 的全部意义，而它只能人来验**：Node 里没有 paint。把双层 rAF 改成单层，自动化测试**照样能红**（因为我的假 rAF 逐帧步进），但**红的理由和真实后果是两回事** —— 真实后果是"骨架一帧都不出现、页面纯冻结"，那个只有眼睛能确认。若看到的是「点完直接冻住、冻完直接出树、全程没有骨架」→ 双层 rAF 被人改回单层了。
     > 顺带验：树出来后 **Build tree 按钮消失**、状态栏换成 `N nodes` 统计；系统偏好设成「减弱动效」时骨架**不呼吸**但仍在。
-28. **大文件不篡改视图偏好**：确保当前偏好是 Pretty（开个小 JSON 确认是树视图）→ 打开一份 > 1MB 的 JSON（它会开在 Raw，正确）→ **再开那个小 JSON** → **仍应是 Pretty**。
-    > v0.8.0 起的线上 bug：`if (heavy) setView("raw")` 把系统的决定写进了用户偏好，打开一个大文件就把 Raw 变成了此后所有 JSON 的默认。同理，在大文件里点 **Build tree** 之后、或在 Raw 下**打字搜索**之后再开小 JSON，**偏好都不该被改写**（那些是手段，不是表态；想表态有 Pretty 标签，那个才存）。
+28. **大文件不篡改视图偏好**：确保当前偏好是 Pretty（开个小 JSON 确认是树视图）→ 打开一份 > 1MB 的 JSON（右栏是 `Build tree` 邀请，正确）→ **再开那个小 JSON** → **仍应是 Pretty**。
+    > v0.8.0 起的线上 bug：`if (heavy) setView("raw")` 把系统的决定写进了用户偏好。v0.10 大文件改开 Pretty（右栏建树入口），且系统决定与 restore 都用 `persist=false`。同理，在大文件里点 **Build tree** 之后、或**在左栏打字编辑**之后再开小 JSON，**偏好都不该被改写**（那些是手段，不是表态；想表态有 Pretty/Table 标签，那两个才存）。
     > **必须开着 ⇅ Sort 再跑一遍这条**：`applySort` 走的是 `jk:sort` 的**异步**回调，晚于 heavy 分支执行 —— 用过一次 Sort 的人会完整地拿回这个 bug，而不开 Sort 的人一切正常。
 29. **状态栏在窄窗口下不吃掉 Build tree 与 trust 行**：造一份 **> 1MB 且带 4 个重复 key** 的 JSON（护城河的旗舰场景：大文件 + 重复 key）→ 在 **1280px 或更窄**的窗口打开（或开着 devtools）→ 状态栏从左到右应当**全部可见**：`● valid JSON`、`⚠ 4 duplicate keys…`（**可以省略号截断**）、`— large file…`、**`Build tree` 按钮**、`big integers kept exact · no ads · no telemetry`。
     > 实测（对抗审查在真浏览器里量的）：`.jk-status` 是 `nowrap` + `overflow:hidden` 的 flex，**nowrap 文本项的 `min-width:auto` = min-content，谁都不收缩**，于是整块从右边裁掉 —— 1 个重复 key 在 < 840px、2 个在 < 950px、4 个在 < 1210px 就开始裁。1080px + 4 个重复 key 时按钮和 trust 行**完全不可见**，AC-007 与 AC-008 双双不过。修法是让 `.jk-warn` 去截断（`min-width:0` + ellipsis），它是这行里唯一"丢了尾巴还能干活"的东西。
     > 和第 23 条同形：**两个东西抢同一块地，而 Node 里量不出宽度**。
 30. **⋯ 溢出菜单默认是关的、点一下才开**：打开任意 JSON → 树上方**不该**浮着 `Collapse all / Sort / Download / Theme / Colors` 那张菜单 → 点 `⋯` → 菜单出现 → 再点 `⋯` 或点菜单外 → 关掉。
     > **T-012 首次真实 Chrome 运行抓到的真 bug**：`.jk-menu-pop` 有 `display:flex` 却少了 `[hidden]{display:none}` 兜底规则。`[hidden]` 靠 UA 的 `[hidden]{display:none}`，特异性与 `.jk-menu-pop` 同为 (0,1,0)，源序在后的作者样式胜出 → **hidden 属性形同虚设，菜单从 T-004 起一直开着盖在树上**，而 400 条自动化全绿（桩没有 CSS）。已补 `.jk-menu-pop[hidden]{display:none}`，并加 `tests/css-hidden.test.mjs` 锁住"有覆盖性 display 的收起浮层必须有 [hidden] 兜底"（源码级，防回归）。
+
+31. **实时编辑管线**（v0.10 招牌，自动化只到"逻辑"层，"实时跟随"只能人看）：左栏改一个值 → **停手约 300ms 后**右栏树、`☰` 结构、状态栏计数、`N keys` 元信息、big-int 徽章**一起更新**；连续快打时右栏不该每键都重建（防抖）。**清空左栏** → 右栏回到"Paste or type JSON…"空态、状态栏不再报 valid。
+    > 桩能验"喂新串会重解析重渲染"，但验不了"防抖窗口""视觉实时性""空态提示文案"——那几样只有真浏览器 + 人眼。改了 `core.js` 的 `ingest`/`rerender`/`adopt` 必跑。
+32. **坏 JSON 不炸右栏**：左栏把合法 JSON 改坏（删括号/多逗号）→ 左栏底部**红字报错 + 左边缘红条**，右栏**仍是上一版好树**（不清空、不白屏、不弹错误页）→ 改回合法 → 报错消失、右栏刷新。这是"编辑器是修复面而非死路"的承重行为。
+33. **分隔条能拖、双击复位、跨会话记住**：拖中间分隔条 → 左右宽度随动、松手后比例存下 → **关标签页重开** → 比例还在；**双击分隔条** → 回到五五分。拖动时不该选中左栏文字（`jk-dragging` 关了 pointer-events）。
+34. **`☰` 结构抽屉开合**：默认**不浮**抽屉 → 点 `☰` → 抽屉浮出、按钮点亮 → 点抽屉外/再点 `☰`/按 Esc → 收起。（对象数组能表格化时，`☰` 与 Table 段并存不打架。）
 
 ## 渲染冒烟工具（`smoke-harness.html`）
 

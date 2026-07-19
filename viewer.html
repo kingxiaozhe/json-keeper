@@ -8,11 +8,9 @@
   <script src="theme-boot.js"></script>
 </head>
 <body class="jk-page">
-  <div class="jk-page-wrap">
-    <textarea id="in" class="jk-input" placeholder='Paste JSON here, then press Format (⌘/Ctrl+Enter)'></textarea>
-    <div class="jk-page-bar"><button class="jk-btn jk-primary" id="go">Format JSON</button></div>
-    <div id="out"></div>
-  </div>
+  <!-- The whole page is the viewer. Its left pane is the editable source, so there's no separate
+       paste box on top anymore — an empty box just opens the viewer ready to be typed into. -->
+  <div id="app" class="jk-fullmount"></div>
   <script src="jsonbig.js"></script>
   <script src="util.js"></script>
   <script src="tree.js"></script>
@@ -24,6 +22,8 @@
   <script src="schema-infer.js"></script>
   <script src="schema-validate.js"></script>
   <script src="panel.js"></script>
+  <script src="split.js"></script>
+  <script src="export-panel.js"></script>
   <script src="rail.js"></script>
   <script src="status.js"></script>
   <script src="core.js"></script>

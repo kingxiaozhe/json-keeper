@@ -138,29 +138,32 @@ test("点数组下标段真的会跳（不只是显示对）", () => {
   } finally { done(); }
 });
 
-test("Raw 下点面包屑会切回 Pretty 并定位（走的是 jumpToPath）", () => {
-  // 先在 Pretty 建树并点出一条面包屑，再切 Raw，再点面包屑
-  const { root, done } = mount({ a: { b: 1 } });
+// v0.10：Raw 视图退役（源码进了左侧编辑器），Table 是右栏仅剩的非树视图。原本这两条锁的是
+// "在 Raw 下面包屑仍在屏幕上、点它切回 Pretty 并定位、且导航不写偏好"。同一条护城河搬到 Table：
+// 从非树视图点面包屑，必须切回 Pretty、定位、且 persist=false 不改跨会话偏好。
+test("Table 下点面包屑会切回 Pretty 并定位（走的是 jumpToPath）", () => {
+  const { root, done } = mount([{ a: { b: 1 } }]);   // 对象数组：Table 可用
   try {
-    clickRow(root, rowByPath(root, "a.b"));
-    root.querySelector('[data-act="raw"]')._click();
-    assert.equal(prettyEl(root).hidden, true, "前提：现在在 Raw");
+    clickRow(root, rowByPath(root, "[0].a.b"));
+    root.querySelector('[data-act="table"]')._click();
+    assert.equal(prettyEl(root).hidden, true, "前提：现在在 Table");
     clickCrumb(root, crumbButtons(root).find((x) => x.textContent === "a"));
-    assert.equal(prettyEl(root).hidden, false, "点面包屑该切回 Pretty —— 面包屑在 Raw 下也在屏幕上");
-    assert.ok(rowByPath(root, "a").classList.contains("jk-hit"));
+    assert.equal(prettyEl(root).hidden, false, "点面包屑该切回 Pretty");
+    assert.ok(rowByPath(root, "[0].a").classList.contains("jk-hit"));
   } finally { done(); }
 });
 
-test("Raw 下点面包屑不改跨会话视图偏好（导航不是表态）", () => {
-  const c = installChrome({ "jk:view": "raw" });
+test("Table 下点面包屑不改跨会话视图偏好（导航不是表态）", () => {
+  const c = installChrome({ "jk:view": "table" });
   try {
     const root = makeMount();
-    JK.mountViewer(root, JSON.stringify({ a: { b: 1 } }), { showErrors: false });
-    // 在 Pretty 下先点出面包屑（需要树在），再切回 Raw
+    JK.mountViewer(root, JSON.stringify([{ a: { b: 1 } }]), { showErrors: false });
+    // 先切 Pretty 建树、点出面包屑，再显式切回 Table（这两次是用户表态，会存），
+    // 最后点面包屑走导航（persist=false）—— 它不该把偏好从 table 改掉。
     root.querySelector('[data-act="pretty"]')._click();
-    clickRow(root, rowByPath(root, "a.b"));
-    root.querySelector('[data-act="raw"]')._click();
+    clickRow(root, rowByPath(root, "[0].a.b"));
+    root.querySelector('[data-act="table"]')._click();
     clickCrumb(root, crumbButtons(root).find((x) => x.textContent === "a"));
-    assert.equal(c.data["jk:view"], "raw", "导航切到 Pretty 用的是 persist=false，不该写偏好");
+    assert.equal(c.data["jk:view"], "table", "导航切到 Pretty 用的是 persist=false，不该写偏好");
   } finally { c.uninstall(); }
 });

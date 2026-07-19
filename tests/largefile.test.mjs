@@ -96,15 +96,17 @@ test("Build tree 不是死键（T-004 的老病：按钮长得对，点了没用
     } finally { c.uninstall(); }
   });
 
-  await t.test("点了会切到 Pretty（不然树建好了还在看原文）", () => {
+  await t.test("点了会建树并显示在右栏 Pretty（v0.10：源码常驻左栏，右栏从建树邀请变成树）", () => {
     const c = installChrome({});
     try {
       const root = mount(BIG);
-      assert.equal(prettyOf(root).hidden, true, "前提：大文件开在 Raw");
+      // v0.10：大文件开在 Pretty，但右栏是"Build tree 邀请"而非树（源码在左栏可读）
+      assert.equal(prettyOf(root).hidden, false, "前提：右栏可见");
+      assert.equal(hasTree(root), false, "前提：此刻还没建树，只有邀请");
       clickBuild(root);
       frame(); frame();
       assert.equal(prettyOf(root).hidden, false);
-      assert.equal(root.querySelector("[data-raw]").hidden, true);
+      assert.ok(hasTree(root), "建完后右栏是树");
     } finally { c.uninstall(); }
   });
 });
@@ -199,12 +201,13 @@ test("系统替你做的决定，不许写进你的偏好", async (t) => {
     } finally { c.uninstall(); }
   });
 
-  await t.test("但用户自己点 Pretty 标签，照旧要存", () => {
+  await t.test("但用户自己点视图标签，照旧要存（v0.10：Raw 退役，改点 Table 表态）", () => {
     const c = installChrome({});
     try {
-      const root = mount(SMALL);
-      root.querySelector('[data-act="raw"]')._click();
-      assert.equal(c.data["jk:view"], "raw", "这才是用户的表态");
+      // 对象数组：Table 段可用。显式点视图标签才是用户表态 —— 该写进 jk:view。
+      const root = mount(JSON.stringify([{ a: 1 }, { a: 2 }]));
+      root.querySelector('[data-act="table"]')._click();
+      assert.equal(c.data["jk:view"], "table", "这才是用户的表态");
     } finally { c.uninstall(); }
   });
 

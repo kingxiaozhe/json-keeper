@@ -191,28 +191,28 @@ test("搜索无结果 —— 别把整棵树变暗", async (t) => {
     } finally { c.uninstall(); }
   });
 
-  // 结果条住在 scrollEl 里，而 scrollEl 同时装着 Raw 面板 —— 于是切到 Raw 后
-  // 「No match for "zzzz"」会挂在**原文**上方。那条结论说的是**树**，而 Raw 没在显示树
-  // （从 Raw 搜索还会被 ensurePretty 拽回 Pretty）。
-  await t.test("切到 Raw 时结果条要撤掉 —— 它说的是树，不是你正在看的原文", () => {
+  // 结果条说的是**树**。v0.10 Raw 视图退役后，右栏仅剩的非树视图是 Table —— 切到 Table 时
+  // 「No match for "zzzz"」同样必须撤掉（它描述的是树，不是表格；从别处搜索也会被 ensurePretty
+  // 拽回 Pretty）。search.onViewChange 只在 view==="pretty" 时留住这条。
+  await t.test("切到 Table 时结果条要撤掉 —— 它说的是树，不是表格", () => {
     const c = installChrome({});
     try {
-      const root = mountViewer({ alpha: 1 });
+      const root = mountViewer([{ alpha: 1 }]);   // 对象数组：Table 可用
       const bar = () => root.querySelector(".jk-scroll").children.find((x) => x.className === "jk-nohits");
       typeSearch(root, "zzzz");
       assert.equal(bar().hidden, false, "前提：Pretty 下先有个无结果态");
-      root.querySelector('[data-act="raw"]')._click();
-      assert.equal(bar().hidden, true, "Raw 上方不该挂着关于树的结论");
+      root.querySelector('[data-act="table"]')._click();
+      assert.equal(bar().hidden, true, "Table 上方不该挂着关于树的结论");
     } finally { c.uninstall(); }
   });
 
   await t.test("切回 Pretty 时结果条要回来（结论仍然成立）", () => {
     const c = installChrome({});
     try {
-      const root = mountViewer({ alpha: 1 });
+      const root = mountViewer([{ alpha: 1 }]);
       const bar = () => root.querySelector(".jk-scroll").children.find((x) => x.className === "jk-nohits");
       typeSearch(root, "zzzz");
-      root.querySelector('[data-act="raw"]')._click();
+      root.querySelector('[data-act="table"]')._click();
       root.querySelector('[data-act="pretty"]')._click();
       assert.equal(bar().hidden, false, "树回来了，那条结论也该回来");
     } finally { c.uninstall(); }

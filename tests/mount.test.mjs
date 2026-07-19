@@ -48,10 +48,15 @@ test("接管契约 —— content.js 唯一依赖的东西", async (t) => {
     assert.equal(mount('{"a":'), false);
   });
 
-  await t.test("坏 JSON 且 showErrors:true 渲染错误但仍返回 false", () => {
+  await t.test("坏 JSON 且 showErrors:true 挂出可修复外壳并返回 true（v0.10 契约变更）", () => {
+    // v0.10 前：坏 JSON 即使 showErrors 也只渲染错误 + 返回 false。现在 viewer 页左栏是可编辑源，
+    // 坏 JSON 落进编辑器、错误显示在下方，是修复路径而非死路 —— 所以挂载成功、返回 true。
+    // 接管契约（showErrors:false + 坏 JSON → false，见上一条）不变，content.js 不受影响。
     const root = makeMount();
-    assert.equal(JK.mountViewer(root, '{"a":', { showErrors: true }), false);
-    assert.match(root.collectHTML(), /Not valid JSON/);
+    assert.equal(JK.mountViewer(root, '{"a":', { showErrors: true }), true);
+    assert.equal(root.querySelector("[data-src]").value, '{"a":', "坏文本落进左侧编辑器");
+    assert.equal(root.querySelector("[data-src-err]").hidden, false, "错误行显示出来");
+    assert.ok(root.querySelector("[data-src-err]").textContent.length > 0, "带上具体报错");
   });
 
   await t.test("错误信息经 esc —— 坏文本是本项目最直接的注入面", () => {
@@ -176,28 +181,29 @@ test("排序与搜索 —— 靠假 chrome.storage 才可达的那一半", async
     } finally { c.uninstall(); }
   });
 
-  await t.test("jk:view=raw 时启动进 Raw 视图，且显示的是原始源", () => {
+  // v0.10：Raw/Min 视图退役 —— 源码常驻左侧可编辑面板，右栏无 Raw/Min。老 storage 里存的
+  // "raw"/"min" 必须回落 Pretty（且 restore 用 persist=false，不把退役值迁写成别的）。
+  await t.test("jk:view=raw 是退役视图 → 回落 Pretty，左栏保留原始源", () => {
     const c = installChrome({ "jk:view": "raw" });
     try {
       const root = makeMount();
-      JK.mountViewer(root, '{ "a" : 1 }', { showErrors: false, originalText: '{ "a" : 1 }' });
-      assert.equal(root.querySelector("[data-raw]").hidden, false, "应显示 Raw");
-      assert.equal(root.querySelector("[data-pretty]").hidden, true);
-      // Raw 必须是原始源（带原空格），不是 minified —— 两者写反了用户就看不到真正的原文
-      assert.equal(root.querySelector("[data-raw]").textContent, '{ "a" : 1 }');
+      JK.mountViewer(root, '{ "a" : 1 }', { showErrors: false });
+      assert.equal(root.querySelector("[data-pretty]").hidden, false, "回落到 Pretty");
+      // 原始源（带原空格）进了左侧编辑器，而不是某个 Raw 面板
+      assert.equal(root.querySelector("[data-src]").value, '{ "a" : 1 }', "左栏保留原始源");
     } finally { c.uninstall(); }
   });
 
-  await t.test("jk:view=min 时显示压缩版，不是原始源", () => {
+  await t.test("jk:view=min 是退役视图 → 回落 Pretty（Min 变成 ⋯ 的 Copy minified）", () => {
     const c = installChrome({ "jk:view": "min" });
     try {
       const root = makeMount();
-      JK.mountViewer(root, '{ "a" : 1 }', { showErrors: false, originalText: '{ "a" : 1 }' });
-      assert.equal(root.querySelector("[data-raw]").textContent, '{"a":1}');
+      JK.mountViewer(root, '{ "a" : 1 }', { showErrors: false });
+      assert.equal(root.querySelector("[data-pretty]").hidden, false, "回落到 Pretty");
     } finally { c.uninstall(); }
   });
 
-  await t.test("jk:view 是未知值时回落 Pretty（向后兼容，feature 2 会加 table）", () => {
+  await t.test("jk:view 是未知值时回落 Pretty（向后兼容闸门）", () => {
     const c = installChrome({ "jk:view": "table" });
     try {
       const root = makeMount();
@@ -206,14 +212,18 @@ test("排序与搜索 —— 靠假 chrome.storage 才可达的那一半", async
     } finally { c.uninstall(); }
   });
 
-  await t.test("大文件无视 jk:view 直接进 Raw（树按需构建）", () => {
+  await t.test("大文件开在 Pretty 但不自动建树，右栏给出 Build tree 入口", () => {
     const c = installChrome({ "jk:view": "pretty" });
     try {
       const root = makeMount();
       const big = '{"a":"' + "x".repeat(1_100_000) + '"}';
       JK.mountViewer(root, big, { showErrors: false });
-      assert.equal(root.querySelector("[data-raw]").hidden, false, "大文件必须走 Raw，否则卡死标签页");
-      assert.match(root.querySelector("[data-status]").innerHTML, /large file/);
+      assert.equal(root.querySelector("[data-pretty]").hidden, false, "开在 Pretty");
+      const st = root.querySelector("[data-status]").innerHTML;
+      assert.match(st, /large file/);
+      assert.match(st, /data-build/, "状态栏给出按需建树入口");
+      // 右栏是"建树邀请"，不是树本身（源码已在左栏可读，不会卡死标签页）
+      assert.match(root.querySelector("[data-pretty]").collectHTML(), /Build tree/);
     } finally { c.uninstall(); }
   });
 

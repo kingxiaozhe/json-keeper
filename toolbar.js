@@ -30,10 +30,14 @@
   const BAR_HTML =
     '<div class="jk-bar">' +
       '<button class="jk-btn" data-act="copy">' + ICON_COPY + "Copy JSON</button>" +
-      // Table sits next to Pretty (both are rendered views) rather than in baseline order — the
-      // Pretty-first order is kept from v0.8.0 so muscle memory survives. Table disables itself
-      // when the data isn't an array of objects (F-106); the reason rides in its title.
-      '<div class="jk-seg"><button class="on" data-act="pretty">Pretty</button><button data-act="table">Table</button><button data-act="raw">Raw</button><button data-act="min">Min</button></div>' +
+      // Table sits next to Pretty (both are rendered views). Raw and Min retired here in v0.10: the
+      // source is now the permanent left editor, so a Raw tab that hid the tree would be showing what
+      // is already on screen. Table still disables itself when the data isn't an array of objects
+      // (F-106); the reason rides in its title. Min moved to ⋯ as "Copy minified".
+      '<div class="jk-seg"><button class="on" data-act="pretty">Pretty</button><button data-act="table">Table</button></div>' +
+      // ☰ pops out the STRUCTURE outline (a drawer now, not a permanent rail — the two-pane split
+      // left no room for a third column). Hidden until core reports the doc is worth an outline.
+      '<button class="jk-btn jk-icon" data-act="rail" title="Structure outline" aria-expanded="false" hidden>☰</button>' +
       '<div class="jk-search">' + ICON_FIND +
         '<input placeholder="Search keys &amp; values"><span class="jk-find-n" data-find hidden></span>' +
         '<button class="jk-find-b" data-find-prev title="Previous (Shift+Enter)" hidden>↑</button><button class="jk-find-b" data-find-next title="Next (Enter)" hidden>↓</button><kbd>/</kbd></div>' +
@@ -63,11 +67,12 @@
     set(document.documentElement);
   }
 
-  // ctx: { onView, onCopy, onDownload, onFold, onSort }
+  // ctx: { onView, onRail, onCopy, onDownload, onFold, onSort }
   function mount(rootEl, ctx) {
     const { store } = JK.util;
     const $ = (s) => rootEl.querySelector(s);
-    const segBtns = { pretty: $('[data-act="pretty"]'), table: $('[data-act="table"]'), raw: $('[data-act="raw"]'), min: $('[data-act="min"]') };
+    const segBtns = { pretty: $('[data-act="pretty"]'), table: $('[data-act="table"]') };
+    const railBtn = $('[data-act="rail"]');
     const flash = $("[data-flash]");
     const menuBtn = $("[data-menu-btn]"), pop = $("[data-menu-pop]");
 
@@ -126,6 +131,7 @@
     // ---- zone 1: constant reach ----
     Object.keys(segBtns).forEach((k) => segBtns[k].addEventListener("click", () => ctx.onView(k)));
     $('[data-act="copy"]').addEventListener("click", () => ctx.onCopy());
+    railBtn.addEventListener("click", (e) => { e.stopPropagation(); ctx.onRail(); });
 
     // ---- zone 3: occasional — everything below lives in ⋯ ----
     let collapsed = false;
@@ -190,6 +196,10 @@
         segBtns.table.title = ok ? "" : reason;
         segBtns.table.classList.toggle("jk-seg-off", !ok);
       },
+      // The ☰ button only earns its place when there's an outline to show — a flat scalar-only doc
+      // gets no structure drawer (rail.shouldShow decides), so the button hides with it.
+      setRailAvailable(on) { railBtn.hidden = !on; if (!on) { railBtn.classList.remove("on"); railBtn.setAttribute("aria-expanded", "false"); } },
+      setRailOpen(on) { railBtn.classList.toggle("on", !!on); railBtn.setAttribute("aria-expanded", on ? "true" : "false"); },
       setFlash(t) { flash.textContent = t; setTimeout(() => (flash.textContent = ""), 1500); },
       setMeta(text) { $("[data-meta]").textContent = text; },
       setChip(text) { $("[data-chip]").textContent = text; },

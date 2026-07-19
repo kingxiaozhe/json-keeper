@@ -21,7 +21,8 @@ function openWith(stored) {
   try {
     const root = makeMount();
     JK.mountViewer(root, JSON.stringify({ a: 1, b: 2 }), { showErrors: false });
-    for (const v of ["pretty", "raw", "min"]) {
+    // v0.10：分段器只剩 pretty / table（Raw、Min 退役 —— 源码进了左侧编辑器）。
+    for (const v of ["pretty", "table"]) {
       const btn = root.querySelector('[data-act="' + v + '"]');
       if (btn && btn.classList.contains("on")) return v;
     }
@@ -29,10 +30,12 @@ function openWith(stored) {
   } finally { c.uninstall(); }
 }
 
-test("视图恢复：已知值照开，未知值回落 pretty（老 storage 兼容闸门）", async (t) => {
+test("视图恢复：已知值照开，未知/退役值回落 pretty（老 storage 兼容闸门）", async (t) => {
   await t.test("存 pretty → 开 pretty", () => assert.equal(openWith("pretty"), "pretty"));
-  await t.test("存 raw → 开 raw", () => assert.equal(openWith("raw"), "raw"));
-  await t.test("存 min → 开 min", () => assert.equal(openWith("min"), "min"));
+  // Raw/Min 从"已知值"变成"退役值"——老用户 storage 里可能还留着，必须回落 pretty，绝不白屏。
+  // 显式改这两条 = 让契约变更被看见（特征化纪律）。
+  await t.test("存 raw（退役）→ 回落 pretty", () => assert.equal(openWith("raw"), "pretty"));
+  await t.test("存 min（退役）→ 回落 pretty", () => assert.equal(openWith("min"), "pretty"));
   await t.test("没存过 → 开 pretty", () => assert.equal(openWith(undefined), "pretty"));
 
   // T-107 落地：`table` 从"未知值"变成"有条件的已知值" —— 仅当当前文档能表格化才接受。

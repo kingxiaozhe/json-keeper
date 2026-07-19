@@ -87,9 +87,45 @@ html.jk-active .jk-root { height:100vh; }
 .jk-crumb-i:focus-visible { outline:2px solid var(--jk-accent); outline-offset:1px; }
 .jk-crumb-cur { color:var(--jk-fg); font-weight:600; }
 
-/* main = rail + scroll */
-.jk-main { flex:1 1 auto; display:flex; min-height:0; }
-.jk-rail { flex:0 0 184px; overflow:auto; background:var(--jk-rail); border-right:1px solid var(--jk-border); padding:8px 0; }
+/* main = source editor | draggable divider | tree/table view (with the STRUCTURE drawer overlaid).
+   The source moved out of a hidden Raw tab and into a permanent left pane you can edit; the tree on
+   the right follows what you type (core.js ingest, debounced). */
+.jk-main { flex:1 1 auto; display:flex; min-height:0; position:relative; }
+
+/* left: the editable source */
+.jk-edit-pane { flex:0 0 42%; display:flex; flex-direction:column; min-width:0; border-right:1px solid var(--jk-border); }
+.jk-src { flex:1 1 auto; width:100%; box-sizing:border-box; resize:none; border:0; outline:0; tab-size:2;
+  background:var(--jk-canvas); color:var(--jk-fg); font-size:12.5px; line-height:1.6; padding:12px 14px; white-space:pre; overflow:auto; }
+.jk-src::placeholder { color:var(--jk-faint); }
+/* Won't parse: mark the whole source edge, not a character — we know the doc is bad, not where. */
+.jk-src.jk-bad { box-shadow: inset 3px 0 0 var(--jk-bad); }
+.jk-src-err { flex:0 0 auto; padding:7px 14px; font-size:11.5px; color:var(--jk-bad); background:var(--jk-panel2);
+  border-top:1px solid var(--jk-border); white-space:pre-wrap; word-break:break-word; }
+.jk-src-err[hidden] { display:none; }
+
+/* the divider */
+.jk-splitter { flex:0 0 7px; cursor:col-resize; background:var(--jk-border); touch-action:none; }
+.jk-splitter:hover, .jk-dragging .jk-splitter { background:var(--jk-accent); }
+/* Mid-drag the panes must not eat the pointer — otherwise dragging over the textarea selects its
+   text instead of resizing, and the release never reaches the divider. */
+.jk-dragging { cursor:col-resize; }
+.jk-dragging .jk-edit-pane, .jk-dragging .jk-view-pane { pointer-events:none; user-select:none; }
+
+/* right: the tree/table view */
+.jk-view-pane { flex:1 1 auto; display:flex; position:relative; min-width:0; }
+.jk-scroll { flex:1 1 auto; position:relative; overflow:auto; }
+
+/* right-pane placeholders: large-file build offer, and the empty/invalid prompt */
+.jk-heavy, .jk-empty { padding:26px 22px; max-width:460px; color:var(--jk-dim); font-size:13px; line-height:1.6; }
+.jk-heavy-t { margin:0 0 12px; }
+.jk-heavy-s { margin:12px 0 0; font-size:11.5px; color:var(--jk-faint); }
+.jk-empty { color:var(--jk-faint); }
+
+/* STRUCTURE drawer — the ☰ pop-out. Overlays the tree from the left; a permanent rail had no room
+   once the body became two panes. Item styles (.jk-rail-*) are unchanged; only the container is. */
+.jk-drawer { position:absolute; top:0; left:0; bottom:0; z-index:15; width:210px; max-width:70%;
+  overflow:auto; padding:8px 0; background:var(--jk-rail); border-right:1px solid var(--jk-border2); box-shadow:var(--jk-shadow); }
+.jk-drawer[hidden] { display:none; }
 .jk-rail-h { font-size:10px; font-weight:700; letter-spacing:.1em; color:var(--jk-faint); padding:4px 14px 8px; }
 .jk-rail-i { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; text-align:left; font:inherit; font-size:12.5px;
   font-family:ui-monospace,Menlo,monospace; color:var(--jk-fg); background:transparent; border:0; border-left:2px solid transparent; padding:5px 14px; cursor:pointer; }
@@ -97,8 +133,6 @@ html.jk-active .jk-root { height:100vh; }
 .jk-rail-i.on { border-left-color:var(--jk-accent); background:var(--jk-accent-soft); color:var(--jk-accent); }
 .jk-rail-k { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .jk-rail-n { font-size:11px; color:var(--jk-faint); }
-
-.jk-scroll { flex:1 1 auto; position:relative; overflow:auto; }
 
 /* Zero hits used to mean every row at 26% opacity plus a bare "0" in the toolbar — the document
    looked broken rather than unmatched. Nothing found, nothing dimmed; this says it in words.
@@ -258,14 +292,9 @@ html.jk-active .jk-root { height:100vh; }
 /* The pulse carries no information the static bars don't — first thing to drop when asked. */
 @media (prefers-reduced-motion: reduce) { .jk-skel-row { animation:none; opacity:.6; } }
 
-/* standalone viewer page */
+/* standalone viewer page — a full-height mount now. The separate paste box on top is gone: the
+   viewer's own left pane IS the editor, so the page is just the viewer filling the tab. */
+html, body.jk-page { height:100%; }
 .jk-page { margin:0; background:var(--jk-canvas); color:var(--jk-fg); font-family: system-ui, sans-serif; }
-.jk-page-wrap { max-width:1040px; margin:0 auto; padding:20px; }
-.jk-input { width:100%; height:120px; box-sizing:border-box; font-family:ui-monospace,Menlo,monospace; font-size:13px; line-height:1.5;
-  border:1px solid var(--jk-border2); border-radius:10px; padding:11px; background:var(--jk-panel); color:var(--jk-fg); resize:vertical; }
-.jk-input::placeholder { color:var(--jk-faint); }
-.jk-page-bar { margin:10px 0 14px; }
-.jk-page-bar .jk-btn.jk-primary { padding:8px 18px; }
-#out .jk-wrap { height:auto; border:1px solid var(--jk-border); border-radius:12px; overflow:hidden; box-shadow:var(--jk-shadow); }
-#out .jk-main { min-height:280px; }
-#out .jk-scroll { max-height:60vh; }
+.jk-fullmount { height:100vh; }
+.jk-fullmount .jk-wrap { height:100%; }
