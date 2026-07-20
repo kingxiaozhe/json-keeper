@@ -74,8 +74,11 @@ https://<gh-user>.github.io/json-keeper/privacy.html   (host docs/privacy.html v
 - Support URL: the repo's /issues page
 
 ## Screenshots (store-assets/, 1280×800 JPEG, no alpha)
-- shot-0-hero.jpg · shot-1-viewer-dark.jpg · shot-2-viewer-light.jpg · shot-3-paste.jpg
-(lead with the hero or the dark viewer)
+v0.10 split-view (rendered headless — clean, no overlays, exact 1280×800):
+- **shot-v10-dark-tree.jpg** (hero) · shot-v10-light-tree.jpg · shot-v10-dark-table.jpg · shot-v10-light-table.jpg
+
+Lead with shot-v10-dark-tree.jpg. The old shot-0..3.jpg show the pre-v0.10 vertical layout — replace, don't upload them.
+Still stale (old layout, need redoing before use): promo-marquee-1400×560.jpg and promo-small-440×280.jpg — these are designed banners, not plain screenshots, so I left them for you.
 
 ## Build the upload zip
 ```
