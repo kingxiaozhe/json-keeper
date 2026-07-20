@@ -4,7 +4,7 @@
 
 ## Summary (≤132 chars)
 ```
-View, format and copy JSON — obvious paste box, one-click valid-JSON copy, and big integers that never lose precision.
+View, edit and copy JSON — editable source beside a live tree, one-click valid-JSON copy, big integers kept exact.
 ```
 
 ## Detailed description (≤16,000)
@@ -15,19 +15,21 @@ WHY IT'S DIFFERENT
 • Big integers stay exact. Most viewers run JSON through the browser's number parser, silently rounding large IDs (e.g. 136986234663732436 → ...430). JSON Keeper preserves every digit — in the tree and when you copy.
 • Copy is a first-class, visible button. Get valid, properly-quoted JSON in one click — plus per-node "copy value", "copy subtree" and "copy path" (like customer.email) on hover.
 • An obvious entry point. Click the icon and paste — or just open any .json URL and it formats automatically.
+• Edit as you read. The source sits in an editable pane beside the tree — fix or reshape the JSON on the left and the tree, structure and validation update as you type. Broken JSON is flagged in place while the last good tree stays on screen, so the editor is a repair path, not a dead end.
 
 FEATURES
-• Collapsible tree with line numbers, node counts, and a structure outline to jump around large documents
+• Side-by-side layout: editable source on the left, formatted tree on the right, with a draggable divider (double-click to reset, remembered across sessions)
+• Collapsible tree with line numbers, node counts, and a pop-out structure outline to jump around large documents
 • Fast search with match count, next/previous, and auto-expand of matches
 • JSONPath query bar — filter to just the fields you want (e.g. $.users[*].email), with a live match count
 • Table view for arrays of objects — and a missing field is drawn distinctly from a null value, so you don't misread the response
 • Export an inferred JSON Schema (Draft 2020-12) and TypeScript types — with every guessed type flagged honestly (empty arrays as unknown[], big integers as bigint), so you don't inherit a wrong assumption
 • Validate the document against a JSON Schema you paste, with each error pinpointed on the tree
 • Highlights duplicate keys (which the JSON spec silently drops) and counts exact big integers
-• Pretty / Raw (exact source) / Minified views; download as .json
+• Pretty (tree) and Table views; copy the whole document minified; download as .json
 • Light / dark / auto theme, remembered
 • Handles real-world quirks: strips XSSI guard prefixes ()]}') and unwraps JSONP (callback({...})), and tolerates JSONC comments and trailing commas
-• Large files stay responsive (the tree is built on demand)
+• Large files stay responsive — the source shows immediately and the tree is built on demand
 
 PRIVACY
 No accounts, no tracking, no ads, no telemetry. JSON Keeper makes no network requests — everything runs locally. Your settings are stored on your device only. See the privacy policy linked below.
@@ -77,6 +79,8 @@ https://<gh-user>.github.io/json-keeper/privacy.html   (host docs/privacy.html v
 
 ## Build the upload zip
 ```
-node src/build-zip.mjs extensions/json-keeper   # strips manifest "key"; excludes docs/, store-assets/, README, *.pem
+./pack.sh    # allowlist build straight from the manifest (only declared files); self-checks that no tests/, specs/, .claude/ or *.pem slipped in
 ```
+Verify with `unzip -l json-keeper.zip` before uploading (expect ~29 files / ~92K).
+Note: the zip carries manifest.json as-is, including its `key` (the public key that pins the local dev ID). The Web Store assigns its own ID and ignores it; leave it in for a consistent unpacked ID, or delete the `key` line in the zip's manifest if you prefer a clean store manifest.
 (Only the user can upload + click "Submit for review". Privacy policy must be hosted at a public URL first.)
