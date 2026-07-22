@@ -13,7 +13,7 @@
 </head>
 <body>
   <h1>JSON Keeper — Privacy Policy</h1>
-  <p class="updated">Last updated: 2026-06-16</p>
+  <p class="updated">Last updated: 2026-07-23</p>
 
   <p>JSON Keeper is a browser extension that formats and displays JSON documents
   you open or paste. This policy explains what data the extension does and does
@@ -28,18 +28,28 @@
   <h2>Data stored on your device</h2>
   <p>The extension saves a few small preferences locally using the browser's
   <code>chrome.storage.local</code> API — your chosen theme (auto/light/dark) and
-  view mode (pretty/raw/min), plus a temporary copy of text you paste into the
-  popup so it can be opened in the viewer tab. This data stays on your own device,
-  is never transmitted by us, and can be erased by removing the extension.</p>
+  color skin, view mode (pretty/raw/min), and key-sorting preference, plus a
+  temporary copy of text you paste into the popup so it can be opened in the
+  viewer tab. The temporary text is removed after the viewer reads it. All of
+  this data stays on your own device, is never transmitted by us, and can be
+  erased by removing the extension.</p>
 
   <h2>The JSON you view</h2>
   <p>JSON Keeper reads the content of JSON documents you open or paste solely to
   format and display them in your browser. That content is never sent anywhere; it
   is processed entirely on your device.</p>
 
+  <h2>Limited use</h2>
+  <p>JSON content and page access are used only to provide JSON viewing, editing,
+  searching, diagnostics, copying, downloading, and export features requested by
+  the user. The extension does not transfer this data to the developer or any
+  third party, does not use it for advertising or credit decisions, and does not
+  allow humans to read it.</p>
+
   <h2>Permissions</h2>
   <ul>
-    <li><strong>storage</strong> — to remember your theme/view preferences.</li>
+    <li><strong>storage</strong> — to remember local display preferences and
+    briefly pass pasted JSON from the popup to the viewer tab.</li>
     <li><strong>host access (http, https, file)</strong> — so the extension can
     detect and pretty-print a JSON document on whatever page you open. It only
     reads page text to render JSON; it does not read cookies, browsing history, or

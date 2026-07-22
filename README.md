@@ -50,7 +50,7 @@
 
 详见 [`ARCHITECTURE.md`](ARCHITECTURE.md)。核心分层:`jsonbig.js`(解析/序列化正确性)→ `jk-util.js`(纯值函数)→ `core.js`(DOM 渲染引擎 `window.JK`)→ 两个入口(`content.js` 接管 JSON 网址、`viewer.html/js` 分栏工作台)共用同一引擎。
 
-- `manifest.json` — MV3,content script(`jsonbig.js`+`jk-util.js`+`core.js`+`content.js`)注入 http/https/file。`key` 钉死本地 ID(打包上传时移除)。
+- `manifest.json` — MV3,content script(`jsonbig.js`+`jk-util.js`+`core.js`+`content.js`)注入 http/https/file。`key` 是钉死本地开发 ID 的公钥，不是签名私钥；Chrome Web Store 会处理商店签名元数据。
 - `jsonbig.js` — 保真大整数的 JSON parse/stringify(核心正确性,零依赖)。
 - `jk-util.js` — **纯值函数**(无 DOM、无共享状态):`esc`/`linkify`/`embeddedJSON`/`groupDigits`/`epochHint`/`posToLineCol`/`countNodes`/`toCSV`,各自独立单测。
 - `core.js` — **DOM 渲染引擎**:`buildTree` + `mountViewer` + 搜索(`applySearch` 等);从 `JKUtil` 取用纯函数并统一挂在 `window.JK`。
@@ -67,3 +67,12 @@
   - `test/highlight.test.js` —— 搜索高亮手术 `markText`/`clearMarks`:命中包裹与计数、保留嵌套结构、清除后文本还原、跨旧切分边界重搜可命中。
   - `test/viewer.test.js` —— 借升级后的 DOM 桩(含小型选择器引擎)在 node 下跑**完整 `mountViewer`**:装配出 `.jk-wrap`/树/工具栏/搜索框、状态显示 valid、Pretty↔Raw 切换、caret 折叠、数组显示 CSV、以及错误路径不抛异常。覆盖此前无测试的视图组装层。
   - 重构前的安全网。共 209 条断言(含源文件无控制字节的卫生守卫);各套件共用 `test/harness.js`(统一断言/加载器/chrome mock)。
+
+## 发布打包
+
+```bash
+./pack.sh
+```
+
+脚本从 `manifest.json` 与扩展页面引用推导白名单，默认生成
+`release-artifacts/json-keeper-<manifest version>.zip`。上传前仍需查看 `unzip -l` 输出，确认包内只有运行所需文件。

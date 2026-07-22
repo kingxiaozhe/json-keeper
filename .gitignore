@@ -1,5 +1,6 @@
 # Never commit the extension signing key.
 *.pem
+release-artifacts/
 
 # Dev / marketing artifacts not needed in the repo
 design/
