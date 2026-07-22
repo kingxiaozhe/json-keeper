@@ -17,7 +17,7 @@
   - verified manual light/dark theme switching keeps both workbench panes synchronized
 - Store materials: listing, privacy policy, and three 1280×800 v0.19 screenshots updated
 - Upload artifact: `release-artifacts/json-keeper-0.19.0.zip` (14 allowlisted files; SHA-256 `e20ee494dfd405e68af3104a9d0c5e827efb55869cafff39baec04c613ff7de6`)
-- Submission gate: GitHub Pages currently serves the older 2026-06-16 privacy policy from `main:/docs`; deploy this branch's updated `docs/privacy.html` and verify the public page before uploading
-- Review verdict: approved to land locally; not approved to submit until the privacy-policy deployment gate is closed
+- Privacy policy deployment: `main` commit `fe90855`; GitHub Pages build `1109315236` completed and the public URL was verified with the 2026-07-23 policy
+- Review verdict: ready for human-authorized Chrome Web Store upload and submission
 - Store review status: not submitted
 - Rollback plan: retain the published v0.16 CRX under `release-artifacts/0.16.0/`; prefer the Chrome Web Store rollback action to republish the previous package. If rollback is unavailable, rebuild the `a91532a` source with a version greater than the failed release and submit it as an emergency replacement.
