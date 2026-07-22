@@ -5,6 +5,6 @@
   "description": "Trustworthy JSON viewer Chrome extension — exact big integers, correctness diagnostics, no ads/telemetry.",
   "license": "MIT",
   "scripts": {
-    "test": "node test/jsonbig.test.js && node test/core.test.js && node test/tree.test.js && node test/highlight.test.js && node test/viewer.test.js"
+    "test": "node test/jsonbig.test.js && node test/core.test.js && node test/tree.test.js && node test/highlight.test.js && node test/viewer.test.js && bash test/pack.test.sh"
   }
 }

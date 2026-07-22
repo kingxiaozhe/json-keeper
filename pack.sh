@@ -6,6 +6,9 @@ cd "$(dirname "$0")"
 version=$(python3 -c 'import json; print(json.load(open("manifest.json"))["version"])')
 out="${1:-release-artifacts/json-keeper-${version}.zip}"
 mkdir -p "$(dirname "$out")"
+tmp=$(mktemp -d "$(dirname "$out")/.json-keeper-pack.XXXXXX")
+trap 'find "$tmp" -type f -delete; rmdir "$tmp"' EXIT
+archive="$tmp/package.zip"
 
 files=$(python3 - <<'PY'
 import json
@@ -42,18 +45,32 @@ print("\n".join(sorted(needed)))
 PY
 )
 
-rm -f "$out"
-# shellcheck disable=SC2086
-echo "$files" | zip -q "$out" -@
+python3 - "$tmp/manifest.json" <<'PY'
+import json
+import pathlib
+import sys
 
-if unzip -Z1 "$out" | grep -qE '(^|/)(test|tests|docs|store-assets|release-artifacts|\.git|\.github)(/|$)|\.pem$|\.map$'; then
+manifest = json.loads(pathlib.Path("manifest.json").read_text())
+manifest.pop("key", None)  # source-only: pins the unpacked development ID
+pathlib.Path(sys.argv[1]).write_text(json.dumps(manifest, indent=2) + "\n")
+PY
+touch -r manifest.json "$tmp/manifest.json"
+
+# The Web Store owns the published item identity. Include a sanitized manifest
+# while leaving the source manifest's development key untouched.
+zip -qXj "$archive" "$tmp/manifest.json"
+# shellcheck disable=SC2086
+echo "$files" | grep -vx 'manifest.json' | zip -qX "$archive" -@
+
+if unzip -Z1 "$archive" | grep -qE '(^|/)(test|tests|docs|store-assets|release-artifacts|\.git|\.github)(/|$)|\.pem$|\.map$'; then
   echo "REFUSING: package contains files that must not ship" >&2
-  unzip -Z1 "$out" | grep -E '(^|/)(test|tests|docs|store-assets|release-artifacts|\.git|\.github)(/|$)|\.pem$|\.map$' >&2
-  rm -f "$out"
+  unzip -Z1 "$archive" | grep -E '(^|/)(test|tests|docs|store-assets|release-artifacts|\.git|\.github)(/|$)|\.pem$|\.map$' >&2
   exit 1
 fi
 
 count=$(echo "$files" | wc -l | tr -d ' ')
-size=$(du -h "$out" | cut -f1)
+size=$(du -h "$archive" | cut -f1)
+unzip -tq "$archive" >/dev/null
+mv -f "$archive" "$out"
 echo "packed ${count} files -> ${out} (${size})"
 unzip -tq "$out"

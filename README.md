@@ -50,7 +50,7 @@
 
 详见 [`ARCHITECTURE.md`](ARCHITECTURE.md)。核心分层:`jsonbig.js`(解析/序列化正确性)→ `jk-util.js`(纯值函数)→ `core.js`(DOM 渲染引擎 `window.JK`)→ 两个入口(`content.js` 接管 JSON 网址、`viewer.html/js` 分栏工作台)共用同一引擎。
 
-- `manifest.json` — MV3,content script(`jsonbig.js`+`jk-util.js`+`core.js`+`content.js`)注入 http/https/file。`key` 是钉死本地开发 ID 的公钥，不是签名私钥；Chrome Web Store 会处理商店签名元数据。
+- `manifest.json` — MV3,content script(`jsonbig.js`+`jk-util.js`+`core.js`+`content.js`)注入 http/https/file。`key` 是钉死本地开发 ID 的公钥，不是签名私钥；`./pack.sh` 会只在上传副本中移除它，由 Chrome Web Store 维持商店条目的 ID。
 - `jsonbig.js` — 保真大整数的 JSON parse/stringify(核心正确性,零依赖)。
 - `jk-util.js` — **纯值函数**(无 DOM、无共享状态):`esc`/`linkify`/`embeddedJSON`/`groupDigits`/`epochHint`/`posToLineCol`/`countNodes`/`toCSV`,各自独立单测。
 - `core.js` — **DOM 渲染引擎**:`buildTree` + `mountViewer` + 搜索(`applySearch` 等);从 `JKUtil` 取用纯函数并统一挂在 `window.JK`。
@@ -75,4 +75,5 @@
 ```
 
 脚本从 `manifest.json` 与扩展页面引用推导白名单，默认生成
-`release-artifacts/json-keeper-<manifest version>.zip`。上传前仍需查看 `unzip -l` 输出，确认包内只有运行所需文件。
+`release-artifacts/json-keeper-<manifest version>.zip`，并从 ZIP 内的
+`manifest.json` 移除仅用于本地开发 ID 的 `key`（源码清单不变）。上传前仍需查看 `unzip -l` 输出，确认包内只有运行所需文件。

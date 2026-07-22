@@ -78,4 +78,4 @@ https://kingxiaozhe.github.io/json-keeper/privacy.html
 ```
 ./pack.sh
 ```
-The allowlist build excludes tests, docs, store assets, release artifacts, source maps, and signing keys. Only the user can authorize upload and click "Submit for review".
+The allowlist build excludes tests, docs, store assets, release artifacts, source maps, and signing keys, and removes the source-only development `key` from the upload manifest. Only the user can authorize upload and click "Submit for review".
