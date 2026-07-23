@@ -1,19 +1,31 @@
-# JSON Keeper (v0.10.0)
+# JSON Keeper
 
-可信赖的 JSON 查看/格式化插件。重写自 JSONVue,差异化:**有明显粘贴入口 + 一键复制合法 JSON + 大整数永不失真 + 可折叠树/搜索**。设计语言 "Quiet Precision"(浅/深双主题)。
+[![CI](https://github.com/kingxiaozhe/json-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/kingxiaozhe/json-keeper/actions/workflows/ci.yml)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## 加载（手动）
-1. `chrome://extensions` → 开**开发者模式**
-2. **加载已解压的扩展程序** → 选 `json-keeper/` 目录
-3. 看本地 `.json` 文件需在该扩展上勾**"允许访问文件网址"**
+本地优先、重视数据正确性的 Chrome JSON 工作台。直接打开 JSON URL、
+本地文件，或粘贴文本；在左侧编辑源码，在右侧查看实时树，并始终保留
+大整数的每一位。
 
-## 三个 P0(对标 JSONVue 的根因)
+![JSON Keeper split workbench](store-assets/shot-v10-dark-tree.jpg)
 
-| P0 痛点(JSONVue) | 根因(逆向确认) | JSON Keeper 的修法 |
-|---|---|---|
-| "用不了/不知道怎么用"(44) | 纯页面转换器,**无 popup、无粘贴框、无入口** | **popup 粘贴框** + 独立 viewer 页;JSON 网址仍自动美化 |
-| 吐不回合法 JSON / View Source 坏(25) | 复制藏在右键菜单;切不回原文 | 树视图上**可见的 Copy(合法JSON)/ Raw(原始源)按钮** |
-| 大整数被四舍五入(8) | `supportBigInt` 选项默认关,走原生 `JSON.parse` | **默认 BigInt 保真**(`jsonbig.js`,显示+复制都不失真) |
+- **不丢精度**：大整数在查看、查询、排序与复制时保持原值，并主动提示
+  重复键。
+- **不只是格式化**：分栏编辑、JSONPath、表格视图、Schema 推断、
+  TypeScript 导出与 Schema 校验在同一个工作台完成。
+- **数据留在本机**：零账号、零广告、零遥测、零网络请求；扩展只使用
+  本地设置存储。
+
+## 安装与快速开始
+
+1. 从 [Releases](https://github.com/kingxiaozhe/json-keeper/releases)
+   下载最新 ZIP 并解压，或直接克隆本仓库。
+2. 打开 `chrome://extensions`，启用**开发者模式**。
+3. 点击**加载已解压的扩展程序**，选择解压后的目录。
+4. 点击扩展图标粘贴 JSON，或直接打开任意 `.json` URL。
+
+查看 `file://` 本地 JSON 时，需要在扩展详情页手动开启
+**允许访问文件网址**。当前仅支持 Chrome / Chromium。
 
 ## 本版已含
 - **左右分屏工作台**[v0.10]:左栏是**可编辑的源码**、右栏是格式化树,中间**可拖拽分隔条**(双击复位,比例跨会话记住)。左栏改字,右栏树/结构/状态实时跟随(防抖);坏 JSON 就地标红报错、**保留上一版好树**不清空。取代了旧的 Raw/Min 视图标签——源码常驻左侧,不必再切模式看原文;`Min` 变成 ⋯ 里的 **Copy minified**。

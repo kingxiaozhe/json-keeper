@@ -66,7 +66,7 @@ JSON Keeper auto-detects and formats a JSON document on whatever page the user o
 
 ## Privacy policy URL
 ```
-https://<gh-user>.github.io/json-keeper/privacy.html   (host docs/privacy.html via GitHub Pages — see note below)
+https://kingxiaozhe.github.io/json-keeper/privacy.html
 ```
 
 ## Optional

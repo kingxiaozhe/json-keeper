@@ -1,0 +1,3 @@
+# Chrome extension public key used only to keep the unpacked development ID
+# stable. This is not private signing material.
+0f923fd2919266717c891bc9bf3fc5a100446524:manifest.json:generic-api-key:3
