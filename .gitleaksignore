@@ -1,0 +1,4 @@
+# Chrome extension public key used only to keep the unpacked development ID
+# stable. pack.sh removes it from the Web Store artifact; no private signing
+# material is present in the repository.
+0f923fd2919266717c891bc9bf3fc5a100446524:manifest.json:generic-api-key:3
